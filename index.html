@@ -114,40 +114,41 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 }
 #burger:hover{background:var(--bg3);color:var(--text)}
 #topbar-center{position:relative}
-#model-selector{
-  display:flex;align-items:center;gap:7px;
-  padding:6px 12px;border-radius:9px;border:1px solid var(--border);
-  background:transparent;color:var(--text);cursor:pointer;
-  font-family:'Geist',sans-serif;font-size:.8rem;font-weight:600;
-  transition:all .15s;
+/* ── MODEL SELECTOR IN BUBBLE ── */
+#bubble-model-wrap{position:relative;}
+#bubble-model-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 20px 5px 9px;border-radius:20px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--text2);font-family:'Geist',sans-serif;
+  font-size:.72rem;font-weight:600;cursor:pointer;
+  transition:all .15s;position:relative;letter-spacing:.04em;
 }
-#model-selector:hover{border-color:var(--border2);background:var(--bg3)}
-.model-dot{width:7px;height:7px;border-radius:50%;background:#3a3a3a;transition:background .2s}
-#model-selector[data-tier="small"] .model-dot{background:#4ade80}
-#model-selector[data-tier="medium"] .model-dot{background:#60a5fa}
-#model-selector[data-tier="large"] .model-dot{background:#c084fc}
-#model-dropdown{
-  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+#bubble-model-btn:hover{background:var(--bg3);border-color:rgba(255,255,255,.2);color:var(--text)}
+#bubble-model-btn::after{
+  content:'';position:absolute;right:7px;top:50%;
+  width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;
+  border-top:4px solid currentColor;transform:translateY(-50%);pointer-events:none;opacity:.5;
+  transition:transform .2s;
+}
+#bubble-model-btn.open::after{transform:translateY(-50%) rotate(180deg);}
+.bubble-model-dot{width:6px;height:6px;border-radius:50%;background:#888;flex-shrink:0;transition:background .2s;}
+#bubble-model-btn[data-tier="small"] .bubble-model-dot{background:#4ade80;}
+#bubble-model-btn[data-tier="medium"] .bubble-model-dot{background:#60a5fa;}
+#bubble-model-btn[data-tier="large"] .bubble-model-dot{background:#c084fc;}
+
+#bubble-model-dropdown{
+  position:absolute;bottom:calc(100% + 8px);left:0;
   background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
   overflow:hidden;z-index:200;min-width:240px;
-  box-shadow:0 12px 40px rgba(0,0,0,.7);
+  box-shadow:0 -8px 32px rgba(0,0,0,.6);
   display:none;
 }
-#model-dropdown.open{display:block;animation:scaleIn .15s ease}
-@keyframes scaleIn{from{opacity:0;transform:translateX(-50%) scale(.96)}to{opacity:1;transform:translateX(-50%) scale(1)}}
-.model-opt{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 16px;cursor:pointer;font-size:.85rem;
-  border-bottom:1px solid var(--border);transition:background .1s;
-}
-.model-opt:last-child{border-bottom:none}
-.model-opt:hover{background:var(--bg3)}
-.model-opt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.model-opt-info{flex:1}
-.model-opt-name{font-weight:600;color:var(--text)}
-.model-opt-desc{font-size:.72rem;color:var(--text2);margin-top:1px}
-.model-opt-check{color:var(--text2);opacity:0}
-.model-opt.selected .model-opt-check{opacity:1;color:#fff}
+#bubble-model-dropdown.open{display:block;animation:slideUpModel .18s cubic-bezier(.34,1.2,.64,1);}
+@keyframes slideUpModel{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Remove old topbar model selector */
+#topbar-center{display:none;}
 #topbar-right{display:flex;align-items:center;gap:6px}
 .tb-btn{
   width:34px;height:34px;border-radius:8px;border:none;
@@ -169,14 +170,48 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #chat-empty{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   height:100%;padding:40px 20px;text-align:center;
+  /* Fade out when chat starts */
+  transition:opacity .3s ease;
 }
-#chat-empty-logo{
-  width:52px;height:52px;border-radius:14px;
-  background:var(--bg3);border:1px solid var(--border2);
-  display:flex;align-items:center;justify-content:center;margin-bottom:20px;
+/* Suggestion chips below centered bubble in empty state */
+body.chat-empty-state .suggestion-chips{
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
+  max-width:min(620px,92vw);
 }
-#chat-empty h1{font-size:1.9rem;font-weight:800;letter-spacing:-.04em;margin-bottom:8px}
-#chat-empty p{font-size:.88rem;color:var(--text2);line-height:1.6;max-width:340px}
+body:not(.chat-empty-state) #chat-empty{
+  display:none !important;
+}
+
+/* Position chips below the floating input */
+body.chat-empty-state #chat-empty{
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%, calc(-50% + 90px));
+  z-index:9;
+  height:auto;
+  padding:0;
+  pointer-events:all;
+  opacity:1;
+}
+
+/* Welcome text above the centered bubble */
+#welcome-above-bubble{
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%, calc(-50% - 120px));
+  text-align:center;
+  pointer-events:none;
+  z-index:9;
+  transition:opacity .35s ease, transform .35s ease;
+}
+body:not(.chat-empty-state) #welcome-above-bubble{
+  opacity:0;transform:translate(-50%, calc(-50% - 150px));
+}
+#welcome-above-bubble h1{
+  font-size:clamp(2rem,6vw,3.2rem);font-weight:800;letter-spacing:-.04em;
+  color:#fff;margin-bottom:8px;
+}
+#welcome-above-bubble p{font-size:.88rem;color:var(--text2);line-height:1.6;}
 .suggestion-chips{
   display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px;max-width:520px;
 }
@@ -304,11 +339,29 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #input-zone{
   flex-shrink:0;
   padding:10px 16px calc(14px + env(safe-area-inset-bottom));
+  transition:padding .4s cubic-bezier(.4,0,.2,1);
+}
+/* When chat is empty: input floats in center of screen */
+body.chat-empty-state #input-zone{
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  padding:0;
+  width:min(680px, 92vw);
+  z-index:10;
+}
+body.chat-empty-state #chat-wrap{
+  pointer-events:none;
+}
+body.chat-empty-state #input-zone{
+  pointer-events:all;
 }
 #input-container{
   max-width:760px;margin:0 auto;
-  /* When chat is empty, input is vertically centered — JS handles the transform */
   transition:all .4s cubic-bezier(.4,0,.2,1);
+}
+body.chat-empty-state #input-container{
+  max-width:100%;
 }
 #input-wrap{
   background:var(--bg2);
@@ -475,6 +528,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 </aside>
 
+<!-- WELCOME ABOVE CENTERED BUBBLE -->
+<div id="welcome-above-bubble">
+  <h1>Wikimind AI</h1>
+  <p>Posez n'importe quelle question.</p>
+</div>
+
 <!-- APP -->
 <div id="app">
 
@@ -489,37 +548,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </button>
 
     <div id="topbar-center">
-      <button id="model-selector" data-tier="small">
-        <div class="model-dot"></div>
-        <span id="model-label">Small 5.1</span>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div id="model-dropdown">
-        <div class="model-opt selected" data-model="mistral-small-latest" data-name="Small 5.1" data-tier="small">
-          <div class="model-opt-dot" style="background:#4ade80"></div>
-          <div class="model-opt-info">
-            <div class="model-opt-name">Wikimind Small 5.1</div>
-            <div class="model-opt-desc">Rapide, idéal pour le quotidien</div>
-          </div>
-          <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <div class="model-opt" data-model="mistral-medium-latest" data-name="Medium 5.1" data-tier="medium">
-          <div class="model-opt-dot" style="background:#60a5fa"></div>
-          <div class="model-opt-info">
-            <div class="model-opt-name">Wikimind Medium 5.1</div>
-            <div class="model-opt-desc">Equilibre performance/vitesse</div>
-          </div>
-          <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <div class="model-opt" data-model="mistral-large-latest" data-name="Large 5.1" data-tier="large">
-          <div class="model-opt-dot" style="background:#c084fc"></div>
-          <div class="model-opt-info">
-            <div class="model-opt-name">Wikimind Large 5.1</div>
-            <div class="model-opt-desc">Puissant, tâches complexes</div>
-          </div>
-          <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
+      <!-- model selector moved to input bubble -->
     </div>
 
     <div id="topbar-right">
@@ -533,14 +562,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <div id="chat-wrap">
     <div id="chat-area">
       <div id="chat-empty">
-        <div id="chat-empty-logo">
-          <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
-            <text x="4" y="30" font-family="Geist,sans-serif" font-weight="900" font-size="28" fill="white">W</text>
-          </svg>
-        </div>
-        <h1>Wikimind AI</h1>
-        <p>Posez n'importe quelle question. Je suis là pour vous aider.</p>
-        <div class="suggestion-chips">
+        <div class="suggestion-chips" style="margin-top:0">
           <button class="chip" data-q="Explique-moi la relativité restreinte">Relativité restreinte</button>
           <button class="chip" data-q="Comment fonctionne une IA ?">Comment fonctionne une IA ?</button>
           <button class="chip" data-q="Résous cette intégrale : ∫x² dx">Intégrale de x²</button>
@@ -558,6 +580,39 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
           <textarea id="chat-input" placeholder="Demandez n'importe quoi..." rows="1"></textarea>
           <div id="input-row">
             <div class="input-row-left">
+              <!-- Model selector in bubble -->
+              <div id="bubble-model-wrap">
+                <button id="bubble-model-btn" data-tier="small">
+                  <span class="bubble-model-dot"></span>
+                  <span id="bubble-model-label">Small 5.1</span>
+                </button>
+                <div id="bubble-model-dropdown">
+                  <div class="model-opt selected" data-model="mistral-small-latest" data-name="Small 5.1" data-tier="small">
+                    <div class="model-opt-dot" style="background:#4ade80"></div>
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">Wikimind Small 5.1</div>
+                      <div class="model-opt-desc">Rapide, idéal pour le quotidien</div>
+                    </div>
+                    <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="model-opt" data-model="mistral-medium-latest" data-name="Medium 5.1" data-tier="medium">
+                    <div class="model-opt-dot" style="background:#60a5fa"></div>
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">Wikimind Medium 5.1</div>
+                      <div class="model-opt-desc">Equilibre performance / vitesse</div>
+                    </div>
+                    <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="model-opt" data-model="mistral-large-latest" data-name="Large 5.1" data-tier="large">
+                    <div class="model-opt-dot" style="background:#c084fc"></div>
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">Wikimind Large 5.1</div>
+                      <div class="model-opt-desc">Puissant, tâches complexes</div>
+                    </div>
+                    <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                </div>
+              </div>
               <div id="plus-menu">
                 <div class="pm-item" id="pm-img">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -688,9 +743,9 @@ const sendBtn = $("send-btn");
 const stopBtn = $("stop-btn");
 const plusBtn = $("plus-btn");
 const plusMenu = $("plus-menu");
-const modelSelector = $("model-selector");
-const modelDropdown = $("model-dropdown");
-const modelLabel = $("model-label");
+const bubbleModelBtn = $("bubble-model-btn");
+const bubbleModelDropdown = $("bubble-model-dropdown");
+const bubbleModelLabel = $("bubble-model-label");
 
 // ── UTILS ──
 const toast = msg => {
@@ -708,17 +763,22 @@ burger.addEventListener("click", openSidebar);
 closeSidebar.addEventListener("click", closeSidebarFn);
 sidebarOverlay.addEventListener("click", closeSidebarFn);
 
-// ── MODEL SELECTOR ──
-modelSelector.addEventListener("click", e => { e.stopPropagation(); modelDropdown.classList.toggle("open"); });
-document.querySelectorAll(".model-opt").forEach(opt => {
+// ── BUBBLE MODEL SELECTOR ──
+bubbleModelBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  bubbleModelBtn.classList.toggle("open");
+  bubbleModelDropdown.classList.toggle("open");
+});
+document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(opt => {
   opt.addEventListener("click", () => {
     selectedModel = opt.dataset.model;
     selectedModelName = opt.dataset.name;
-    modelLabel.textContent = selectedModelName;
-    modelSelector.dataset.tier = opt.dataset.tier;
-    document.querySelectorAll(".model-opt").forEach(o => o.classList.remove("selected"));
+    bubbleModelLabel.textContent = selectedModelName;
+    bubbleModelBtn.dataset.tier = opt.dataset.tier;
+    document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(o => o.classList.remove("selected"));
     opt.classList.add("selected");
-    modelDropdown.classList.remove("open");
+    bubbleModelDropdown.classList.remove("open");
+    bubbleModelBtn.classList.remove("open");
   });
 });
 
@@ -729,41 +789,46 @@ plusBtn.addEventListener("click", e => { e.stopPropagation(); plusMenu.classList
 });
 
 // Close dropdowns
-document.addEventListener("click", () => { modelDropdown.classList.remove("open"); plusMenu.classList.remove("open"); });
+document.addEventListener("click", () => {
+  bubbleModelDropdown.classList.remove("open");
+  bubbleModelBtn.classList.remove("open");
+  plusMenu.classList.remove("open");
+});
 
 // ── KATEX + MARKDOWN ──
-// Wait for katex to load
 function renderContent(text) {
-  // Pre-process: protect math blocks
   const mathBlocks = [];
   const mathInlines = [];
-  
-  // Block math $$ ... $$
-  text = text.replace(/\$\$([^$]+)\$\$/g, (_, math) => {
-    mathBlocks.push(math);
-    return `%%MATH_BLOCK_${mathBlocks.length-1}%%`;
-  });
-  // Inline math $ ... $
-  text = text.replace(/\$([^$\n]+)\$/g, (_, math) => {
-    mathInlines.push(math);
-    return `%%MATH_INLINE_${mathInlines.length-1}%%`;
-  });
 
-  // Render markdown
+  // Display math: $$ ... $$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => { mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; });
+  // Display math: \[ ... \]
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => { mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; });
+  // Display math: [ ... ] — only when it contains LaTeX commands
+  text = text.replace(/\[\s*([\s\S]+?)\s*\]/g, (full, m) => {
+    if(/\\[a-zA-Z]|[_^{}]/.test(m) && m.length < 500 && !/^\d+$/.test(m.trim())) {
+      mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`;
+    }
+    return full;
+  });
+  // Inline math: \( ... \)
+  text = text.replace(/\\\((.+?)\\\)/g, (_, m) => { mathInlines.push(m); return `%%MI${mathInlines.length-1}%%`; });
+  // Inline math: $ ... $
+  text = text.replace(/\$([^$\n]+?)\$/g, (_, m) => { mathInlines.push(m); return `%%MI${mathInlines.length-1}%%`; });
+
   let html = marked.parse(text, { breaks: true, gfm: true });
 
-  // Restore math
-  mathBlocks.forEach((math, i) => {
-    let rendered = "";
-    try { rendered = katex.renderToString(math, { displayMode: true, throwOnError: false }); }
-    catch { rendered = `<code>${escHtml(math)}</code>`; }
-    html = html.replace(`%%MATH_BLOCK_${i}%%`, `<div class="katex-block">${rendered}</div>`);
+  mathBlocks.forEach((m, i) => {
+    let r = "";
+    try { r = katex.renderToString(m, { displayMode: true, throwOnError: false }); }
+    catch { r = `<code>${escHtml(m)}</code>`; }
+    html = html.replace(`%%MB${i}%%`, `<div class="katex-block">${r}</div>`);
   });
-  mathInlines.forEach((math, i) => {
-    let rendered = "";
-    try { rendered = katex.renderToString(math, { displayMode: false, throwOnError: false }); }
-    catch { rendered = `<code>${escHtml(math)}</code>`; }
-    html = html.replace(`%%MATH_INLINE_${i}%%`, rendered);
+  mathInlines.forEach((m, i) => {
+    let r = "";
+    try { r = katex.renderToString(m, { displayMode: false, throwOnError: false }); }
+    catch { r = `<code>${escHtml(m)}</code>`; }
+    html = html.replace(`%%MI${i}%%`, r);
   });
 
   return html;
@@ -790,6 +855,9 @@ function setStarted(v) {
   chatEmpty.style.display = v ? "none" : "flex";
   messagesEl.style.display = v ? "flex" : "none";
   if(v) messagesEl.style.flexDirection = "column";
+  // Toggle centered input bubble
+  if(v) document.body.classList.remove("chat-empty-state");
+  else document.body.classList.add("chat-empty-state");
 }
 
 function appendUserMsg(text) {
