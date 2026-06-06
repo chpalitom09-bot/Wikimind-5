@@ -239,15 +239,17 @@ body.chat-empty-state #input-container{max-width:100%;}
 }
 #bubble-model-btn.open::after{transform:translateY(-50%) rotate(180deg);}
 
-/* Dropdown — FIXED position, above input, high z-index */
+/* Dropdown — ABSOLUTE position, relative to parent */
 #bubble-model-dropdown{
-  position:fixed;
+  position:absolute;
   background:var(--bg2);border:1px solid var(--border2);border-radius:14px;
   overflow:hidden;
   z-index:9999;
   min-width:250px;
-  box-shadow:0 -4px 32px rgba(0,0,0,.7),0 8px 32px rgba(0,0,0,.5);
+  box-shadow:0 4px 32px rgba(0,0,0,.7);
   display:none;
+  bottom: calc(100% + 8px);
+  left: 0;
 }
 #bubble-model-dropdown.open{
   display:block;
@@ -349,13 +351,13 @@ body.chat-empty-state #input-container{max-width:100%;}
   </div>
 </aside>
 
-<!-- WELCOME SCREEN (visible when chat is empty) -->
+<!-- WELCOME SCREEN -->
 <div id="welcome-screen">
   <div id="welcome-title">Wikimind AI</div>
   <div id="welcome-sub">Posez n'importe quelle question.</div>
 </div>
 
-<!-- SUGGESTION CHIPS (below centered bubble) -->
+<!-- SUGGESTION CHIPS -->
 <div class="suggestion-chips">
   <button class="chip" data-q="Explique-moi la relativité restreinte">Relativité restreinte</button>
   <button class="chip" data-q="Comment fonctionne une IA ?">Comment fonctionne une IA ?</button>
@@ -492,47 +494,55 @@ body.chat-empty-state #input-container{max-width:100%;}
 <div id="toast"></div>
 
 <script type="module">
+// =============================================
+// FIREBASE CONFIGURATION
+// =============================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push, remove } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
 
+// Initialize Firebase apps
 const authApp = initializeApp({
-  apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
-  authDomain:"wikimind-3-comments.firebaseapp.com",
-  databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"wikimind-3-comments",
-  storageBucket:"wikimind-3-comments.firebasestorage.app",
-  messagingSenderId:"137479541640",
-  appId:"1:137479541640:web:4ed2510a9908055052e03d"
+  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain: "wikimind-3-comments.firebaseapp.com",
+  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wikimind-3-comments",
+  storageBucket: "wikimind-3-comments.firebasestorage.app",
+  messagingSenderId: "137479541640",
+  appId: "1:137479541640:web:4ed2510a9908055052e03d"
 }, "auth-app");
 
-const dataApp = initApp2({
-  apiKey:"AIzaSyBZ9585EYnmH2nrH6pRHl1o9WqiEs1J3b8",
-  authDomain:"wikimind5.firebaseapp.com",
-  databaseURL:"https://wikimind5-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"wikimind5",
-  storageBucket:"wikimind5.firebasestorage.app",
-  messagingSenderId:"892166712269",
-  appId:"1:892166712269:web:0c110e0889f40b16f13284"
+const dataApp = initializeApp({
+  apiKey: "AIzaSyBZ9585EYnmH2nrH6pRHl1o9WqiEs1J3b8",
+  authDomain: "wikimind5.firebaseapp.com",
+  databaseURL: "https://wikimind5-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wikimind5",
+  storageBucket: "wikimind5.firebasestorage.app",
+  messagingSenderId: "892166712269",
+  appId: "1:892166712269:web:0c110e0889f40b16f13284"
 }, "data-app");
 
 const auth = getAuth(authApp);
 const db = getDatabase(dataApp);
 const KEY = "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj";
 
-// ── STATE ──
+// =============================================
+// STATE
+// =============================================
 let currentUser = null;
 let currentConvId = null;
-let messages = []; // [{role,content,msgId,model,ts,responseTime,liked}]
+let messages = [];
 let streaming = false;
 let abortCtrl = null;
 let selectedModel = "mistral-small-latest";
 let selectedModelName = "Small 5.1";
 let chatStarted = false;
 let _streamStart = 0;
+let conversations = [];
 
-// ── DOM ──
+// =============================================
+// DOM ELEMENTS
+// =============================================
 const $ = id => document.getElementById(id);
 const overlay = $("auth-overlay");
 const sidebar = $("sidebar");
@@ -549,65 +559,94 @@ const bubbleModelBtn = $("bubble-model-btn");
 const bubbleModelDropdown = $("bubble-model-dropdown");
 const bubbleModelLabel = $("bubble-model-label");
 
-// ── UTILS ──
+// =============================================
+// UTILITY FUNCTIONS
+// =============================================
 const toast = msg => {
-  const t = $("toast"); t.textContent = msg; t.classList.add("on");
-  setTimeout(()=>t.classList.remove("on"), 2600);
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("on");
+  setTimeout(() => t.classList.remove("on"), 2600);
 };
-const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-const initials = n => n ? n.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2) : "?";
-const escHtml = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-const fmtTime = ms => ms < 1000 ? ms+"ms" : (ms/1000).toFixed(1)+"s";
 
-// ── SIDEBAR ──
-const openSidebar = () => { sidebar.classList.add("open"); sidebarOverlay.classList.add("active"); };
-const closeSidebarFn = () => { sidebar.classList.remove("open"); sidebarOverlay.classList.remove("active"); };
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const initials = n => n ? n.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
+const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const fmtTime = ms => ms < 1000 ? ms + "ms" : (ms / 1000).toFixed(1) + "s";
+
+// =============================================
+// SIDEBAR FUNCTIONS
+// =============================================
+const openSidebar = () => {
+  sidebar.classList.add("open");
+  sidebarOverlay.classList.add("active");
+  loadConversations();
+};
+
+const closeSidebarFn = () => {
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("active");
+};
+
 $("burger").addEventListener("click", openSidebar);
 $("close-sidebar").addEventListener("click", closeSidebarFn);
 sidebarOverlay.addEventListener("click", closeSidebarFn);
 
-// ── MODEL SELECTOR (fixed positioning) ──
+// =============================================
+// MODEL SELECTOR (FIXED POSITIONING)
+// =============================================
 bubbleModelBtn.addEventListener("click", e => {
   e.stopPropagation();
   const isOpen = bubbleModelDropdown.classList.contains("open");
-  if(isOpen) { closeModelDD(); return; }
+  if (isOpen) {
+    closeModelDD();
+    return;
+  }
   bubbleModelBtn.classList.add("open");
-  bubbleModelDropdown.style.display = "block";
   bubbleModelDropdown.classList.add("open");
-  // Position above button
-  const r = bubbleModelBtn.getBoundingClientRect();
-  bubbleModelDropdown.style.visibility = "hidden";
-  bubbleModelDropdown.style.display = "block";
-  const h = bubbleModelDropdown.offsetHeight;
-  bubbleModelDropdown.style.visibility = "";
-  bubbleModelDropdown.style.left = r.left + "px";
-  bubbleModelDropdown.style.top = (r.top - h - 8) + "px";
 });
-function closeModelDD(){
+
+function closeModelDD() {
   bubbleModelBtn.classList.remove("open");
   bubbleModelDropdown.classList.remove("open");
-  bubbleModelDropdown.style.display = "none";
 }
+
 document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(opt => {
   opt.addEventListener("click", () => {
     selectedModel = opt.dataset.model;
     selectedModelName = opt.dataset.name;
     bubbleModelLabel.textContent = selectedModelName;
     bubbleModelBtn.dataset.tier = opt.dataset.tier;
-    document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(o=>o.classList.remove("selected"));
+    document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(o => o.classList.remove("selected"));
     opt.classList.add("selected");
     closeModelDD();
   });
 });
 
-// ── PLUS MENU ──
-plusBtn.addEventListener("click", e => { e.stopPropagation(); plusMenu.classList.toggle("open"); });
-["pm-img","pm-file","pm-web"].forEach(id => {
-  $(id)?.addEventListener("click", () => { toast("Fonctionnalité bientôt disponible."); plusMenu.classList.remove("open"); });
+// Close dropdown when clicking outside
+document.addEventListener("click", () => {
+  closeModelDD();
+  plusMenu.classList.remove("open");
 });
-document.addEventListener("click", () => { closeModelDD(); plusMenu.classList.remove("open"); });
 
-// ── TYPING PLACEHOLDER ──
+// =============================================
+// PLUS MENU
+// =============================================
+plusBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  plusMenu.classList.toggle("open");
+});
+
+["pm-img", "pm-file", "pm-web"].forEach(id => {
+  $(id)?.addEventListener("click", () => {
+    toast("Fonctionnalité bientôt disponible.");
+    plusMenu.classList.remove("open");
+  });
+});
+
+// =============================================
+// TYPING PLACEHOLDER
+// =============================================
 const PLACEHOLDER_PHRASES = [
   "Explique-moi un concept complexe...",
   "Résous cette équation...",
@@ -619,109 +658,182 @@ const PLACEHOLDER_PHRASES = [
   "Donne-moi des idées pour...",
 ];
 let _phIdx = 0, _phPos = 0, _phDir = 1, _phTimer = null;
-function runPlaceholder(){
-  if(!document.body.classList.contains("chat-empty-state")){ chatInput.placeholder=""; return; }
+
+function runPlaceholder() {
+  if (!document.body.classList.contains("chat-empty-state")) {
+    chatInput.placeholder = "";
+    return;
+  }
   const phrase = PLACEHOLDER_PHRASES[_phIdx];
-  if(_phDir === 1){
+  if (_phDir === 1) {
     _phPos++;
     chatInput.placeholder = phrase.slice(0, _phPos);
-    if(_phPos >= phrase.length){ _phDir = -1; _phTimer = setTimeout(runPlaceholder, 1600); return; }
+    if (_phPos >= phrase.length) {
+      _phDir = -1;
+      _phTimer = setTimeout(runPlaceholder, 1600);
+      return;
+    }
     _phTimer = setTimeout(runPlaceholder, 55);
   } else {
     _phPos--;
     chatInput.placeholder = phrase.slice(0, _phPos);
-    if(_phPos <= 0){ _phDir = 1; _phIdx = (_phIdx+1)%PLACEHOLDER_PHRASES.length; _phTimer = setTimeout(runPlaceholder, 400); return; }
+    if (_phPos <= 0) {
+      _phDir = 1;
+      _phIdx = (_phIdx + 1) % PLACEHOLDER_PHRASES.length;
+      _phTimer = setTimeout(runPlaceholder, 400);
+      return;
+    }
     _phTimer = setTimeout(runPlaceholder, 30);
   }
 }
 runPlaceholder();
 
-// ── KATEX + MARKDOWN ──
+// =============================================
+// AUTO-RESIZE TEXTINPUT
+// =============================================
+function autoResize() {
+  chatInput.style.height = "auto";
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + "px";
+}
+chatInput.addEventListener("input", autoResize);
+
+// =============================================
+// KATEX + MARKDOWN RENDERING
+// =============================================
 function renderContent(text) {
-  const mathBlocks=[], mathInlines=[];
-  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_,m)=>{ mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; });
-  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_,m)=>{ mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; });
-  text = text.replace(/\[\s*([\s\S]+?)\s*\]/g, (full,m)=>{
-    if(/\\[a-zA-Z]|[_^{}]/.test(m) && m.length<500 && !/^\d+$/.test(m.trim())){ mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; }
+  const mathBlocks = [], mathInlines = [];
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => {
+    mathBlocks.push(m);
+    return `%%MB${mathBlocks.length - 1}%%`;
+  });
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => {
+    mathBlocks.push(m);
+    return `%%MB${mathBlocks.length - 1}%%`;
+  });
+  text = text.replace(/\[\s*([\s\S]+?)\s*\]/g, (full, m) => {
+    if (/\\[a-zA-Z]|[_^{}]/.test(m) && m.length < 500 && !/^\d+$/.test(m.trim())) {
+      mathBlocks.push(m);
+      return `%%MB${mathBlocks.length - 1}%%`;
+    }
     return full;
   });
-  text = text.replace(/\\\((.+?)\\\)/g, (_,m)=>{ mathInlines.push(m); return `%%MI${mathInlines.length-1}%%`; });
-  text = text.replace(/\$([^$\n]+?)\$/g, (_,m)=>{ mathInlines.push(m); return `%%MI${mathInlines.length-1}%%`; });
-  let html = marked.parse(text, {breaks:true, gfm:true});
-  mathBlocks.forEach((m,i)=>{
-    let r=""; try{ r=katex.renderToString(m,{displayMode:true,throwOnError:false}); }catch{ r=`<code>${escHtml(m)}</code>`; }
+  text = text.replace(/\\\((.+?)\\\)/g, (_, m) => {
+    mathInlines.push(m);
+    return `%%MI${mathInlines.length - 1}%%`;
+  });
+  text = text.replace(/\$([^$\n]+?)\$/g, (_, m) => {
+    mathInlines.push(m);
+    return `%%MI${mathInlines.length - 1}%%`;
+  });
+
+  let html = marked.parse(text, { breaks: true, gfm: true });
+
+  mathBlocks.forEach((m, i) => {
+    let r = "";
+    try {
+      r = katex.renderToString(m, { displayMode: true, throwOnError: false });
+    } catch {
+      r = `<code>${escHtml(m)}</code>`;
+    }
     html = html.replace(`%%MB${i}%%`, `<div class="katex-block">${r}</div>`);
   });
-  mathInlines.forEach((m,i)=>{
-    let r=""; try{ r=katex.renderToString(m,{displayMode:false,throwOnError:false}); }catch{ r=`<code>${escHtml(m)}</code>`; }
+
+  mathInlines.forEach((m, i) => {
+    let r = "";
+    try {
+      r = katex.renderToString(m, { displayMode: false, throwOnError: false });
+    } catch {
+      r = `<code>${escHtml(m)}</code>`;
+    }
     html = html.replace(`%%MI${i}%%`, r);
   });
+
   return html;
 }
 
 function addCodeButtons(bubble) {
   bubble.querySelectorAll("pre").forEach(pre => {
-    if(pre.querySelector(".code-header")) return;
+    if (pre.querySelector(".code-header")) return;
     const code = pre.querySelector("code");
-    if(!code) return;
-    const lang = (code.className.match(/language-(\w+)/)||[])[1]||"";
+    if (!code) return;
+    const lang = (code.className.match(/language-(\w+)/) || [])[1] || "";
     const header = document.createElement("div");
     header.className = "code-header";
     header.innerHTML = `<span>${lang}</span><button class="copy-code-btn">Copier</button>`;
     pre.parentNode.insertBefore(header, pre);
-    header.querySelector(".copy-code-btn").addEventListener("click", ()=>{
-      navigator.clipboard.writeText(code.textContent).then(()=>toast("Copié !"));
+    header.querySelector(".copy-code-btn").addEventListener("click", () => {
+      navigator.clipboard.writeText(code.textContent).then(() => toast("Copié !"));
     });
   });
 }
 
-// ── CHAT STATE ──
+// =============================================
+// CHAT STATE MANAGEMENT
+// =============================================
 function setStarted(v) {
   chatStarted = v;
-  if(v){
+  if (v) {
     document.body.classList.remove("chat-empty-state");
-    clearTimeout(_phTimer); chatInput.placeholder = "";
+    clearTimeout(_phTimer);
+    chatInput.placeholder = "";
   } else {
     document.body.classList.add("chat-empty-state");
-    _phPos=0; _phDir=1; clearTimeout(_phTimer); runPlaceholder();
+    _phPos = 0;
+    _phDir = 1;
+    clearTimeout(_phTimer);
+    runPlaceholder();
   }
 }
 
-function scrollBottom() { chatArea.scrollTop = chatArea.scrollHeight; }
+function scrollBottom() {
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
 
-// ── APPEND MESSAGES ──
+// =============================================
+// MESSAGE APPEND FUNCTIONS
+// =============================================
 function appendUserMsg(text) {
   const g = document.createElement("div");
   g.className = "msg-group user";
-  g.innerHTML = `<div class="msg-inner"><div class="bubble user">${escHtml(text)}</div><div class="msg-meta user">${new Date().toLocaleTimeString("fr",{hour:"2-digit",minute:"2-digit"})}</div></div>`;
+  g.innerHTML = `<div class="msg-inner"><div class="bubble user">${escHtml(text)}</div><div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div></div>`;
   messagesEl.appendChild(g);
   scrollBottom();
 }
 
 function appendThinking() {
   const g = document.createElement("div");
-  g.className="msg-group ai"; g.id="thinking-group";
-  g.innerHTML=`<div class="msg-inner"><div class="thinking-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Wikimind réfléchit...</span></div></div>`;
-  messagesEl.appendChild(g); scrollBottom();
+  g.className = "msg-group ai";
+  g.id = "thinking-group";
+  g.innerHTML = `<div class="msg-inner"><div class="thinking-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Wikimind réfléchit...</span></div></div>`;
+  messagesEl.appendChild(g);
+  scrollBottom();
+  return g;
 }
 
-function appendAIMsg(msgObj, isStreaming=false) {
-  // msgObj: {content, model, modelName, ts, responseTime, liked, msgId}
+function removeThinking() {
+  const thinkingEl = document.getElementById("thinking-group");
+  if (thinkingEl) thinkingEl.remove();
+}
+
+function appendAIMsg(msgObj, isStreaming = false) {
   const g = document.createElement("div");
   g.className = "msg-group ai";
-  if(msgObj.msgId) g.dataset.msgId = msgObj.msgId;
+  if (msgObj.msgId) g.dataset.msgId = msgObj.msgId;
 
   const inner = document.createElement("div");
   inner.className = "msg-inner";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble ai";
-  if(isStreaming) bubble.id = "stream-bubble";
-  if(msgObj.content) { bubble.innerHTML = renderContent(msgObj.content); addCodeButtons(bubble); }
+  if (isStreaming) bubble.id = "stream-bubble";
+  if (msgObj.content) {
+    bubble.innerHTML = renderContent(msgObj.content);
+    addCodeButtons(bubble);
+  }
 
   const meta = document.createElement("div");
   meta.className = "msg-meta";
-  meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName||selectedModelName}</span>`;
+  meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName || selectedModelName}</span>`;
 
   // Actions bar
   const actBar = document.createElement("div");
@@ -729,37 +841,43 @@ function appendAIMsg(msgObj, isStreaming=false) {
 
   // Copy
   const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier");
-  btnCopy.addEventListener("click", ()=>{
-    navigator.clipboard.writeText(msgObj.content||bubble.innerText||"").then(()=>{
+  btnCopy.addEventListener("click", () => {
+    navigator.clipboard.writeText(msgObj.content || bubble.innerText || "").then(() => {
       btnCopy.classList.add("copy-anim");
       btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
-      setTimeout(()=>{ btnCopy.classList.remove("copy-anim"); btnCopy.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; }, 1600);
+      setTimeout(() => {
+        btnCopy.classList.remove("copy-anim");
+        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+      }, 1600);
     });
   });
 
   // Like
   const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
-  if(msgObj.liked===1) btnLike.classList.add("liked");
+  if (msgObj.liked === 1) btnLike.classList.add("liked");
 
   // Dislike
   const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
-  if(msgObj.liked===-1) btnDislike.classList.add("disliked");
+  if (msgObj.liked === -1) btnDislike.classList.add("disliked");
 
-  btnLike.addEventListener("click", ()=> handleReaction(msgObj, 1, btnLike, btnDislike, g));
-  btnDislike.addEventListener("click", ()=> handleReaction(msgObj, -1, btnLike, btnDislike, g));
+  btnLike.addEventListener("click", () => handleReaction(msgObj, 1, btnLike, btnDislike, g));
+  btnDislike.addEventListener("click", () => handleReaction(msgObj, -1, btnLike, btnDislike, g));
 
   // Regen
   const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Regénérer");
-  btnRegen.addEventListener("click", ()=> regenMsg(msgObj, g));
+  btnRegen.addEventListener("click", () => regenMsg(msgObj, g));
 
-  // Info (...)
+  // Info
   const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
   const popup = document.createElement("div");
   popup.className = "msg-info-popup";
   buildInfoPopup(popup, msgObj);
   btnInfo.appendChild(popup);
-  btnInfo.addEventListener("click", e=>{ e.stopPropagation(); popup.classList.toggle("open"); });
-  document.addEventListener("click", ()=>popup.classList.remove("open"));
+  btnInfo.addEventListener("click", e => {
+    e.stopPropagation();
+    popup.classList.toggle("open");
+  });
+  document.addEventListener("click", () => popup.classList.remove("open"));
 
   actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
   inner.append(bubble, meta, actBar);
@@ -769,320 +887,652 @@ function appendAIMsg(msgObj, isStreaming=false) {
   return bubble;
 }
 
-function mkActBtn(svgHtml, title){
+function mkActBtn(svgHtml, title) {
   const b = document.createElement("button");
-  b.className = "act-btn"; b.title = title;
+  b.className = "act-btn";
+  b.title = title;
   b.innerHTML = svgHtml;
   return b;
 }
 
-function buildInfoPopup(popup, msgObj){
+function buildInfoPopup(popup, msgObj) {
   const rt = msgObj.responseTime ? fmtTime(msgObj.responseTime) : "–";
-  const ts = msgObj.ts ? new Date(msgObj.ts).toLocaleTimeString("fr",{hour:"2-digit",minute:"2-digit"}) : "–";
+  const ts = msgObj.ts ? new Date(msgObj.ts).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" }) : "–";
   popup.innerHTML = `
-    <div><strong>Modèle</strong> — ${msgObj.modelName||selectedModelName}</div>
+    <div><strong>Modèle</strong> — ${msgObj.modelName || selectedModelName}</div>
     <div><strong>Heure</strong> — ${ts}</div>
     <div><strong>Temps de réponse</strong> — ${rt}</div>
     <div><strong>Likes</strong> — chargement...</div>
   `;
-  // Fetch global stats for this model
-  loadModelStats(msgObj.modelName||selectedModelName, popup);
+  loadModelStats(msgObj.modelName || selectedModelName, popup);
 }
 
-async function loadModelStats(modelName, popup){
+async function loadModelStats(modelName, popup) {
   try {
-    const snap = await get(ref(db, `stats/models/${modelName.replace(/\./g,"_")}`));
-    if(snap.exists()){
+    const snap = await get(ref(db, `stats/models/${modelName.replace(/\./g, "_")}`));
+    if (snap.exists()) {
       const d = snap.val();
-      const total = (d.likes||0)+(d.dislikes||0);
-      const pct = total>0 ? Math.round((d.likes||0)/total*100) : 0;
-      const avgRt = d.totalTime && d.count ? fmtTime(Math.round(d.totalTime/d.count)) : "–";
+      const total = (d.likes || 0) + (d.dislikes || 0);
+      const pct = total > 0 ? Math.round(((d.likes || 0) / total) * 100) : 0;
+      const avgRt = d.totalTime && d.count ? fmtTime(Math.round(d.totalTime / d.count)) : "–";
       const el = popup.querySelector("div:last-child");
-      if(el) el.innerHTML = `<strong>${pct}% de satisfaction</strong> sur ${total} avis · moy. ${avgRt}`;
+      if (el) el.innerHTML = `<strong>${pct}% de satisfaction</strong> sur ${total} avis · moy. ${avgRt}`;
     }
-  } catch(_){}
+  } catch (_) { }
 }
 
-// ── REACTIONS ──
-async function handleReaction(msgObj, val, btnLike, btnDislike, groupEl){
-  if(!msgObj.msgId) return;
-  const prev = msgObj.liked||0;
-  const newVal = prev===val ? 0 : val;
+// =============================================
+// REACTIONS HANDLING
+// =============================================
+async function handleReaction(msgObj, val, btnLike, btnDislike, groupEl) {
+  if (!msgObj.msgId) return;
+  const prev = msgObj.liked || 0;
+  const newVal = prev === val ? 0 : val;
   msgObj.liked = newVal;
 
-  btnLike.classList.toggle("liked", newVal===1);
-  btnDislike.classList.toggle("disliked", newVal===-1);
-  if(newVal!==0){ (newVal===1?btnLike:btnDislike).classList.add("like-anim"); setTimeout(()=>{ btnLike.classList.remove("like-anim"); btnDislike.classList.remove("like-anim"); },300); }
+  btnLike.classList.toggle("liked", newVal === 1);
+  btnDislike.classList.toggle("disliked", newVal === -1);
+  if (newVal !== 0) {
+    (newVal === 1 ? btnLike : btnDislike).classList.add("like-anim");
+    setTimeout(() => {
+      btnLike.classList.remove("like-anim");
+      btnDislike.classList.remove("like-anim");
+    }, 300);
+  }
 
   // Save to user conversation
-  if(currentUser && currentConvId){
-    const idx = messages.findIndex(m=>m.msgId===msgObj.msgId);
-    if(idx>=0){ messages[idx].liked = newVal; await saveConv(); }
+  if (currentUser && currentConvId) {
+    const idx = messages.findIndex(m => m.msgId === msgObj.msgId);
+    if (idx >= 0) {
+      messages[idx].liked = newVal;
+      await saveConversation();
+    }
   }
 
   // Save global stats
-  const mKey = (msgObj.modelName||selectedModelName).replace(/\./g,"_");
+  const mKey = (msgObj.modelName || selectedModelName).replace(/\./g, "_");
   const statsRef = ref(db, `stats/models/${mKey}`);
   try {
     const snap = await get(statsRef);
-    const cur = snap.exists() ? snap.val() : {likes:0,dislikes:0};
-    if(prev===1) cur.likes=Math.max(0,(cur.likes||0)-1);
-    if(prev===-1) cur.dislikes=Math.max(0,(cur.dislikes||0)-1);
-    if(newVal===1) cur.likes=(cur.likes||0)+1;
-    if(newVal===-1) cur.dislikes=(cur.dislikes||0)+1;
+    const cur = snap.exists() ? snap.val() : { likes: 0, dislikes: 0 };
+    if (prev === 1) cur.likes = Math.max(0, (cur.likes || 0) - 1);
+    if (prev === -1) cur.dislikes = Math.max(0, (cur.dislikes || 0) - 1);
+    if (newVal === 1) cur.likes = (cur.likes || 0) + 1;
+    if (newVal === -1) cur.dislikes = (cur.dislikes || 0) + 1;
     await set(statsRef, cur);
-  } catch(_){}
+  } catch (_) { }
 }
 
-// ── REGEN ──
-async function regenMsg(msgObj, groupEl){
-  if(streaming) return;
-  // Remove this AI message from DOM and messages array
+// =============================================
+// REGENERATE MESSAGE
+// =============================================
+async function regenMsg(msgObj, groupEl) {
+  if (streaming) return;
   groupEl.remove();
-  const idx = messages.findIndex(m=>m.msgId===msgObj.msgId);
-  if(idx>=0) messages.splice(idx,1);
-  // Get last user message
-  const lastUser = [...messages].reverse().find(m=>m.role==="user");
-  if(!lastUser) return;
+  const idx = messages.findIndex(m => m.msgId === msgObj.msgId);
+  if (idx >= 0) messages.splice(idx, 1);
+  const lastUser = [...messages].reverse().find(m => m.role === "user");
+  if (!lastUser) return;
   await doStream(lastUser.content, true);
 }
 
-// ── SEND ──
+// =============================================
+// SEND MESSAGE
+// =============================================
 async function sendMessage(text) {
   text = text || chatInput.value.trim();
-  if(!text || streaming) return;
-  if(!chatStarted) setStarted(true);
-  if(!currentConvId) currentConvId = genId();
+  if (!text || streaming) return;
+
+  if (!chatStarted) setStarted(true);
+  if (!currentConvId) currentConvId = genId();
+
   const userMsgId = genId();
-  messages.push({role:"user", content:text, msgId:userMsgId, ts:Date.now()});
+  const userMsg = { role: "user", content: text, msgId: userMsgId, ts: Date.now() };
+  messages.push(userMsg);
   appendUserMsg(text);
-  chatInput.value=""; autoResize(); sendBtn.disabled=true;
-  await doStream(text, false);
+  chatInput.value = "";
+  autoResize();
+  sendBtn.disabled = true;
+
+  // Save conversation title if it's the first message
+  if (currentUser && messages.length === 1) {
+    await saveConversationTitle(text);
+  }
+
+  // Save user message to Firebase
+  if (currentUser && currentConvId) {
+    await saveConversation();
+  }
+
+  try {
+    await doStream(text, false);
+  } catch (error) {
+    console.error("Error in sendMessage:", error);
+    removeThinking();
+    toast("Une erreur est survenue. Veuillez réessayer.");
+    sendBtn.disabled = false;
+  }
 }
 
-async function doStream(userText, isRegen){
-  appendThinking();
-  streaming=true; _streamStart=Date.now();
+// =============================================
+// STREAM HANDLING (FIXED: NO DOUBLE MESSAGE)
+// =============================================
+async function doStream(userText, isRegen) {
+  if (streaming) return;
+
+  streaming = true;
+  _streamStart = Date.now();
   stopBtn.classList.add("on");
+  sendBtn.disabled = true;
   abortCtrl = new AbortController();
 
   const aiMsgId = genId();
-  const aiMsgObj = {role:"ai", content:"", msgId:aiMsgId, model:selectedModel, modelName:selectedModelName, ts:Date.now(), responseTime:null, liked:0};
+  const aiMsgObj = {
+    role: "ai",
+    content: "",
+    msgId: aiMsgId,
+    model: selectedModel,
+    modelName: selectedModelName,
+    ts: Date.now(),
+    responseTime: null,
+    liked: 0
+  };
+
+  // Add to messages array
+  messages.push(aiMsgObj);
+
+  // Append thinking indicator
+  const thinkingEl = appendThinking();
 
   try {
-    const res = await fetch("https://api.mistral.ai/v1/chat/completions",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+KEY},
-      signal:abortCtrl.signal,
-      body:JSON.stringify({
-        model:selectedModel, stream:true,
-        messages:[
-          {role:"system",content:"Tu es Wikimind AI, l'assistant intelligent de la plateforme Wikimind. Tu es concis, précis et utile. Pour les formules mathématiques, utilise la syntaxe LaTeX : $formule$ pour l'inline et $$formule$$ pour les blocs. Réponds en français sauf si l'utilisateur écrit autrement."},
-          ...messages.filter(m=>m.role!=="ai"||m.msgId!==aiMsgId).map(m=>({role:m.role==="ai"?"assistant":m.role,content:m.content}))
+    const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + KEY
+      },
+      signal: abortCtrl.signal,
+      body: JSON.stringify({
+        model: selectedModel,
+        stream: true,
+        messages: [
+          {
+            role: "system",
+            content: "Tu es Wikimind AI, l'assistant intelligent de la plateforme Wikimind. Tu es concis, précis et utile. Pour les formules mathématiques, utilise la syntaxe LaTeX : $formule$ pour l'inline et $$formule$$ pour les blocs. Réponds en français sauf si l'utilisateur écrit autrement."
+          },
+          ...messages.filter(m => m.role !== "ai" || m.msgId !== aiMsgId).map(m => ({
+            role: m.role === "ai" ? "assistant" : m.role,
+            content: m.content
+          }))
         ]
       })
     });
 
-    $("thinking-group")?.remove();
-    const bubble = appendAIMsg(aiMsgObj, true);
-    const cur = document.createElement("span"); cur.className="cursor-blink"; cur.id="cursor";
-    bubble.appendChild(cur);
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
 
-    let full="";
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    let buffer="";
-    while(true){
-      const {done,value} = await reader.read();
-      if(done) break;
-      buffer += dec.decode(value,{stream:true});
-      const lines = buffer.split("\n"); buffer=lines.pop();
-      for(const line of lines){
-        if(!line.startsWith("data:")) continue;
-        const d=line.slice(5).trim();
-        if(d==="[DONE]") break;
-        try{
-          const tok=JSON.parse(d).choices?.[0]?.delta?.content||"";
-          if(tok){ full+=tok; $("cursor")?.remove(); bubble.innerHTML=renderContent(full); addCodeButtons(bubble); const nc=document.createElement("span"); nc.className="cursor-blink"; nc.id="cursor"; bubble.appendChild(nc); scrollBottom(); }
-        }catch{}
+    if (!res.body) {
+      throw new Error("No response body");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n").filter(line => line.trim() !== "");
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6).trim();
+          if (data !== "[DONE]") {
+            try {
+              const json = JSON.parse(data);
+              if (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) {
+                const content = json.choices[0].delta.content;
+                fullResponse += content;
+                aiMsgObj.content += content;
+
+                // Update the streaming message in the DOM
+                let bubble = document.getElementById("stream-bubble");
+                if (!bubble) {
+                  // If the bubble doesn't exist yet, create it
+                  removeThinking();
+                  appendAIMsg(aiMsgObj, true);
+                  bubble = document.getElementById("stream-bubble");
+                } else {
+                  bubble.innerHTML = renderContent(aiMsgObj.content);
+                  addCodeButtons(bubble);
+                }
+              }
+            } catch (e) {
+              console.error("Error parsing JSON:", e);
+            }
+          }
+        }
       }
     }
-    $("cursor")?.remove();
 
-    const rt = Date.now()-_streamStart;
-    aiMsgObj.content = full;
-    aiMsgObj.responseTime = rt;
-    messages.push(aiMsgObj);
+    // Finalize the message
+    aiMsgObj.responseTime = Date.now() - _streamStart;
+    removeThinking();
 
-    // Update stream bubble group with final data
-    const sg = $("stream-bubble")?.closest(".msg-group");
-    if(sg){
-      sg.dataset.msgId = aiMsgId;
-      bubble.removeAttribute("id");
-      // Rebuild actions with real msgObj
-      const oldBar = sg.querySelector(".msg-actions");
-      if(oldBar) oldBar.remove();
-      const newBubble = sg.querySelector(".bubble.ai");
-      const inner2 = sg.querySelector(".msg-inner");
-      const actBar2 = document.createElement("div"); actBar2.className="msg-actions";
-      const bC2=mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,"Copier");
-      bC2.addEventListener("click",()=>{ navigator.clipboard.writeText(full).then(()=>{ bC2.classList.add("copy-anim"); bC2.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`; setTimeout(()=>{ bC2.classList.remove("copy-anim"); bC2.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;},1600); }); });
-      const bL2=mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`,"Utile");
-      const bD2=mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`,"Pas utile");
-      bL2.addEventListener("click",()=>handleReaction(aiMsgObj,1,bL2,bD2,sg));
-      bD2.addEventListener("click",()=>handleReaction(aiMsgObj,-1,bL2,bD2,sg));
-      const bR2=mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`,"Regénérer");
-      bR2.addEventListener("click",()=>regenMsg(aiMsgObj,sg));
-      const bI2=mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`,"Infos");
-      const pop2=document.createElement("div"); pop2.className="msg-info-popup"; buildInfoPopup(pop2,aiMsgObj); bI2.appendChild(pop2);
-      bI2.addEventListener("click",e=>{e.stopPropagation();pop2.classList.toggle("open");});
-      actBar2.append(bC2,bL2,bD2,bR2,bI2);
-      inner2.appendChild(actBar2);
+    // Update the DOM with the final message
+    const streamBubble = document.getElementById("stream-bubble");
+    if (streamBubble) {
+      streamBubble.id = "";
+      streamBubble.innerHTML = renderContent(aiMsgObj.content);
+      addCodeButtons(streamBubble);
+    } else {
+      appendAIMsg(aiMsgObj);
     }
 
-    // Save stats (response time)
-    const mKey = selectedModelName.replace(/\./g,"_");
-    try {
-      const snap2 = await get(ref(db,`stats/models/${mKey}`));
-      const cur2 = snap2.exists()?snap2.val():{count:0,totalTime:0};
-      await set(ref(db,`stats/models/${mKey}`),{...cur2, count:(cur2.count||0)+1, totalTime:(cur2.totalTime||0)+rt});
-    } catch(_){}
+    // Save the conversation
+    if (currentUser && currentConvId) {
+      await saveConversation();
+    }
 
-    if(currentUser) await saveConv();
-
-  } catch(e){
-    $("thinking-group")?.remove();
-    $("stream-bubble")?.closest(".msg-group")?.remove();
-    if(e.name!=="AbortError") appendAIMsg({content:"Une erreur est survenue. Veuillez réessayer.",modelName:selectedModelName,ts:Date.now(),msgId:genId(),liked:0});
+  } catch (error) {
+    console.error("Stream error:", error);
+    removeThinking();
+    messages.pop(); // Remove the incomplete AI message
+    toast("Une erreur est survenue. Veuillez réessayer.");
+  } finally {
+    streaming = false;
+    stopBtn.classList.remove("on");
+    sendBtn.disabled = false;
+    abortCtrl = null;
   }
-  streaming=false; abortCtrl=null;
-  stopBtn.classList.remove("on");
-  sendBtn.disabled=chatInput.value.trim()==="";
 }
 
-// ── FIREBASE SAVE ──
-async function saveConv() {
-  if(!currentUser||!currentConvId) return;
-  const title = messages.find(m=>m.role==="user")?.content?.slice(0,52)||"Conversation";
-  const convData = {
-    title, updatedAt:Date.now(),
-    messages: messages.map(m=>({
-      role:m.role, content:m.content, msgId:m.msgId||"",
-      model:m.model||"", modelName:m.modelName||"",
-      ts:m.ts||0, responseTime:m.responseTime||0, liked:m.liked||0
-    }))
-  };
-  await set(ref(db,`users/${currentUser.uid}/conversations/${currentConvId}`), convData);
+// =============================================
+// STOP STREAMING
+// =============================================
+stopBtn.addEventListener("click", () => {
+  if (abortCtrl) {
+    abortCtrl.abort();
+    streaming = false;
+    stopBtn.classList.remove("on");
+    sendBtn.disabled = false;
+    removeThinking();
+    toast("Réponse arrêtée");
+  }
+});
+
+// =============================================
+// CONVERSATION MANAGEMENT
+// =============================================
+async function saveConversation() {
+  if (!currentUser || !currentConvId) return;
+
+  try {
+    const convRef = ref(db, `conversations/${currentUser.uid}/${currentConvId}/messages`);
+    const messagesToSave = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content,
+      msgId: msg.msgId,
+      ts: msg.ts,
+      model: msg.model,
+      modelName: msg.modelName,
+      responseTime: msg.responseTime,
+      liked: msg.liked
+    }));
+
+    await set(convRef, messagesToSave);
+
+    // Update the conversation list
+    await updateConversationList();
+  } catch (error) {
+    console.error("Error saving conversation:", error);
+  }
 }
 
-function loadConversations() {
-  if(!currentUser) return;
-  onValue(ref(db,`users/${currentUser.uid}/conversations`), snap=>{
-    convList.innerHTML="";
-    if(!snap.exists()) return;
-    const sorted=Object.entries(snap.val()).sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
-    sorted.forEach(([id,conv])=>{
-      const el=document.createElement("div");
-      el.className="conv-item"+(id===currentConvId?" active":"");
-      el.dataset.id=id;
-      el.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="conv-item-title">${conv.title||"Conversation"}</span>`;
-      el.addEventListener("click",()=>{
-        currentConvId=id;
-        messages = Array.isArray(conv.messages) ? conv.messages : [];
-        renderAllMessages();
-        document.querySelectorAll(".conv-item").forEach(i=>i.classList.toggle("active",i.dataset.id===id));
-        closeSidebarFn();
+async function saveConversationTitle(text) {
+  if (!currentUser || !currentConvId) return;
+
+  try {
+    const convRef = ref(db, `conversations/${currentUser.uid}/${currentConvId}`);
+    await set(convRef, {
+      title: text.length > 50 ? text.slice(0, 50) + "..." : text,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+  } catch (error) {
+    console.error("Error saving conversation title:", error);
+  }
+}
+
+async function loadConversations() {
+  if (!currentUser) return;
+
+  try {
+    const convRef = ref(db, `conversations/${currentUser.uid}`);
+    const snapshot = await get(convRef);
+
+    if (snapshot.exists()) {
+      const userConvs = snapshot.val();
+      conversations = [];
+
+      for (const convId in userConvs) {
+        if (userConvs[convId].title) {
+          conversations.push({
+            id: convId,
+            title: userConvs[convId].title,
+            createdAt: userConvs[convId].createdAt || Date.now()
+          });
+        }
+      }
+
+      // Sort by most recent
+      conversations.sort((a, b) => b.createdAt - a.createdAt);
+
+      renderConversationList();
+    }
+  } catch (error) {
+    console.error("Error loading conversations:", error);
+  }
+}
+
+async function updateConversationList() {
+  if (!currentUser) return;
+
+  try {
+    const convRef = ref(db, `conversations/${currentUser.uid}`);
+    const snapshot = await get(convRef);
+
+    if (snapshot.exists()) {
+      const userConvs = snapshot.val();
+      conversations = [];
+
+      for (const convId in userConvs) {
+        if (userConvs[convId].title) {
+          conversations.push({
+            id: convId,
+            title: userConvs[convId].title,
+            createdAt: userConvs[convId].createdAt || Date.now()
+          });
+        }
+      }
+
+      conversations.sort((a, b) => b.createdAt - a.createdAt);
+      renderConversationList();
+    }
+  } catch (error) {
+    console.error("Error updating conversation list:", error);
+  }
+}
+
+function renderConversationList() {
+  convList.innerHTML = "";
+
+  if (conversations.length === 0) {
+    convList.innerHTML = '<div style="color:var(--text3);font-size:.75rem;padding:8px;">Aucune conversation</div>';
+    return;
+  }
+
+  conversations.forEach(conv => {
+    const item = document.createElement("div");
+    item.className = "conv-item";
+    item.dataset.convId = conv.id;
+    item.innerHTML = `<span class="conv-item-title">${escHtml(conv.title)}</span>`;
+
+    item.addEventListener("click", () => loadConversation(conv.id));
+    convList.appendChild(item);
+  });
+}
+
+async function loadConversation(convId) {
+  if (streaming) return;
+
+  currentConvId = convId;
+  messages = [];
+
+  try {
+    const convRef = ref(db, `conversations/${currentUser.uid}/${convId}/messages`);
+    const snapshot = await get(convRef);
+
+    if (snapshot.exists()) {
+      const savedMessages = snapshot.val();
+      messages = Object.values(savedMessages).map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        msgId: msg.msgId,
+        ts: msg.ts,
+        model: msg.model,
+        modelName: msg.modelName,
+        responseTime: msg.responseTime,
+        liked: msg.liked || 0
+      }));
+
+      // Render messages
+      messagesEl.innerHTML = "";
+      messages.forEach(msg => {
+        if (msg.role === "user") {
+          appendUserMsg(msg.content);
+        } else {
+          appendAIMsg(msg);
+        }
       });
-      convList.appendChild(el);
-    });
-  });
-}
 
-function renderAllMessages() {
-  messagesEl.innerHTML="";
-  if(messages.length===0){setStarted(false);return;}
-  setStarted(true);
-  messages.forEach(m=>{
-    if(m.role==="user") appendUserMsg(m.content);
-    else appendAIMsg(m);
-  });
-}
-
-$("new-chat-btn").addEventListener("click",()=>{
-  currentConvId=null; messages=[]; messagesEl.innerHTML="";
-  setStarted(false); chatInput.focus(); closeSidebarFn();
-});
-
-// ── INPUT ──
-function autoResize(){
-  chatInput.style.height="auto";
-  chatInput.style.height=Math.min(chatInput.scrollHeight,200)+"px";
-  sendBtn.disabled=chatInput.value.trim()===""||streaming;
-}
-chatInput.addEventListener("input",autoResize);
-chatInput.addEventListener("keydown",e=>{
-  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(!sendBtn.disabled)sendMessage();}
-});
-sendBtn.addEventListener("click",()=>sendMessage());
-stopBtn.addEventListener("click",()=>abortCtrl?.abort());
-
-// Chips
-document.querySelectorAll(".chip").forEach(c=>{
-  c.addEventListener("click",()=>sendMessage(c.dataset.q));
-});
-
-// ── AUTH ──
-let authTab="login";
-document.querySelectorAll(".auth-tab").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    authTab=btn.dataset.tab;
-    document.querySelectorAll(".auth-tab").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    $("auth-name").style.display=authTab==="register"?"block":"none";
-    $("auth-submit").textContent=authTab==="register"?"Créer un compte":"Se connecter";
-    $("auth-err").style.display="none";
-  });
-});
-$("auth-submit").addEventListener("click",async()=>{
-  const email=$("auth-email").value.trim(), pass=$("auth-pass").value;
-  $("auth-err").style.display="none";
-  if(!email||!pass){$("auth-err").textContent="Remplissez tous les champs.";$("auth-err").style.display="block";return;}
-  try{
-    if(authTab==="login") await signInWithEmailAndPassword(auth,email,pass);
-    else{ const cred=await createUserWithEmailAndPassword(auth,email,pass); if($("auth-name").value.trim()) await updateProfile(cred.user,{displayName:$("auth-name").value.trim()}); }
-  }catch(e){
-    const errs={"auth/invalid-email":"Email invalide.","auth/user-not-found":"Aucun compte avec cet email.","auth/wrong-password":"Mot de passe incorrect.","auth/email-already-in-use":"Email déjà utilisé.","auth/weak-password":"Mot de passe trop court.","auth/invalid-credential":"Identifiants invalides."};
-    $("auth-err").textContent=errs[e.code]||"Erreur : "+e.message;
-    $("auth-err").style.display="block";
+      setStarted(messages.length > 0);
+      scrollBottom();
+      closeSidebarFn();
+    }
+  } catch (error) {
+    console.error("Error loading conversation:", error);
+    toast("Erreur lors du chargement de la conversation.");
   }
-});
-$("auth-pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("auth-submit").click();});
-async function socialLogin(p){ try{ await signInWithPopup(auth,p); }catch(e){ $("auth-err").textContent="Connexion échouée : "+(e.message||e.code); $("auth-err").style.display="block"; } }
-$("btn-google").addEventListener("click",()=>socialLogin(new GoogleAuthProvider()));
-$("btn-microsoft").addEventListener("click",()=>socialLogin(new OAuthProvider("microsoft.com")));
-$("btn-facebook").addEventListener("click",()=>socialLogin(new FacebookAuthProvider()));
-$("guest-btn").addEventListener("click",()=>{ overlay.style.display="none"; toast("Mode invité : conversations non sauvegardées."); });
+}
 
-onAuthStateChanged(auth,user=>{
-  if(user){
-    currentUser=user; overlay.style.display="none";
-    const name=user.displayName||user.email?.split("@")[0]||"Utilisateur";
-    $("s-name").textContent=name; $("s-avatar").textContent=initials(name);
+async function newConversation() {
+  if (streaming) return;
+
+  currentConvId = genId();
+  messages = [];
+  messagesEl.innerHTML = "";
+  setStarted(false);
+  closeSidebarFn();
+  chatInput.focus();
+}
+
+// =============================================
+// AUTHENTICATION
+// =============================================
+function updateAuthUI() {
+  if (currentUser) {
+    $("s-name").textContent = currentUser.displayName || currentUser.email || "Utilisateur";
+    $("s-avatar").textContent = initials(currentUser.displayName || currentUser.email || "U");
+    $("s-plan").textContent = "Free";
     loadConversations();
+  } else {
+    $("s-name").textContent = "Non connecté";
+    $("s-avatar").textContent = "?";
+    $("s-plan").textContent = "Free";
   }
+}
+
+async function handleAuth(tab) {
+  const email = $("auth-email").value.trim();
+  const pass = $("auth-pass").value.trim();
+  const name = $("auth-name").value.trim();
+
+  if (!email || !pass) {
+    toast("Veuillez remplir tous les champs.");
+    return;
+  }
+
+  try {
+    if (tab === "login") {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } else {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      if (name) {
+        await updateProfile(userCredential.user, { displayName: name });
+      }
+    }
+    overlay.style.display = "none";
+    toast("Connexion réussie !");
+  } catch (error) {
+    let msg = "Une erreur est survenue.";
+    if (error.code === "auth/invalid-email") msg = "Adresse e-mail invalide.";
+    if (error.code === "auth/user-not-found") msg = "Utilisateur non trouvé.";
+    if (error.code === "auth/wrong-password") msg = "Mot de passe incorrect.";
+    if (error.code === "auth/email-already-in-use") msg = "Cet e-mail est déjà utilisé.";
+    if (error.code === "auth/weak-password") msg = "Le mot de passe doit contenir au moins 6 caractères.";
+    $("auth-err").textContent = msg;
+    $("auth-err").style.display = "block";
+  }
+}
+
+// Auth tabs
+document.querySelectorAll(".auth-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    if (tab.dataset.tab === "register") {
+      $("auth-name").style.display = "block";
+      $("auth-submit").textContent = "S'inscrire";
+    } else {
+      $("auth-name").style.display = "none";
+      $("auth-submit").textContent = "Se connecter";
+    }
+  });
 });
-$("user-row").addEventListener("click",()=>{
-  if(currentUser&&confirm("Se déconnecter ?")){
-    signOut(auth).then(()=>{
-      currentUser=null; currentConvId=null; messages=[];
-      $("s-name").textContent="Non connecté"; $("s-avatar").textContent="?";
-      convList.innerHTML=""; setStarted(false); overlay.style.display="flex";
-    });
+
+// Auth submit
+$("auth-submit").addEventListener("click", () => {
+  const activeTab = document.querySelector(".auth-tab.active");
+  handleAuth(activeTab.dataset.tab);
+});
+
+// Social auth
+$("btn-google").addEventListener("click", async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+    overlay.style.display = "none";
+    toast("Connexion réussie avec Google !");
+  } catch (error) {
+    toast("Erreur de connexion avec Google.");
   }
 });
 
-// Init
-setStarted(false);
-autoResize();
+$("btn-microsoft").addEventListener("click", async () => {
+  try {
+    const provider = new OAuthProvider("microsoft.com");
+    await signInWithPopup(auth, provider);
+    overlay.style.display = "none";
+    toast("Connexion réussie avec Microsoft !");
+  } catch (error) {
+    toast("Erreur de connexion avec Microsoft.");
+  }
+});
+
+$("btn-facebook").addEventListener("click", async () => {
+  try {
+    const provider = new FacebookAuthProvider();
+    await signInWithPopup(auth, provider);
+    overlay.style.display = "none";
+    toast("Connexion réussie avec Facebook !");
+  } catch (error) {
+    toast("Erreur de connexion avec Facebook.");
+  }
+});
+
+// Guest mode
+$("guest-btn").addEventListener("click", () => {
+  overlay.style.display = "none";
+  toast("Mode invité activé. Les conversations ne seront pas sauvegardées.");
+});
+
+// Sign out
+$("user-row").addEventListener("click", async () => {
+  if (currentUser) {
+    await signOut(auth);
+    toast("Déconnecté.");
+  } else {
+    overlay.style.display = "flex";
+  }
+});
+
+// =============================================
+// AUTH STATE CHANGE
+// =============================================
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  updateAuthUI();
+
+  if (user) {
+    overlay.style.display = "none";
+    // Load last conversation if exists
+    if (conversations.length > 0) {
+      await loadConversation(conversations[0].id);
+    }
+  } else {
+    // Clear conversations if not logged in
+    currentConvId = null;
+    messages = [];
+    conversations = [];
+    messagesEl.innerHTML = "";
+    setStarted(false);
+  }
+});
+
+// =============================================
+// SUGGESTION CHIPS
+// =============================================
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const question = chip.dataset.q;
+    if (question) {
+      chatInput.value = question;
+      autoResize();
+      sendMessage(question);
+    }
+  });
+});
+
+// =============================================
+// INPUT EVENTS
+// =============================================
+chatInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (!chatInput.value.trim() || streaming) return;
+    sendMessage();
+  }
+});
+
+sendBtn.addEventListener("click", () => {
+  if (!chatInput.value.trim() || streaming) return;
+  sendMessage();
+});
+
+// Enable/disable send button based on input
+chatInput.addEventListener("input", () => {
+  sendBtn.disabled = !chatInput.value.trim() || streaming;
+});
+
+// New chat button
+$("new-chat-btn").addEventListener("click", newConversation);
+
+// =============================================
+// INITIALIZE
+// =============================================
+// Check if there's a stored conversation ID
+const savedConvId = localStorage.getItem("currentConvId");
+if (savedConvId) {
+  currentConvId = savedConvId;
+}
+
+// Initialize placeholder animation
+runPlaceholder();
 </script>
 </body>
 </html>
