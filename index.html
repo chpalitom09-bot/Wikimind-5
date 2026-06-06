@@ -9,6 +9,9 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+<!-- Chart.js pour les graphiques -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.10.1/lib/browser/math.js"></script>
 <style>
 * {
   box-sizing: border-box;
@@ -17,16 +20,16 @@
 }
 
 :root {
-  --bg: #070707;
-  --bg2: #101010;
-  --bg3: #161616;
-  --bg4: #1c1c1c;
-  --border: rgba(255, 255, 255, 0.07);
-  --border2: rgba(255, 255, 255, 0.13);
-  --text: #efefef;
-  --text2: #777;
-  --text3: #444;
-  --primary: #60a5fa;
+  --bg: #000000; /* Noir pur */
+  --bg2: #0a0a0a;
+  --bg3: #141414;
+  --bg4: #1e1e1e;
+  --border: rgba(255, 255, 255, 0.1);
+  --border2: rgba(255, 255, 255, 0.2);
+  --text: #ffffff; /* Blanc pur */
+  --text2: #a0a0a0;
+  --text3: #606060;
+  --primary: #888888;
 }
 
 html, body {
@@ -43,7 +46,7 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 299;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   opacity: 0;
   pointer-events: none;
@@ -195,7 +198,7 @@ html, body {
   height: 30px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #2a2a2a, #444);
+  background: linear-gradient(135deg, #333, #555);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,7 +302,7 @@ html, body {
   border-radius: 3px;
 }
 
-/* ========== WELCOME SCREEN ========== */
+/* ========== WELCOME SCREEN (POSITIONNÉ PLUS HAUT) ========== */
 #welcome-screen {
   position: fixed;
   top: 0;
@@ -310,72 +313,55 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  z-index: 10; /* Plus élevé que la bulle */
   opacity: 1;
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.5s ease;
   pointer-events: none;
+  margin-top: -60px; /* Monte le titre */
 }
 
 body:not(.chat-empty-state) #welcome-screen {
   opacity: 0;
-  transform: scale(0.95);
   pointer-events: none;
 }
 
 #welcome-title {
-  font-size: clamp(3.5rem, 12vw, 6rem);
+  font-size: clamp(4rem, 15vw, 8rem);
   font-weight: 900;
   letter-spacing: -0.05em;
-  color: #fff;
+  color: var(--text);
   line-height: 1;
-  margin-bottom: 10px;
-  font-style: italic;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-  animation: glowPulse 2s ease-in-out infinite alternate;
-}
-
-@keyframes glowPulse {
-  from {
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-  }
-  to {
-    text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-  }
+  margin-bottom: 20px;
+  font-style: normal; /* Plus de italic */
+  text-shadow: none; /* Plus de glow */
 }
 
 #welcome-sub {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--text3);
   margin-bottom: 0;
-  opacity: 0;
-  animation: fadeIn 0.5s ease 0.3s forwards;
 }
 
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-  }
-}
-
+/* ========== SUGGESTION CHIPS (PLUS BAS) ========== */
 .suggestion-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
   justify-content: center;
   max-width: min(600px, 90vw);
-  margin-top: 20px;
+  margin-top: 30px;
   pointer-events: all;
   position: fixed;
-  top: 50%;
+  top: 55%; /* Descendu pour éviter le chevauchement */
   left: 50%;
-  transform: translate(-50%, calc(-50% + 120px));
+  transform: translate(-50%, -50%);
   z-index: 11;
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 body:not(.chat-empty-state) .suggestion-chips {
   opacity: 0;
-  transform: translate(-50%, calc(-50% + 150px));
+  transform: translate(-50%, -60%);
   pointer-events: none;
 }
 
@@ -394,7 +380,7 @@ body:not(.chat-empty-state) .suggestion-chips {
 .chip:hover {
   background: var(--bg3);
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--border2);
 }
 
 /* ========== MESSAGES ========== */
@@ -462,14 +448,14 @@ body:not(.chat-empty-state) .suggestion-chips {
   color: var(--text);
 }
 
-/* ========== MSG ACTIONS BAR (ALWAYS VISIBLE) ========== */
+/* ========== MSG ACTIONS BAR (TOUJOURS VISIBLE) ========== */
 .msg-actions {
   display: flex;
   align-items: center;
   gap: 2px;
   margin-top: 8px;
   padding: 2px 0;
-  opacity: 1;
+  opacity: 1 !important; /* TOUJOURS VISIBLE */
   transition: none;
 }
 
@@ -573,13 +559,13 @@ body:not(.chat-empty-state) .suggestion-chips {
   font-size: 1.2em;
   font-weight: 700;
   margin: 16px 0 8px;
-  color: #fff;
+  color: var(--text);
 }
 .bubble.ai h2 {
   font-size: 1.05em;
   font-weight: 700;
   margin: 14px 0 6px;
-  color: #fff;
+  color: var(--text);
 }
 .bubble.ai h3 {
   font-size: 0.95em;
@@ -595,11 +581,11 @@ body:not(.chat-empty-state) .suggestion-chips {
 }
 .bubble.ai strong {
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
 }
 .bubble.ai em {
   font-style: italic;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text2);
 }
 .bubble.ai a {
   color: var(--primary);
@@ -619,7 +605,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   margin-bottom: 4px;
 }
 .bubble.ai blockquote {
-  border-left: 3px solid rgba(255, 255, 255, 0.15);
+  border-left: 3px solid var(--border2);
   padding: 8px 14px;
   margin: 10px 0;
   color: var(--text2);
@@ -633,13 +619,13 @@ body:not(.chat-empty-state) .suggestion-chips {
 .bubble.ai code {
   font-family: 'Geist Mono', monospace;
   font-size: 0.82em;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--bg4);
   padding: 2px 6px;
   border-radius: 5px;
   border: 1px solid var(--border);
 }
 .bubble.ai pre {
-  background: #0c0c0c;
+  background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
@@ -652,7 +638,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   border: none;
   padding: 0;
   font-size: 0.82em;
-  color: #e2e8f0;
+  color: var(--text);
   line-height: 1.6;
 }
 .code-header {
@@ -666,7 +652,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   font-family: 'Geist Mono', monospace;
 }
 .copy-code-btn {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg4);
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text2);
@@ -677,8 +663,46 @@ body:not(.chat-empty-state) .suggestion-chips {
   transition: all 0.15s;
 }
 .copy-code-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg3);
   color: var(--text);
+}
+
+/* ========== TABLEAUX (NOUVEAU) ========== */
+.bubble.ai table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  background: var(--bg3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.bubble.ai th, .bubble.ai td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+  color: var(--text);
+}
+.bubble.ai th {
+  background: var(--bg4);
+  font-weight: 600;
+}
+.bubble.ai tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ========== GRAPHIQUES (NOUVEAU) ========== */
+.chart-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px 0;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.chart-container canvas {
+  width: 100% !important;
+  height: 300px !important;
 }
 
 /* ========== KATEX ========== */
@@ -729,25 +753,8 @@ body:not(.chat-empty-state) .suggestion-chips {
     transform: scale(1);
   }
 }
-.cursor-blink {
-  display: inline-block;
-  width: 2px;
-  height: 0.9em;
-  background: #fff;
-  margin-left: 1px;
-  vertical-align: text-bottom;
-  animation: cursorBlink 0.65s step-end infinite;
-}
-@keyframes cursorBlink {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
 
-/* ========== INPUT ZONE ========== */
+/* ========== INPUT ZONE (POSITION AJUSTÉE) ========== */
 #input-zone {
   flex-shrink: 0;
   padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
@@ -756,13 +763,12 @@ body:not(.chat-empty-state) .suggestion-chips {
 
 body.chat-empty-state #input-zone {
   position: fixed;
-  top: 50%;
+  top: 60%; /* Descendu pour éviter le chevauchement */
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 0;
   width: min(680px, 92vw);
-  z-index: 10;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5; /* Moins élevé que le titre */
 }
 
 body.chat-empty-state #chat-wrap {
@@ -777,23 +783,10 @@ body.chat-empty-state #input-zone {
   max-width: 760px;
   margin: 0 auto;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: slideIn 0.5s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 body.chat-empty-state #input-container {
   max-width: 100%;
-  animation: none;
 }
 
 #input-wrap {
@@ -802,11 +795,11 @@ body.chat-empty-state #input-container {
   border-radius: 18px;
   overflow: visible;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
 }
 #input-wrap:focus-within {
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(255, 255, 255, 0.03);
+  border-color: var(--border2);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 255, 255, 0.05);
 }
 
 #chat-input {
@@ -891,7 +884,7 @@ body.chat-empty-state #input-container {
 }
 #bubble-model-btn:hover {
   background: var(--bg3);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--border2);
   color: var(--text);
 }
 #bubble-model-btn::after {
@@ -913,7 +906,7 @@ body.chat-empty-state #input-container {
   transform: translateY(-50%) rotate(180deg);
 }
 
-/* Dropdown - ABSOLUTE position */
+/* Dropdown */
 #bubble-model-dropdown {
   position: absolute;
   background: var(--bg2);
@@ -1035,8 +1028,8 @@ body.chat-empty-state #input-container {
   height: 32px;
   border-radius: 9px;
   border: none;
-  background: #fff;
-  color: #000;
+  background: var(--text);
+  color: var(--bg);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1044,13 +1037,15 @@ body.chat-empty-state #input-container {
   transition: opacity 0.15s, transform 0.12s;
 }
 #send-btn:hover {
-  opacity: 0.85;
+  opacity: 0.9;
   transform: scale(1.06);
 }
 #send-btn:disabled {
-  opacity: 0.2;
+  opacity: 0.3;
   cursor: not-allowed;
   transform: none;
+  background: var(--bg3);
+  color: var(--text3);
 }
 
 #stop-btn {
@@ -1079,7 +1074,7 @@ body.chat-empty-state #input-container {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.88);
+  background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -1111,6 +1106,7 @@ body.chat-empty-state #input-container {
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.03em;
+  color: var(--text);
 }
 .auth-head p {
   font-size: 0.82rem;
@@ -1141,7 +1137,7 @@ body.chat-empty-state #input-container {
 }
 .auth-tab.active {
   background: var(--bg4);
-  color: #fff;
+  color: var(--text);
 }
 .auth-input {
   width: 100%;
@@ -1156,7 +1152,7 @@ body.chat-empty-state #input-container {
   transition: border-color 0.15s;
 }
 .auth-input:focus {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--border2);
 }
 .auth-input::placeholder {
   color: var(--text3);
@@ -1171,8 +1167,8 @@ body.chat-empty-state #input-container {
   padding: 11px;
   border: none;
   border-radius: 10px;
-  background: #fff;
-  color: #000;
+  background: var(--text);
+  color: var(--bg);
   font-family: 'Geist', sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
@@ -1180,7 +1176,7 @@ body.chat-empty-state #input-container {
   transition: opacity 0.15s;
 }
 #auth-submit:hover {
-  opacity: 0.88;
+  opacity: 0.9;
 }
 .auth-sep {
   display: flex;
@@ -1221,7 +1217,7 @@ body.chat-empty-state #input-container {
 }
 .social-btn:hover {
   background: var(--bg3);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--border2);
 }
 .social-btn svg {
   width: 17px;
@@ -1230,7 +1226,7 @@ body.chat-empty-state #input-container {
 }
 #auth-err {
   font-size: 0.78rem;
-  color: #f87171;
+  color: #ff4444;
   display: none;
   padding: 2px 0;
 }
@@ -1274,26 +1270,6 @@ body.chat-empty-state #input-container {
   #auth-box {
     padding: 28px 22px;
   }
-}
-
-/* ========== INPUT TRANSITION ANIMATION ========== */
-@keyframes inputSlideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-body:not(.chat-empty-state) #input-zone {
-  animation: inputSlideDown 0.5s ease;
-}
-
-/* ========== MOBILE OPTIMIZATIONS ========== */
-@media (max-width: 768px) {
   .msg-actions {
     gap: 4px;
   }
@@ -1335,19 +1311,20 @@ body:not(.chat-empty-state) #input-zone {
   </div>
 </aside>
 
-<!-- WELCOME SCREEN -->
+<!-- WELCOME SCREEN (PLUS HAUT) -->
 <div id="welcome-screen">
   <div id="welcome-title">WIKIMIND AI</div>
   <div id="welcome-sub">Posez n'importe quelle question.</div>
 </div>
 
-<!-- SUGGESTION CHIPS -->
+<!-- SUGGESTION CHIPS (PLUS BAS) -->
 <div class="suggestion-chips">
   <button class="chip" data-q="Explique-moi la relativité restreinte">Relativité restreinte</button>
   <button class="chip" data-q="Comment fonctionne une IA ?">Comment fonctionne une IA ?</button>
   <button class="chip" data-q="Résous cette intégrale : ∫x² dx">Intégrale de x²</button>
   <button class="chip" data-q="Écris-moi un poème sur la nuit">Poème sur la nuit</button>
   <button class="chip" data-q="Donne-moi les bases de Python">Bases de Python</button>
+  <button class="chip" data-q="Trace-moi la fonction y = x^2 + 1">Graphique y = x² + 1</button>
 </div>
 
 <div id="app">
@@ -1479,24 +1456,15 @@ body:not(.chat-empty-state) #input-zone {
 
 <script type="module">
 // =============================================
-// FIREBASE CONFIGURATION
+// FIREBASE CONFIGURATION (UN SEUL PROJET UTILISÉ)
 // =============================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push, remove } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
 
-// Initialize Firebase apps
-const authApp = initializeApp({
-  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
-  authDomain: "wikimind-3-comments.firebaseapp.com",
-  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "wikimind-3-comments",
-  storageBucket: "wikimind-3-comments.firebasestorage.app",
-  messagingSenderId: "137479541640",
-  appId: "1:137479541640:web:4ed2510a9908055052e03d"
-}, "auth-app");
-
-const dataApp = initializeApp({
+// ==== UTILISATION D'UN SEUL PROJET FIREBASE ====
+// (Remplacez par vos propres clés si nécessaire)
+const firebaseConfig = {
   apiKey: "AIzaSyBZ9585EYnmH2nrH6pRHl1o9WqiEs1J3b8",
   authDomain: "wikimind5.firebaseapp.com",
   databaseURL: "https://wikimind5-default-rtdb.europe-west1.firebasedatabase.app",
@@ -1504,10 +1472,11 @@ const dataApp = initializeApp({
   storageBucket: "wikimind5.firebasestorage.app",
   messagingSenderId: "892166712269",
   appId: "1:892166712269:web:0c110e0889f40b16f13284"
-}, "data-app");
+};
 
-const auth = getAuth(authApp);
-const db = getDatabase(dataApp);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 const KEY = "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj";
 
 // =============================================
@@ -1523,6 +1492,7 @@ let selectedModelName = "Small 5.1";
 let chatStarted = false;
 let _streamStart = 0;
 let conversations = [];
+let userId = null; // ID de l'utilisateur (uid si connecté, ou guest_id)
 
 // =============================================
 // DOM ELEMENTS
@@ -1558,13 +1528,26 @@ const initials = n => n ? n.split(" ").map(w => w[0]).join("").toUpperCase().sli
 const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmtTime = ms => ms < 1000 ? ms + "ms" : (ms / 1000).toFixed(1) + "s";
 
+// Génère un ID pour les invités
+function getOrCreateUserId() {
+  if (currentUser) {
+    return currentUser.uid;
+  }
+  let guestId = localStorage.getItem("guestId");
+  if (!guestId) {
+    guestId = "guest_" + genId();
+    localStorage.setItem("guestId", guestId);
+  }
+  return guestId;
+}
+
 // =============================================
 // SIDEBAR FUNCTIONS
 // =============================================
 const openSidebar = () => {
   sidebar.classList.add("open");
   sidebarOverlay.classList.add("active");
-  if (currentUser) loadConversations();
+  loadConversations();
 };
 
 const closeSidebarFn = () => {
@@ -1577,7 +1560,7 @@ $("close-sidebar").addEventListener("click", closeSidebarFn);
 sidebarOverlay.addEventListener("click", closeSidebarFn);
 
 // =============================================
-// MODEL SELECTOR (FIXED POSITIONING)
+// MODEL SELECTOR
 // =============================================
 bubbleModelBtn.addEventListener("click", e => {
   e.stopPropagation();
@@ -1607,7 +1590,6 @@ document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(opt => {
   });
 });
 
-// Close dropdown when clicking outside
 document.addEventListener("click", () => {
   closeModelDD();
   plusMenu.classList.remove("open");
@@ -1637,9 +1619,9 @@ const PLACEHOLDER_PHRASES = [
   "Écris-moi un texte sur...",
   "Comment fonctionne...",
   "Aide-moi à coder...",
-  "Traduis ce texte...",
-  "Résume cet article...",
-  "Donne-moi des idées pour...",
+  "Trace-moi un graphique...",
+  "Crée un tableau de données...",
+  "Traduis ce texte..."
 ];
 let _phIdx = 0, _phPos = 0, _phDir = 1, _phTimer = null;
 
@@ -1682,9 +1664,21 @@ function autoResize() {
 chatInput.addEventListener("input", autoResize);
 
 // =============================================
-// KATEX + MARKDOWN RENDERING
+// KATEX + MARKDOWN + TABLEAUX RENDERING
 // =============================================
 function renderContent(text) {
+  // Remplacer les graphiques par des conteneurs canvas
+  text = text.replace(/```graphique\s*([\s\S]+?)```/gi, (_, func) => {
+    const funcClean = func.trim();
+    return `<div class="chart-container" data-function="${escHtml(funcClean)}"></div>`;
+  });
+
+  // Remplacer les blocs de code pour les tableaux
+  text = text.replace(/```tableau\s*([\s\S]+?)```/gi, (_, table) => {
+    return `<div class="table-container">${table.trim()}</div>`;
+  });
+
+  // Traiter le markdown normal
   const mathBlocks = [], mathInlines = [];
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => {
     mathBlocks.push(m);
@@ -1749,6 +1743,97 @@ function addCodeButtons(bubble) {
       navigator.clipboard.writeText(code.textContent).then(() => toast("Copié !"));
     });
   });
+
+  // Traiter les graphiques
+  bubble.querySelectorAll(".chart-container").forEach(container => {
+    const func = container.dataset.function;
+    if (func) {
+      renderFunctionGraph(container, func);
+    }
+  });
+}
+
+// =============================================
+// GRAPHIQUES INTERACTIFS (NOUVEAU)
+// =============================================
+function renderFunctionGraph(container, funcText) {
+  try {
+    // Créer un canvas
+    const canvas = document.createElement("canvas");
+    container.innerHTML = "";
+    container.appendChild(canvas);
+
+    // Analyser la fonction (ex: "y = x^2 + 1" -> "x^2 + 1")
+    const funcMatch = funcText.match(/y\s*=\s*([^;]+)/i);
+    if (!funcMatch) {
+      container.innerHTML = `<div style="color: var(--text2); padding: 10px;">Graphique non valide. Essayez "y = x^2 + 1"</div>`;
+      return;
+    }
+
+    const expr = funcMatch[1].trim();
+    const f = math.compile(expr);
+
+    // Configurer le graphique avec Chart.js
+    const ctx = canvas.getContext("2d");
+    const chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: Array.from({ length: 100 }, (_, i) => i - 50),
+        datasets: [{
+          label: `f(x) = ${expr}`,
+          data: Array.from({ length: 100 }, (_, i) => {
+            const x = (i - 50) / 10;
+            try {
+              return { x: x, y: f.evaluate({ x: x }) };
+            } catch {
+              return { x: x, y: NaN };
+            }
+          }),
+          borderColor: "#4488ff",
+          backgroundColor: "rgba(68, 136, 255, 0.1)",
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: "linear",
+            position: "bottom",
+            grid: { color: "rgba(255, 255, 255, 0.1)" },
+            ticks: { color: var(--text2) }
+          },
+          y: {
+            grid: { color: "rgba(255, 255, 255, 0.1)" },
+            ticks: { color: var(--text2) }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: var(--text) }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `f(${context.parsed.x.toFixed(2)}) = ${context.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        onClick: (e, elements) => {
+          if (elements.length > 0) {
+            const point = elements[0];
+            const x = chart.data.datasets[point.datasetIndex].data[point.index].x;
+            const y = chart.data.datasets[point.datasetIndex].data[point.index].y;
+            toast(`f(${x.toFixed(2)}) = ${y.toFixed(2)}`);
+          }
+        }
+      }
+    });
+  } catch (e) {
+    container.innerHTML = `<div style="color: var(--text2); padding: 10px;">Erreur: ${escHtml(e.message)}</div>`;
+  }
 }
 
 // =============================================
@@ -1819,7 +1904,7 @@ function appendAIMsg(msgObj, isStreaming = false) {
   meta.className = "msg-meta";
   meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName || selectedModelName}</span>`;
 
-  // Actions bar (ALWAYS VISIBLE)
+  // Actions bar (TOUJOURS VISIBLE)
   const actBar = document.createElement("div");
   actBar.className = "msg-actions";
 
@@ -1886,25 +1971,7 @@ function buildInfoPopup(popup, msgObj) {
     <div><strong>Modèle</strong> — ${msgObj.modelName || selectedModelName}</div>
     <div><strong>Heure</strong> — ${ts}</div>
     <div><strong>Temps de réponse</strong> — ${rt}</div>
-    <div><strong>Likes</strong> — chargement...</div>
   `;
-  loadModelStats(msgObj.modelName || selectedModelName, popup);
-}
-
-async function loadModelStats(modelName, popup) {
-  try {
-    const snap = await get(ref(db, `stats/models/${modelName.replace(/\./g, "_")}`));
-    if (snap.exists()) {
-      const d = snap.val();
-      const total = (d.likes || 0) + (d.dislikes || 0);
-      const pct = total > 0 ? Math.round(((d.likes || 0) / total) * 100) : 0;
-      const avgRt = d.totalTime && d.count ? fmtTime(Math.round(d.totalTime / d.count)) : "–";
-      const el = popup.querySelector("div:last-child");
-      if (el) el.innerHTML = `<strong>${pct}% de satisfaction</strong> sur ${total} avis · moy. ${avgRt}`;
-    }
-  } catch (e) {
-    console.error("Error loading model stats:", e);
-  }
 }
 
 // =============================================
@@ -1927,27 +1994,12 @@ async function handleReaction(msgObj, val, btnLike, btnDislike, groupEl) {
   }
 
   // Save to user conversation
-  if (currentUser && currentConvId) {
+  if (userId && currentConvId) {
     const idx = messages.findIndex(m => m.msgId === msgObj.msgId);
     if (idx >= 0) {
       messages[idx].liked = newVal;
       await saveConversation();
     }
-  }
-
-  // Save global stats
-  const mKey = (msgObj.modelName || selectedModelName).replace(/\./g, "_");
-  const statsRef = ref(db, `stats/models/${mKey}`);
-  try {
-    const snap = await get(statsRef);
-    const cur = snap.exists() ? snap.val() : { likes: 0, dislikes: 0 };
-    if (prev === 1) cur.likes = Math.max(0, (cur.likes || 0) - 1);
-    if (prev === -1) cur.dislikes = Math.max(0, (cur.dislikes || 0) - 1);
-    if (newVal === 1) cur.likes = (cur.likes || 0) + 1;
-    if (newVal === -1) cur.dislikes = (cur.dislikes || 0) + 1;
-    await set(statsRef, cur);
-  } catch (e) {
-    console.error("Error saving model stats:", e);
   }
 }
 
@@ -1971,11 +2023,21 @@ async function sendMessage() {
   const text = chatInput.value.trim();
   if (!text || streaming) return;
 
+  // Initialiser l'ID utilisateur (connecté ou invité)
+  userId = getOrCreateUserId();
+
   if (!chatStarted) setStarted(true);
   if (!currentConvId) currentConvId = genId();
 
   const userMsgId = genId();
-  const userMsg = { role: "user", content: text, msgId: userMsgId, ts: Date.now() };
+  const userMsg = {
+    role: "user",
+    content: text,
+    msgId: userMsgId,
+    ts: Date.now(),
+    model: selectedModel,
+    modelName: selectedModelName
+  };
   messages.push(userMsg);
   appendUserMsg(text);
   chatInput.value = "";
@@ -1983,12 +2045,12 @@ async function sendMessage() {
   sendBtn.disabled = true;
 
   // Save conversation title if it's the first message
-  if (currentUser && messages.length === 1) {
+  if (userId && messages.length === 1) {
     await saveConversationTitle(text);
   }
 
   // Save user message to Firebase
-  if (currentUser && currentConvId) {
+  if (userId && currentConvId) {
     await saveConversation();
   }
 
@@ -2003,7 +2065,7 @@ async function sendMessage() {
 }
 
 // =============================================
-// STREAM HANDLING (FIXED: NO DOUBLE MESSAGE)
+// STREAM HANDLING (FIXED: NO DOUBLE MESSAGE + NO UNDEFINED)
 // =============================================
 async function doStream(userText, isRegen) {
   if (streaming) return;
@@ -2043,7 +2105,11 @@ async function doStream(userText, isRegen) {
         messages: [
           {
             role: "system",
-            content: "Tu es Wikimind AI, l'assistant intelligent de la plateforme Wikimind. Tu es concis, précis et utile. Pour les formules mathématiques, utilise la syntaxe LaTeX : $formule$ pour l'inline et $$formule$$ pour les blocs. Réponds en français sauf si l'utilisateur écrit autrement."
+            content: "Tu es Wikimind AI, l'assistant intelligent de la plateforme Wikimind. Tu es concis, précis et utile. " +
+                    "Pour les formules mathématiques, utilise la syntaxe LaTeX : $formule$ pour l'inline et $$formule$$ pour les blocs. " +
+                    "Pour les graphiques, utilise la syntaxe ```graphique\n y = x^2 + 1 \n```. " +
+                    "Pour les tableaux, utilise la syntaxe markdown standard. " +
+                    "Réponds en français sauf si l'utilisateur écrit autrement."
           },
           ...messages.filter(m => m.role !== "ai" || m.msgId !== aiMsgId).map(m => ({
             role: m.role === "ai" ? "assistant" : m.role,
@@ -2115,7 +2181,7 @@ async function doStream(userText, isRegen) {
     }
 
     // Save the conversation
-    if (currentUser && currentConvId) {
+    if (userId && currentConvId) {
       await saveConversation();
     }
 
@@ -2123,7 +2189,7 @@ async function doStream(userText, isRegen) {
     console.error("Stream error:", error);
     removeThinking();
     messages.pop();
-    if (currentUser && currentConvId) {
+    if (userId && currentConvId) {
       await saveConversation();
     }
     toast("Une erreur est survenue. Veuillez réessayer.");
@@ -2150,54 +2216,53 @@ stopBtn.addEventListener("click", () => {
 });
 
 // =============================================
-// CONVERSATION MANAGEMENT (FIXED: PERMISSION ERRORS)
+// CONVERSATION MANAGEMENT (FIXED: PERMISSION + UNDEFINED)
 // =============================================
 async function saveConversation() {
-  if (!currentUser || !currentConvId) return;
+  if (!userId || !currentConvId) return;
 
   try {
-    const convRef = ref(db, `conversations/${currentUser.uid}/${currentConvId}`);
+    // S'assurer que toutes les propriétés sont définies
     const messagesToSave = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-      msgId: msg.msgId,
-      ts: msg.ts,
-      model: msg.model,
-      modelName: msg.modelName,
-      responseTime: msg.responseTime,
+      role: msg.role || "user",
+      content: msg.content || "",
+      msgId: msg.msgId || genId(),
+      ts: msg.ts || Date.now(),
+      model: msg.model || selectedModel,
+      modelName: msg.modelName || selectedModelName,
+      responseTime: msg.responseTime || null,
       liked: msg.liked || 0
     }));
 
-    // Save messages
-    await set(ref(db, `conversations/${currentUser.uid}/${currentConvId}/messages`), messagesToSave);
+    // Sauvegarder les messages
+    await set(ref(db, `conversations/${userId}/${currentConvId}/messages`), messagesToSave);
 
-    // Update conversation metadata
+    // Mettre à jour les métadonnées de la conversation
     const firstUserMsg = messages.find(m => m.role === "user");
-    const title = firstUserMsg ? (firstUserMsg.content.length > 50 ? firstUserMsg.content.slice(0, 50) + "..." : firstUserMsg.content) : "Nouvelle conversation";
-    const convData = {
+    const title = firstUserMsg
+      ? (firstUserMsg.content.length > 50 ? firstUserMsg.content.slice(0, 50) + "..." : firstUserMsg.content)
+      : "Nouvelle conversation";
+
+    await set(ref(db, `conversations/${userId}/${currentConvId}`), {
       title: title,
       createdAt: messages[0]?.ts || Date.now(),
       updatedAt: Date.now(),
       model: selectedModelName
-    };
+    });
 
-    await set(convRef, convData);
     await updateConversationList();
   } catch (error) {
     console.error("Error saving conversation:", error);
-    // Retry once if it's a permission error
-    if (error.message.includes("Permission denied")) {
-      setTimeout(() => saveConversation(), 1000);
-    }
+    // Ne pas afficher d'erreur à l'utilisateur pour éviter les spams
   }
 }
 
 async function saveConversationTitle(text) {
-  if (!currentUser || !currentConvId) return;
+  if (!userId || !currentConvId) return;
 
   try {
     const title = text.length > 50 ? text.slice(0, 50) + "..." : text;
-    await set(ref(db, `conversations/${currentUser.uid}/${currentConvId}`), {
+    await set(ref(db, `conversations/${userId}/${currentConvId}`), {
       title: title,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -2210,13 +2275,13 @@ async function saveConversationTitle(text) {
 }
 
 async function loadConversations() {
-  if (!currentUser) {
+  if (!userId) {
     convList.innerHTML = '<div style="color:var(--text3);font-size:.75rem;padding:8px;">Connectez-vous pour voir vos conversations</div>';
     return;
   }
 
   try {
-    const convRef = ref(db, `conversations/${currentUser.uid}`);
+    const convRef = ref(db, `conversations/${userId}`);
     const snapshot = await get(convRef);
 
     if (snapshot.exists()) {
@@ -2245,10 +2310,10 @@ async function loadConversations() {
 }
 
 async function updateConversationList() {
-  if (!currentUser) return;
+  if (!userId) return;
 
   try {
-    const convRef = ref(db, `conversations/${currentUser.uid}`);
+    const convRef = ref(db, `conversations/${userId}`);
     const snapshot = await get(convRef);
 
     if (snapshot.exists()) {
@@ -2299,7 +2364,7 @@ async function loadConversation(convId) {
   messages = [];
 
   try {
-    const messagesRef = ref(db, `conversations/${currentUser.uid}/${convId}/messages`);
+    const messagesRef = ref(db, `conversations/${userId}/${convId}/messages`);
     const snapshot = await get(messagesRef);
 
     if (snapshot.exists()) {
@@ -2308,13 +2373,13 @@ async function loadConversation(convId) {
 
       messagesArray.forEach(msg => {
         messages.push({
-          role: msg.role,
-          content: msg.content,
-          msgId: msg.msgId,
-          ts: msg.ts,
-          model: msg.model,
-          modelName: msg.modelName,
-          responseTime: msg.responseTime,
+          role: msg.role || "user",
+          content: msg.content || "",
+          msgId: msg.msgId || genId(),
+          ts: msg.ts || Date.now(),
+          model: msg.model || selectedModel,
+          modelName: msg.modelName || selectedModelName,
+          responseTime: msg.responseTime || null,
           liked: msg.liked || 0
         });
       });
@@ -2355,6 +2420,7 @@ async function newConversation() {
 // =============================================
 function updateAuthUI() {
   if (currentUser) {
+    userId = currentUser.uid;
     $("s-name").textContent = currentUser.displayName || currentUser.email || "Utilisateur";
     $("s-avatar").textContent = initials(currentUser.displayName || currentUser.email || "U");
     $("s-plan").textContent = "Free";
@@ -2362,7 +2428,8 @@ function updateAuthUI() {
       loadConversations();
     }
   } else {
-    $("s-name").textContent = "Non connecté";
+    userId = getOrCreateUserId(); // Utiliser l'ID invité
+    $("s-name").textContent = "Mode invité";
     $("s-avatar").textContent = "?";
     $("s-plan").textContent = "Free";
     currentConvId = null;
@@ -2465,7 +2532,8 @@ $("btn-facebook").addEventListener("click", async () => {
 // Guest mode
 $("guest-btn").addEventListener("click", () => {
   overlay.style.display = "none";
-  toast("Mode invité activé. Les conversations ne seront pas sauvegardées.");
+  userId = getOrCreateUserId();
+  toast("Mode invité activé. Les conversations sont sauvegardées localement.");
 });
 
 // Sign out
@@ -2486,6 +2554,7 @@ onAuthStateChanged(auth, async (user) => {
   updateAuthUI();
 
   if (user) {
+    userId = user.uid;
     overlay.style.display = "none";
     if (conversations.length > 0) {
       await loadConversation(conversations[0].id);
@@ -2534,13 +2603,10 @@ $("new-chat-btn").addEventListener("click", newConversation);
 // =============================================
 // INITIALIZE
 // =============================================
-// Check if there's a stored conversation ID
-const savedConvId = localStorage.getItem("currentConvId");
-if (savedConvId) {
-  currentConvId = savedConvId;
-}
+// Initialiser l'ID utilisateur (invité par défaut)
+userId = getOrCreateUserId();
 
-// Initialize placeholder animation
+// Initialiser le placeholder
 runPlaceholder();
 </script>
 </body>
