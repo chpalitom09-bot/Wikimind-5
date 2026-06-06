@@ -9,9 +9,13 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
-<!-- Chart.js pour les graphiques -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjs@11.10.1/lib/browser/math.js"></script>
+<!-- Plotly pour les graphiques interactifs -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<!-- Wikimind Charts Engine -->
+<script src="wikimind-charts.js"></script>
+<!-- PDF.js pour la lecture de PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 * {
   box-sizing: border-box;
@@ -131,6 +135,34 @@ html, body {
   color: var(--text);
 }
 
+/* BOUTON CONNECTEURS SIDEBAR */
+#sidebar-connectors-btn {
+  margin: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'Geist', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  text-align: left;
+}
+#sidebar-connectors-btn:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+#sidebar-connectors-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 .s-section {
   padding: 14px 14px 4px;
   font-size: 0.7rem;
@@ -230,7 +262,6 @@ html, body {
   height: 100vh;
 }
 
-/* TOPBAR SANS TRAIT */
 #topbar {
   display: flex;
   align-items: center;
@@ -303,21 +334,22 @@ html, body {
   border-radius: 3px;
 }
 
-/* ========== WELCOME SCREEN (TITRE "WIKIMIND" RÉDUIT) ========== */
+/* ========== WELCOME SCREEN — FIX POSITION ========== */
 #welcome-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 10;
   opacity: 1;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.4s ease;
   pointer-events: none;
+  /* On monte légèrement pour compenser la zone d'input */
+  margin-top: -48px;
 }
 
 body:not(.chat-empty-state) #welcome-screen {
@@ -326,7 +358,7 @@ body:not(.chat-empty-state) #welcome-screen {
 }
 
 #welcome-title {
-  font-size: clamp(3rem, 12vw, 6rem); /* Réduit de ~25% par rapport à 8rem */
+  font-size: clamp(3rem, 12vw, 6rem);
   font-weight: 900;
   letter-spacing: -0.05em;
   color: var(--text);
@@ -366,14 +398,8 @@ body:not(.chat-empty-state) #welcome-screen {
   animation: msgIn 0.22s ease;
 }
 @keyframes msgIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @media (min-width: 900px) {
   .msg-group {
@@ -401,7 +427,7 @@ body:not(.chat-empty-state) #welcome-screen {
   color: var(--text);
 }
 
-/* ========== MSG ACTIONS BAR (TOUJOURS VISIBLE) ========== */
+/* ========== MSG ACTIONS BAR ========== */
 .msg-actions {
   display: flex;
   align-items: center;
@@ -409,7 +435,6 @@ body:not(.chat-empty-state) #welcome-screen {
   margin-top: 8px;
   padding: 2px 0;
   opacity: 1 !important;
-  transition: none;
 }
 
 .act-btn {
@@ -434,11 +459,32 @@ body:not(.chat-empty-state) #welcome-screen {
   width: 13px;
   height: 13px;
 }
-.act-btn.liked {
-  color: #4ade80;
+.act-btn.liked { color: #4ade80; }
+.act-btn.disliked { color: #f87171; }
+
+/* ========== INFO POPUP — FIX BUG ========== */
+.msg-info-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 200px;
+  z-index: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  display: none;
+  font-size: 0.78rem;
+  color: var(--text2);
+  line-height: 1.8;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.act-btn.disliked {
-  color: #f87171;
+.msg-info-popup.open {
+  display: block;
+  animation: fadeUp2 0.12s ease;
+  pointer-events: all;
 }
 
 /* ========== META ========== */
@@ -465,169 +511,137 @@ body:not(.chat-empty-state) #welcome-screen {
 }
 
 /* ========== MARKDOWN ========== */
-.bubble.ai h1 {
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin: 16px 0 8px;
-  color: var(--text);
-}
-.bubble.ai h2 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin: 14px 0 6px;
-  color: var(--text);
-}
-.bubble.ai h3 {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 12px 0 5px;
-  color: #ddd;
-}
-.bubble.ai p {
-  margin-bottom: 10px;
-  font-size: 1rem;
-  line-height: 1.7;
-}
-.bubble.ai p:last-child {
-  margin-bottom: 0;
-}
-.bubble.ai strong {
-  font-weight: 700;
-  color: var(--text);
-}
-.bubble.ai em {
-  font-style: italic;
-  color: var(--text2);
-}
-.bubble.ai a {
-  color: var(--primary);
-  text-decoration: underline;
-}
-.bubble.ai ul {
-  list-style: disc;
-  padding-left: 1.5em;
-  margin: 8px 0;
-}
-.bubble.ai ol {
-  list-style: decimal;
-  padding-left: 1.5em;
-  margin: 8px 0;
-}
-.bubble.ai li {
-  margin-bottom: 4px;
-}
-.bubble.ai blockquote {
-  border-left: 3px solid var(--border2);
-  padding: 8px 14px;
-  margin: 10px 0;
-  color: var(--text2);
-  font-style: italic;
-}
-.bubble.ai hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 14px 0;
-}
-.bubble.ai code {
-  font-family: 'Geist Mono', monospace;
-  font-size: 0.85rem;
-  background: var(--bg4);
-  padding: 2px 6px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-}
-.bubble.ai pre {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  overflow-x: auto;
-  margin: 10px 0;
-  position: relative;
-}
-.bubble.ai pre code {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.85rem;
-  color: var(--text);
-  line-height: 1.6;
-}
-.code-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 16px 0;
-  margin-bottom: -4px;
-  font-size: 0.7rem;
-  color: var(--text3);
-  font-family: 'Geist Mono', monospace;
-}
-.copy-code-btn {
-  background: var(--bg4);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--text2);
-  padding: 2px 8px;
-  font-family: 'Geist', sans-serif;
-  font-size: 0.65rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.copy-code-btn:hover {
-  background: var(--bg3);
-  color: var(--text);
-}
+.bubble.ai h1 { font-size: 1.3rem; font-weight: 700; margin: 16px 0 8px; color: var(--text); }
+.bubble.ai h2 { font-size: 1.15rem; font-weight: 700; margin: 14px 0 6px; color: var(--text); }
+.bubble.ai h3 { font-size: 1.05rem; font-weight: 600; margin: 12px 0 5px; color: #ddd; }
+.bubble.ai p { margin-bottom: 10px; font-size: 1rem; line-height: 1.7; }
+.bubble.ai p:last-child { margin-bottom: 0; }
+.bubble.ai strong { font-weight: 700; color: var(--text); }
+.bubble.ai em { font-style: italic; color: var(--text2); }
+.bubble.ai a { color: var(--primary); text-decoration: underline; }
+.bubble.ai ul { list-style: disc; padding-left: 1.5em; margin: 8px 0; }
+.bubble.ai ol { list-style: decimal; padding-left: 1.5em; margin: 8px 0; }
+.bubble.ai li { margin-bottom: 4px; }
+.bubble.ai blockquote { border-left: 3px solid var(--border2); padding: 8px 14px; margin: 10px 0; color: var(--text2); font-style: italic; }
+.bubble.ai hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.bubble.ai code { font-family: 'Geist Mono', monospace; font-size: 0.85rem; background: var(--bg4); padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border); }
+.bubble.ai pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 10px 0; position: relative; }
+.bubble.ai pre code { background: none; border: none; padding: 0; font-size: 0.85rem; color: var(--text); line-height: 1.6; }
+.code-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 0; margin-bottom: -4px; font-size: 0.7rem; color: var(--text3); font-family: 'Geist Mono', monospace; }
+.copy-code-btn { background: var(--bg4); border: 1px solid var(--border); border-radius: 5px; color: var(--text2); padding: 2px 8px; font-family: 'Geist', sans-serif; font-size: 0.65rem; cursor: pointer; transition: all 0.15s; }
+.copy-code-btn:hover { background: var(--bg3); color: var(--text); }
 
 /* ========== TABLEAUX ========== */
-.bubble.ai table {
-  border-collapse: collapse;
+.bubble.ai table { border-collapse: collapse; width: 100%; margin: 10px 0; background: var(--bg3); border-radius: 8px; overflow: hidden; }
+.bubble.ai th, .bubble.ai td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; color: var(--text); }
+.bubble.ai th { background: var(--bg4); font-weight: 600; }
+.bubble.ai tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+/* ========== GRAPHIQUES WIKIMIND ========== */
+.wm-chart-container {
   width: 100%;
-  margin: 10px 0;
-  background: var(--bg3);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.bubble.ai th, .bubble.ai td {
-  padding: 8px 12px;
+  max-width: 680px;
+  height: 320px;
+  margin: 16px 0;
+  background: rgba(20,20,20,0.6);
+  border-radius: 12px;
   border: 1px solid var(--border);
-  text-align: left;
-  color: var(--text);
+  overflow: hidden;
+  position: relative;
 }
-.bubble.ai th {
-  background: var(--bg4);
-  font-weight: 600;
-}
-.bubble.ai tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+.wm-chart-error {
+  color: var(--text2);
+  font-size: 0.85rem;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
-/* ========== GRAPHIQUES ========== */
-.chart-container {
-  width: 100%;
-  max-width: 600px;
-  margin: 20px 0;
+/* Override Plotly modebar */
+.js-plotly-plot .plotly .modebar {
+  right: 8px !important;
+  top: 4px !important;
+}
+
+/* ========== FILE ATTACHMENT PREVIEW ========== */
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  color: var(--text2);
+  max-width: 300px;
 }
-.chart-container canvas {
-  width: 100% !important;
-  height: 300px !important;
+.file-attachment-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: var(--bg4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
+.file-attachment-icon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text2);
+}
+.file-attachment-info { min-width: 0; }
+.file-attachment-name { font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.file-attachment-size { font-size: 0.7rem; color: var(--text3); margin-top: 1px; }
+
+/* Zone prévisualisation fichier attaché dans input */
+#attached-files-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px 0;
+}
+.attached-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px 4px 6px;
+  font-size: 0.75rem;
+  color: var(--text2);
+  max-width: 180px;
+}
+.attached-file-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attached-file-chip .chip-remove {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+}
+.chip-remove:hover { color: var(--text); }
 
 /* ========== KATEX ========== */
-.katex-block {
-  display: block;
-  text-align: center;
-  padding: 10px 0;
-  margin: 8px 0;
-  overflow-x: auto;
-}
-.katex {
-  font-size: 1.1rem;
-}
+.katex-block { display: block; text-align: center; padding: 10px 0; margin: 8px 0; overflow-x: auto; }
+.katex { font-size: 1.1rem; }
 
 /* ========== THINKING ========== */
 .thinking-bubble {
@@ -638,32 +652,17 @@ body:not(.chat-empty-state) #welcome-screen {
   color: var(--text3);
   font-size: 0.85rem;
 }
-.thinking-dots {
-  display: flex;
-  gap: 4px;
-}
+.thinking-dots { display: flex; gap: 4px; }
 .thinking-dots span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+  width: 5px; height: 5px; border-radius: 50%;
   background: var(--text3);
   animation: tDot 1.2s ease-in-out infinite;
 }
-.thinking-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.thinking-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes tDot {
-  0%, 100% {
-    opacity: 0.2;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 /* ========== INPUT ZONE ========== */
@@ -681,6 +680,8 @@ body.chat-empty-state #input-zone {
   padding: 0;
   width: min(680px, 92vw);
   z-index: 5;
+  /* Décalage vers le bas pour que le titre WIKIMIND soit au-dessus */
+  margin-top: 60px;
 }
 
 body.chat-empty-state #chat-wrap {
@@ -707,11 +708,11 @@ body.chat-empty-state #input-container {
   border-radius: 18px;
   overflow: visible;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 24px rgba(0,0,0,0.5);
 }
 #input-wrap:focus-within {
   border-color: var(--border2);
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.6), 0 0 0 3px rgba(255,255,255,0.05);
 }
 
 #chat-input {
@@ -730,9 +731,7 @@ body.chat-empty-state #input-container {
   line-height: 1.6;
   border-radius: 18px 18px 0 0;
 }
-#chat-input::placeholder {
-  color: var(--text3);
-}
+#chat-input::placeholder { color: var(--text3); }
 
 /* ========== INPUT ROW ========== */
 #input-row {
@@ -754,6 +753,50 @@ body.chat-empty-state #input-container {
   align-items: center;
   gap: 6px;
 }
+
+/* CONNECTEURS ACTIFS DANS L'INPUT */
+#active-connectors-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.connector-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 5px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: default;
+}
+.connector-chip img {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: contain;
+}
+.connector-chip .connector-remove {
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.connector-remove:hover { color: var(--text); }
 
 .i-btn {
   width: 30px;
@@ -802,10 +845,8 @@ body.chat-empty-state #input-container {
 #bubble-model-btn::after {
   content: '';
   position: absolute;
-  right: 7px;
-  top: 50%;
-  width: 0;
-  height: 0;
+  right: 7px; top: 50%;
+  width: 0; height: 0;
   border-left: 3px solid transparent;
   border-right: 3px solid transparent;
   border-top: 4px solid currentColor;
@@ -826,7 +867,7 @@ body.chat-empty-state #input-container {
   overflow: hidden;
   z-index: 9999;
   min-width: 250px;
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.7);
   display: none;
   bottom: calc(100% + 8px);
   left: 0;
@@ -836,14 +877,8 @@ body.chat-empty-state #input-container {
   animation: slideUpModel 0.18s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 @keyframes slideUpModel {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .model-opt {
@@ -856,35 +891,15 @@ body.chat-empty-state #input-container {
   border-bottom: 1px solid var(--border);
   transition: background 0.1s;
 }
-.model-opt:last-child {
-  border-bottom: none;
-}
-.model-opt:hover {
-  background: var(--bg3);
-}
-.model-opt-info {
-  flex: 1;
-}
-.model-opt-name {
-  font-weight: 600;
-  color: var(--text);
-}
-.model-opt-desc {
-  font-size: 0.75rem;
-  color: var(--text2);
-  margin-top: 1px;
-}
-.model-opt-check {
-  color: var(--text2);
-  opacity: 0;
-  flex-shrink: 0;
-}
-.model-opt.selected .model-opt-check {
-  opacity: 1;
-  color: #fff;
-}
+.model-opt:last-child { border-bottom: none; }
+.model-opt:hover { background: var(--bg3); }
+.model-opt-info { flex: 1; }
+.model-opt-name { font-weight: 600; color: var(--text); }
+.model-opt-desc { font-size: 0.75rem; color: var(--text2); margin-top: 1px; }
+.model-opt-check { color: var(--text2); opacity: 0; flex-shrink: 0; }
+.model-opt.selected .model-opt-check { opacity: 1; color: #fff; }
 
-/* ========== PLUS MENU (NOUVELLE VERSION AVEC ICÔNES) ========== */
+/* ========== PLUS MENU ========== */
 #plus-menu {
   position: absolute;
   bottom: calc(100% + 12px);
@@ -895,7 +910,7 @@ body.chat-empty-state #input-container {
   overflow: hidden;
   z-index: 200;
   min-width: 240px;
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 10px 36px rgba(0,0,0,0.65);
   display: none;
 }
 #plus-menu.open {
@@ -903,14 +918,8 @@ body.chat-empty-state #input-container {
   animation: fadeUp2 0.15s ease;
 }
 @keyframes fadeUp2 {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .pm-item {
@@ -924,245 +933,267 @@ body.chat-empty-state #input-container {
   transition: all 0.1s;
   border-bottom: 1px solid var(--border);
 }
-.pm-item:last-child {
-  border-bottom: none;
-}
-.pm-item:hover {
-  background: var(--bg3);
-  color: var(--text);
-}
-.pm-item svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  opacity: 0.8;
-}
+.pm-item:last-child { border-bottom: none; }
+.pm-item:hover { background: var(--bg3); color: var(--text); }
+.pm-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.8; }
 
-/* ========== SEND/STOP BUTTONS ========== */
-#send-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  border: none;
-  background: var(--text);
-  color: var(--bg);
-  cursor: pointer;
+/* Connecteurs déjà connectés dans le menu + */
+.pm-connectors-active {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.pm-connector-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: opacity 0.15s, transform 0.12s;
+  gap: 10px;
+  padding: 7px 4px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.1s;
 }
-#send-btn:hover {
-  opacity: 0.9;
-  transform: scale(1.06);
+.pm-connector-item:hover { background: var(--bg3); }
+.pm-connector-item img {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: contain;
 }
-#send-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  transform: none;
-  background: var(--bg3);
-  color: var(--text3);
+.pm-connector-item-info { flex: 1; min-width: 0; }
+.pm-connector-item-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.pm-connector-status {
+  font-size: 0.68rem;
+  color: #4ade80;
+}
+.pm-connector-toggle {
+  width: 18px; height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+.pm-connector-toggle.active {
+  background: #4d8fff;
+  border-color: #4d8fff;
+}
+.pm-connector-toggle svg { width: 10px; height: 10px; color: #fff; }
+
+/* ========== CONNECTEURS PANEL (page entière) ========== */
+#connectors-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#connectors-panel.open {
+  transform: translateX(0);
 }
 
-#stop-btn {
-  width: 32px;
-  height: 32px;
+#connectors-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 28px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#connectors-panel-back {
+  width: 34px; height: 34px;
   border-radius: 9px;
   border: 1px solid var(--border2);
   background: transparent;
   color: var(--text2);
   cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   transition: all 0.12s;
+  flex-shrink: 0;
 }
-#stop-btn.on {
+#connectors-panel-back:hover { background: var(--bg3); color: var(--text); }
+#connectors-panel-head h1 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  flex: 1;
+}
+#connectors-panel-head p {
+  font-size: 0.82rem;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+#connectors-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}
+#connectors-panel-body::-webkit-scrollbar { width: 4px; }
+#connectors-panel-body::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+.connectors-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+  margin-top: 24px;
+}
+.connectors-section-title:first-child { margin-top: 0; }
+
+.connectors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.connector-card {
   display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
 }
-#stop-btn:hover {
+.connector-card:hover {
+  border-color: var(--border2);
   background: var(--bg3);
+}
+.connector-card.connected {
+  border-color: rgba(74,222,128,0.3);
+}
+.connector-card-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.connector-card-icon img {
+  width: 28px; height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.connector-card-info { flex: 1; min-width: 0; }
+.connector-card-name {
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--text);
 }
+.connector-card-desc {
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.connector-card-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.connector-card-status.connected { color: #4ade80; }
+.connector-card-status.disconnected { color: var(--text3); }
+.connector-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.connector-card-status.connected .connector-status-dot { background: #4ade80; }
+.connector-card-status.disconnected .connector-status-dot { background: var(--text3); }
+
+/* ========== SEND/STOP BUTTONS ========== */
+#send-btn {
+  width: 32px; height: 32px;
+  border-radius: 9px; border: none;
+  background: var(--text); color: var(--bg);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.15s, transform 0.12s;
+}
+#send-btn:hover { opacity: 0.9; transform: scale(1.06); }
+#send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; background: var(--bg3); color: var(--text3); }
+
+#stop-btn {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--border2);
+  background: transparent; color: var(--text2);
+  cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  transition: all 0.12s;
+}
+#stop-btn.on { display: flex; }
+#stop-btn:hover { background: var(--bg3); color: var(--text); }
 
 /* ========== AUTH MODAL ========== */
 #auth-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.9);
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.9);
   backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 #auth-box {
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 20px;
   padding: 36px 32px;
-  width: 400px;
-  max-width: 92vw;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: boxIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 400px; max-width: 92vw;
+  display: flex; flex-direction: column; gap: 16px;
+  animation: boxIn 0.25s cubic-bezier(0.4,0,0.2,1);
 }
 @keyframes boxIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
-.auth-head h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--text);
-}
-.auth-head p {
-  font-size: 0.85rem;
-  color: var(--text2);
-  margin-top: 4px;
-  line-height: 1.5;
-}
-.auth-tabs {
-  display: flex;
-  background: var(--bg3);
-  border-radius: 9px;
-  padding: 3px;
-  gap: 3px;
-}
-.auth-tab {
-  flex: 1;
-  padding: 7px;
-  text-align: center;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text2);
-  border: none;
-  background: transparent;
-  font-family: 'Geist', sans-serif;
-  border-radius: 7px;
-  transition: all 0.15s;
-}
-.auth-tab.active {
-  background: var(--bg4);
-  color: var(--text);
-}
-.auth-input {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-family: 'Geist', sans-serif;
-  font-size: 0.9rem;
-  padding: 11px 14px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.auth-input:focus {
-  border-color: var(--border2);
-}
-.auth-input::placeholder {
-  color: var(--text3);
-}
-.auth-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-#auth-submit {
-  width: 100%;
-  padding: 11px;
-  border: none;
-  border-radius: 10px;
-  background: var(--text);
-  color: var(--bg);
-  font-family: 'Geist', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-#auth-submit:hover {
-  opacity: 0.9;
-}
-.auth-sep {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.auth-sep::before, .auth-sep::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-.auth-sep span {
-  font-size: 0.7rem;
-  color: var(--text3);
-}
-.social-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-.social-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text);
-  font-family: 'Geist', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.social-btn:hover {
-  background: var(--bg3);
-  border-color: var(--border2);
-}
-.social-btn svg {
-  width: 17px;
-  height: 17px;
-  flex-shrink: 0;
-}
-#auth-err {
-  font-size: 0.8rem;
-  color: #ff4444;
-  display: none;
-  padding: 2px 0;
-}
-.auth-guest {
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--text2);
-  cursor: pointer;
-  padding: 2px;
-  transition: color 0.15s;
-}
-.auth-guest:hover {
-  color: var(--text);
-}
+.auth-head h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+.auth-head p { font-size: 0.85rem; color: var(--text2); margin-top: 4px; line-height: 1.5; }
+.auth-tabs { display: flex; background: var(--bg3); border-radius: 9px; padding: 3px; gap: 3px; }
+.auth-tab { flex: 1; padding: 7px; text-align: center; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text2); border: none; background: transparent; font-family: 'Geist', sans-serif; border-radius: 7px; transition: all 0.15s; }
+.auth-tab.active { background: var(--bg4); color: var(--text); }
+.auth-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Geist', sans-serif; font-size: 0.9rem; padding: 11px 14px; outline: none; transition: border-color 0.15s; }
+.auth-input:focus { border-color: var(--border2); }
+.auth-input::placeholder { color: var(--text3); }
+.auth-fields { display: flex; flex-direction: column; gap: 8px; }
+#auth-submit { width: 100%; padding: 11px; border: none; border-radius: 10px; background: var(--text); color: var(--bg); font-family: 'Geist', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+#auth-submit:hover { opacity: 0.9; }
+.auth-sep { display: flex; align-items: center; gap: 10px; }
+.auth-sep::before, .auth-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.auth-sep span { font-size: 0.7rem; color: var(--text3); }
+.social-btns { display: flex; flex-direction: column; gap: 7px; }
+.social-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 10px; border: 1px solid var(--border2); border-radius: 10px; background: transparent; color: var(--text); font-family: 'Geist', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.social-btn:hover { background: var(--bg3); border-color: var(--border2); }
+.social-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+#auth-err { font-size: 0.8rem; color: #ff4444; display: none; padding: 2px 0; }
+.auth-guest { text-align: center; font-size: 0.8rem; color: var(--text2); cursor: pointer; padding: 2px; transition: color 0.15s; }
+.auth-guest:hover { color: var(--text); }
 
 /* ========== TOAST ========== */
 #toast {
   position: fixed;
-  bottom: 90px;
-  left: 50%;
+  bottom: 90px; left: 50%;
   transform: translateX(-50%) translateY(6px);
   background: var(--bg3);
   border: 1px solid var(--border2);
@@ -1175,31 +1206,18 @@ body.chat-empty-state #input-container {
   pointer-events: none;
   z-index: 9999;
   white-space: nowrap;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
 }
-#toast.on {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (max-width: 640px) {
-  #auth-box {
-    padding: 28px 22px;
-  }
-  .msg-actions {
-    gap: 4px;
-  }
-  .act-btn {
-    width: 24px;
-    height: 24px;
-  }
-  .act-btn svg {
-    width: 12px;
-    height: 12px;
-  }
-  .bubble {
-    font-size: 0.95rem;
-  }
+  #auth-box { padding: 28px 22px; }
+  .msg-actions { gap: 4px; }
+  .act-btn { width: 24px; height: 24px; }
+  .act-btn svg { width: 12px; height: 12px; }
+  .bubble { font-size: 0.95rem; }
+  #connectors-panel-body { padding: 18px; }
+  .connectors-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -1217,6 +1235,14 @@ body.chat-empty-state #input-container {
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Nouvelle conversation
   </button>
+  <!-- BOUTON CONNECTEURS DANS LA SIDEBAR -->
+  <button id="sidebar-connectors-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/>
+      <rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/>
+    </svg>
+    Connecteurs
+  </button>
   <div class="s-section">Historique</div>
   <div id="conv-list"></div>
   <div id="sidebar-foot">
@@ -1230,7 +1256,7 @@ body.chat-empty-state #input-container {
   </div>
 </aside>
 
-<!-- WELCOME SCREEN (SANS SUGGESTION CHIPS) -->
+<!-- WELCOME SCREEN -->
 <div id="welcome-screen">
   <div id="welcome-title">WIKIMIND</div>
 </div>
@@ -1257,6 +1283,8 @@ body.chat-empty-state #input-container {
     <div id="input-zone">
       <div id="input-container">
         <div id="input-wrap">
+          <!-- Zone prévisualisation fichiers attachés -->
+          <div id="attached-files-preview"></div>
           <textarea id="chat-input" placeholder="" rows="1"></textarea>
           <div id="input-row">
             <div class="input-row-left">
@@ -1289,64 +1317,58 @@ body.chat-empty-state #input-container {
                   </div>
                 </div>
               </div>
-              <!-- NOUVEAU MENU PLUS AVEC ICÔNES -->
+              <!-- MENU PLUS -->
               <div id="plus-menu">
                 <div class="pm-item" id="pm-upload">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
+                    <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                   </svg>
                   Télécharger des fichiers
                 </div>
                 <div class="pm-item" id="pm-skills">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
                   Skills
                 </div>
+                <!-- Connecteurs actifs (injectés dynamiquement) -->
+                <div id="pm-connectors-section" class="pm-connectors-active" style="display:none">
+                  <div id="pm-connectors-list"></div>
+                </div>
                 <div class="pm-item" id="pm-connectors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="2" y1="12" x2="22" y2="12"/>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/>
+                    <rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/>
                   </svg>
                   Connecteurs
                 </div>
                 <div class="pm-item" id="pm-libraries">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                   </svg>
                   Bibliothèques
                 </div>
                 <div class="pm-item" id="pm-workflows">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                   </svg>
                   Workflows
                 </div>
                 <div class="pm-item" id="pm-agents">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                   Agents
                 </div>
-                <div class="pm-item" id="pm-reset">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                    <line x1="3" y1="3" x2="3" y2="8"/>
-                    <line x1="3" y1="8" x2="8" y2="8"/>
-                  </svg>
-                  Réinitialiser l'entrée
-                </div>
               </div>
+              <!-- Connecteurs actifs dans la row d'input -->
+              <div id="active-connectors-row"></div>
               <button class="i-btn" id="plus-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
               </button>
             </div>
@@ -1356,8 +1378,7 @@ body.chat-empty-state #input-container {
               </button>
               <button id="send-btn" disabled>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <line x1="12" y1="19" x2="12" y2="5"/>
-                  <polyline points="5 12 12 5 19 12"/>
+                  <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
                 </svg>
               </button>
             </div>
@@ -1367,6 +1388,26 @@ body.chat-empty-state #input-container {
     </div>
   </div>
 </div>
+
+<!-- PANEL CONNECTEURS (plein écran) -->
+<div id="connectors-panel">
+  <div id="connectors-panel-head">
+    <button id="connectors-panel-back">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div>
+      <h1>Mes connecteurs</h1>
+      <p>Connectez vos applications pour des réponses enrichies</p>
+    </div>
+  </div>
+  <div id="connectors-panel-body">
+    <div class="connectors-section-title">Connecteurs disponibles</div>
+    <div class="connectors-grid" id="connectors-grid"></div>
+  </div>
+</div>
+
+<!-- INPUT FILE CACHÉ -->
+<input type="file" id="file-input" multiple accept=".txt,.md,.html,.htm,.css,.js,.json,.csv,.xml,.py,.pdf,.docx,.doc,.rtf" style="display:none">
 
 <!-- AUTH MODAL -->
 <div id="auth-overlay">
@@ -1420,14 +1461,10 @@ body.chat-empty-state #input-container {
 <div id="toast"></div>
 
 <script type="module">
-// =============================================
-// FIREBASE CONFIGURATION (wikimind-3-comments)
-// =============================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push, remove } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
 
-// Configuration pour wikimind-3-comments
 const firebaseConfig = {
   apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
   authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -1458,8 +1495,50 @@ let _streamStart = 0;
 let conversations = [];
 let userId = null;
 
+// Fichiers attachés
+let attachedFiles = []; // [{ name, content, type, size }]
+
+// Connecteurs
+let activeConnectors = []; // connecteurs activés pour cette conv
+
 // =============================================
-// DOM ELEMENTS
+// CONNECTEURS DATA
+// =============================================
+const CONNECTORS_LIST = [
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    desc: 'Accédez à vos emails et envoyez des messages',
+    icon: 'gmail-connect.png',
+    connected: false,
+    howToConnect: 'gmail'
+  }
+  // Ajoutez d'autres connecteurs ici
+];
+
+// Charger l'état des connecteurs depuis localStorage
+function loadConnectorsState() {
+  try {
+    const saved = localStorage.getItem('wm_connectors');
+    if (saved) {
+      const state = JSON.parse(saved);
+      CONNECTORS_LIST.forEach(c => {
+        if (state[c.id] !== undefined) c.connected = state[c.id];
+      });
+    }
+  } catch {}
+}
+
+function saveConnectorsState() {
+  const state = {};
+  CONNECTORS_LIST.forEach(c => { state[c.id] = c.connected; });
+  localStorage.setItem('wm_connectors', JSON.stringify(state));
+}
+
+loadConnectorsState();
+
+// =============================================
+// DOM
 // =============================================
 const $ = (id) => document.getElementById(id);
 const overlay = $("auth-overlay");
@@ -1478,7 +1557,7 @@ const bubbleModelDropdown = $("bubble-model-dropdown");
 const bubbleModelLabel = $("bubble-model-label");
 
 // =============================================
-// UTILITY FUNCTIONS
+// UTILS
 // =============================================
 const toast = (msg) => {
   const t = $("toast");
@@ -1491,12 +1570,10 @@ const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2
 const initials = (n) => n ? n.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 const escHtml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmtTime = (ms) => ms < 1000 ? ms + "ms" : (ms / 1000).toFixed(1) + "s";
+const fmtSize = (bytes) => bytes < 1024 ? bytes + ' o' : bytes < 1048576 ? (bytes/1024).toFixed(1) + ' Ko' : (bytes/1048576).toFixed(1) + ' Mo';
 
-// Génère un ID pour les invités
 function getOrCreateUserId() {
-  if (currentUser) {
-    return currentUser.uid;
-  }
+  if (currentUser) return currentUser.uid;
   let guestId = localStorage.getItem("wikimind_guest_id");
   if (!guestId) {
     guestId = "guest_" + genId();
@@ -1506,7 +1583,7 @@ function getOrCreateUserId() {
 }
 
 // =============================================
-// SIDEBAR FUNCTIONS
+// SIDEBAR
 // =============================================
 const openSidebar = () => {
   sidebar.classList.add("open");
@@ -1523,16 +1600,274 @@ $("burger").addEventListener("click", openSidebar);
 $("close-sidebar").addEventListener("click", closeSidebarFn);
 sidebarOverlay.addEventListener("click", closeSidebarFn);
 
+// Bouton connecteurs sidebar → ouvre le panel
+$("sidebar-connectors-btn").addEventListener("click", () => {
+  closeSidebarFn();
+  openConnectorsPanel();
+});
+
+// =============================================
+// CONNECTEURS PANEL
+// =============================================
+function openConnectorsPanel() {
+  renderConnectorsGrid();
+  $("connectors-panel").classList.add("open");
+}
+
+function closeConnectorsPanel() {
+  $("connectors-panel").classList.remove("open");
+}
+
+$("connectors-panel-back").addEventListener("click", closeConnectorsPanel);
+
+function renderConnectorsGrid() {
+  const grid = $("connectors-grid");
+  grid.innerHTML = "";
+  CONNECTORS_LIST.forEach(conn => {
+    const card = document.createElement("div");
+    card.className = "connector-card" + (conn.connected ? " connected" : "");
+    card.innerHTML = `
+      <div class="connector-card-icon">
+        <img src="${conn.icon}" alt="${conn.name}" onerror="this.style.display='none';this.parentElement.innerHTML='<svg width=24 height=24 viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"1.5\\"><rect x=\\"2\\" y=\\"2\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/><rect x=\\"13\\" y=\\"2\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/><rect x=\\"2\\" y=\\"13\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/><rect x=\\"13\\" y=\\"13\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/></svg>'">
+      </div>
+      <div class="connector-card-info">
+        <div class="connector-card-name">${conn.name}</div>
+        <div class="connector-card-desc">${conn.desc}</div>
+      </div>
+      <div class="connector-card-status ${conn.connected ? 'connected' : 'disconnected'}">
+        <div class="connector-status-dot"></div>
+        ${conn.connected ? 'Connecté' : 'Connecter'}
+      </div>
+    `;
+    card.addEventListener("click", () => toggleConnector(conn.id));
+    grid.appendChild(card);
+  });
+}
+
+function toggleConnector(connId) {
+  const conn = CONNECTORS_LIST.find(c => c.id === connId);
+  if (!conn) return;
+  
+  if (conn.connected) {
+    conn.connected = false;
+    toast(`${conn.name} déconnecté`);
+  } else {
+    // Pour Gmail, on explique comment le configurer
+    if (conn.id === 'gmail') {
+      showGmailConnectInfo();
+      return;
+    }
+    conn.connected = true;
+    toast(`${conn.name} connecté !`);
+  }
+  
+  saveConnectorsState();
+  renderConnectorsGrid();
+  renderPlusMenuConnectors();
+  renderActiveConnectorsRow();
+}
+
+function showGmailConnectInfo() {
+  // Pour l'instant on affiche les instructions, à remplacer par OAuth
+  toast("Gmail : ajoutez votre clé API dans le code (voir doc)");
+  // TODO: implémenter OAuth Gmail
+}
+
+// Rendu connecteurs actifs dans le menu +
+function renderPlusMenuConnectors() {
+  const section = $("pm-connectors-section");
+  const list = $("pm-connectors-list");
+  const connected = CONNECTORS_LIST.filter(c => c.connected);
+  
+  if (connected.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+  
+  section.style.display = "block";
+  list.innerHTML = "";
+  
+  connected.forEach(conn => {
+    const isActive = activeConnectors.includes(conn.id);
+    const item = document.createElement("div");
+    item.className = "pm-connector-item";
+    item.innerHTML = `
+      <img src="${conn.icon}" alt="${conn.name}" width="22" height="22" onerror="this.style.display='none'">
+      <div class="pm-connector-item-info">
+        <div class="pm-connector-item-name">${conn.name}</div>
+        <div class="pm-connector-status">● Connecté</div>
+      </div>
+      <div class="pm-connector-toggle ${isActive ? 'active' : ''}" data-id="${conn.id}">
+        ${isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </div>
+    `;
+    item.querySelector(".pm-connector-toggle").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleActiveConnector(conn.id);
+      plusMenu.classList.remove("open");
+    });
+    list.appendChild(item);
+  });
+}
+
+function toggleActiveConnector(connId) {
+  const idx = activeConnectors.indexOf(connId);
+  if (idx === -1) {
+    activeConnectors.push(connId);
+    const conn = CONNECTORS_LIST.find(c => c.id === connId);
+    toast(`${conn.name} activé pour cette conversation`);
+  } else {
+    activeConnectors.splice(idx, 1);
+    const conn = CONNECTORS_LIST.find(c => c.id === connId);
+    toast(`${conn.name} désactivé`);
+  }
+  renderActiveConnectorsRow();
+  renderPlusMenuConnectors();
+}
+
+// Chips dans la zone d'input
+function renderActiveConnectorsRow() {
+  const row = $("active-connectors-row");
+  row.innerHTML = "";
+  
+  activeConnectors.forEach(connId => {
+    const conn = CONNECTORS_LIST.find(c => c.id === connId);
+    if (!conn) return;
+    
+    const chip = document.createElement("div");
+    chip.className = "connector-chip";
+    chip.innerHTML = `
+      <img src="${conn.icon}" alt="${conn.name}" onerror="this.style.display='none'">
+      <span>${conn.name}</span>
+      <button class="connector-remove" data-id="${connId}">✕</button>
+    `;
+    chip.querySelector(".connector-remove").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleActiveConnector(connId);
+    });
+    row.appendChild(chip);
+  });
+}
+
+// =============================================
+// IMPORT DE FICHIERS
+// =============================================
+$("pm-upload").addEventListener("click", () => {
+  plusMenu.classList.remove("open");
+  $("file-input").click();
+});
+
+$("file-input").addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  
+  for (const file of files) {
+    try {
+      const content = await readFile(file);
+      attachedFiles.push({
+        name: file.name,
+        content: content,
+        type: file.type,
+        size: file.size
+      });
+    } catch (err) {
+      toast(`Erreur lecture : ${file.name}`);
+    }
+  }
+  
+  e.target.value = "";
+  renderAttachedFilesPreview();
+  updateSendBtn();
+});
+
+async function readFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  
+  // PDF
+  if (ext === 'pdf' || file.type === 'application/pdf') {
+    return await readPDF(file);
+  }
+  
+  // Fichiers texte lisibles
+  const textTypes = ['txt','md','html','htm','css','js','json','csv','xml','py','rtf','doc','docx'];
+  if (textTypes.includes(ext) || file.type.startsWith('text/')) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsText(file, 'UTF-8');
+    });
+  }
+  
+  // Fallback texte brut
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+async function readPDF(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        // PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
+          let text = '';
+          for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(' ') + '\n\n';
+          }
+          resolve(`[PDF — ${file.name} — ${pdf.numPages} page(s)]\n\n${text.trim()}`);
+        } else {
+          resolve(`[PDF — ${file.name} — extraction non disponible]`);
+        }
+      } catch (err) {
+        resolve(`[PDF — ${file.name} — erreur : ${err.message}]`);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function renderAttachedFilesPreview() {
+  const preview = $("attached-files-preview");
+  preview.innerHTML = "";
+  
+  attachedFiles.forEach((f, idx) => {
+    const chip = document.createElement("div");
+    chip.className = "attached-file-chip";
+    chip.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+      <button class="chip-remove" data-idx="${idx}">✕</button>
+    `;
+    chip.querySelector(".chip-remove").addEventListener("click", () => {
+      attachedFiles.splice(idx, 1);
+      renderAttachedFilesPreview();
+      updateSendBtn();
+    });
+    preview.appendChild(chip);
+  });
+}
+
+function updateSendBtn() {
+  sendBtn.disabled = (!chatInput.value.trim() && attachedFiles.length === 0) || streaming;
+}
+
 // =============================================
 // MODEL SELECTOR
 // =============================================
 bubbleModelBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   const isOpen = bubbleModelDropdown.classList.contains("open");
-  if (isOpen) {
-    closeModelDD();
-    return;
-  }
+  if (isOpen) { closeModelDD(); return; }
   bubbleModelBtn.classList.add("open");
   bubbleModelDropdown.classList.add("open");
 });
@@ -1555,41 +1890,32 @@ document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(opt => {
 });
 
 // =============================================
-// PLUS MENU (NOUVELLE VERSION AVEC ICÔNES)
+// PLUS MENU
 // =============================================
 plusBtn.addEventListener("click", (e) => {
   e.stopPropagation();
+  renderPlusMenuConnectors();
   plusMenu.classList.toggle("open");
 });
 
-// Fermer le menu quand on clique ailleurs
 document.addEventListener("click", () => {
   closeModelDD();
   plusMenu.classList.remove("open");
 });
 
-// Actions pour les éléments du menu plus (à implémenter plus tard)
+$("pm-connectors").addEventListener("click", () => {
+  plusMenu.classList.remove("open");
+  openConnectorsPanel();
+});
+
 document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
   item.addEventListener("click", () => {
     const id = item.id;
-    if (id === "pm-upload") {
-      toast("Téléchargement de fichiers - Bientôt disponible");
-    } else if (id === "pm-skills") {
-      toast("Skills - Bientôt disponible");
-    } else if (id === "pm-connectors") {
-      toast("Connecteurs - Bientôt disponible");
-    } else if (id === "pm-libraries") {
-      toast("Bibliothèques - Bientôt disponible");
-    } else if (id === "pm-workflows") {
-      toast("Workflows - Bientôt disponible");
-    } else if (id === "pm-agents") {
-      toast("Agents - Bientôt disponible");
-    } else if (id === "pm-reset") {
-      chatInput.value = "";
-      autoResize();
-      toast("Entrée réinitialisée");
-    }
-    plusMenu.classList.remove("open");
+    if (id === "pm-skills") toast("Skills — Bientôt disponible");
+    else if (id === "pm-libraries") toast("Bibliothèques — Bientôt disponible");
+    else if (id === "pm-workflows") toast("Workflows — Bientôt disponible");
+    else if (id === "pm-agents") toast("Agents — Bientôt disponible");
+    if (!['pm-upload','pm-connectors'].includes(id)) plusMenu.classList.remove("open");
   });
 });
 
@@ -1603,7 +1929,8 @@ const PLACEHOLDER_PHRASES = [
   "Comment ça fonctionne ?",
   "Aide-moi à coder...",
   "Trace un graphique...",
-  "Crée un tableau..."
+  "Crée un tableau...",
+  "Analyse ce document..."
 ];
 let _phIdx = 0, _phPos = 0, _phDir = 1, _phTimer = null;
 
@@ -1616,95 +1943,65 @@ function runPlaceholder() {
   if (_phDir === 1) {
     _phPos++;
     chatInput.placeholder = phrase.slice(0, _phPos);
-    if (_phPos >= phrase.length) {
-      _phDir = -1;
-      _phTimer = setTimeout(runPlaceholder, 1600);
-      return;
-    }
+    if (_phPos >= phrase.length) { _phDir = -1; _phTimer = setTimeout(runPlaceholder, 1600); return; }
     _phTimer = setTimeout(runPlaceholder, 55);
   } else {
     _phPos--;
     chatInput.placeholder = phrase.slice(0, _phPos);
-    if (_phPos <= 0) {
-      _phDir = 1;
-      _phIdx = (_phIdx + 1) % PLACEHOLDER_PHRASES.length;
-      _phTimer = setTimeout(runPlaceholder, 400);
-      return;
-    }
+    if (_phPos <= 0) { _phDir = 1; _phIdx = (_phIdx + 1) % PLACEHOLDER_PHRASES.length; _phTimer = setTimeout(runPlaceholder, 400); return; }
     _phTimer = setTimeout(runPlaceholder, 30);
   }
 }
 runPlaceholder();
 
 // =============================================
-// AUTO-RESIZE TEXTINPUT
+// AUTO-RESIZE
 // =============================================
 function autoResize() {
   chatInput.style.height = "auto";
   chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + "px";
 }
-chatInput.addEventListener("input", autoResize);
+chatInput.addEventListener("input", () => {
+  autoResize();
+  updateSendBtn();
+});
 
 // =============================================
-// KATEX + MARKDOWN + TABLEAUX + GRAPHIQUES
+// RENDER CONTENT (MARKDOWN + KATEX + GRAPHIQUES)
 // =============================================
 function renderContent(text) {
-  // Remplacer les graphiques par des conteneurs canvas
-  text = text.replace(/```graphique\s*([\s\S]+?)```/gi, (_, func) => {
-    const funcClean = func.trim();
-    return `<div class="chart-container" data-function="${escHtml(funcClean)}"></div>`;
+  // Graphiques → placeholder div (rendu différé par WMCharts)
+  text = text.replace(/```graphique\s*([\s\S]+?)```/gi, (_, block) => {
+    const encoded = encodeURIComponent(block.trim());
+    return `<div class="wm-chart-container" data-chart-text="${encoded}" style="height:320px"></div>`;
   });
 
-  // Remplacer les blocs de code pour les tableaux
-  text = text.replace(/```tableau\s*([\s\S]+?)```/gi, (_, table) => {
-    return `<div class="table-container">${table.trim()}</div>`;
-  });
-
-  // Traiter le markdown normal
+  // KaTeX
   const mathBlocks = [], mathInlines = [];
-  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => {
-    mathBlocks.push(m);
-    return `%%MB${mathBlocks.length - 1}%%`;
-  });
-  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => {
-    mathBlocks.push(m);
-    return `%%MB${mathBlocks.length - 1}%%`;
-  });
-  text = text.replace(/\[\s*([\s\S]+?)\s*\]/g, (full, m) => {
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => { mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; });
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => { mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`; });
+  text = text.replace(/\[(\s*[\s\S]+?\s*)\]/g, (full, m) => {
     if (/\\[a-zA-Z]|[_^{}]/.test(m) && m.length < 500 && !/^\d+$/.test(m.trim())) {
-      mathBlocks.push(m);
-      return `%%MB${mathBlocks.length - 1}%%`;
+      mathBlocks.push(m); return `%%MB${mathBlocks.length-1}%%`;
     }
     return full;
   });
-  text = text.replace(/\\\((.+?)\\\)/g, (_, m) => {
-    mathInlines.push(m);
-    return `%%MI${mathInlines.length - 1}%%`;
-  });
-  text = text.replace(/\$([^$\n]+?)\$/g, (_, m) => {
-    mathInlines.push(m);
-    return `%%MI${mathInlines.length - 1}%%`;
-  });
+  text = text.replace(/\\\((.+?)\\\)/g, (_, m) => { mathInlines.push(m); return `%%MI${mathInlines.length-1}%%`; });
+  text = text.replace(/\$([^$\n]+?)\$/g, (_, m) => { mathInlines.push(m); return `%%MI${mathInlines.length-1}%%`; });
 
   let html = marked.parse(text, { breaks: true, gfm: true });
 
   mathBlocks.forEach((m, i) => {
     let r = "";
-    try {
-      r = katex.renderToString(m, { displayMode: true, throwOnError: false });
-    } catch {
-      r = `<code>${escHtml(m)}</code>`;
-    }
+    try { r = katex.renderToString(m, { displayMode: true, throwOnError: false }); }
+    catch { r = `<code>${escHtml(m)}</code>`; }
     html = html.replace(`%%MB${i}%%`, `<div class="katex-block">${r}</div>`);
   });
 
   mathInlines.forEach((m, i) => {
     let r = "";
-    try {
-      r = katex.renderToString(m, { displayMode: false, throwOnError: false });
-    } catch {
-      r = `<code>${escHtml(m)}</code>`;
-    }
+    try { r = katex.renderToString(m, { displayMode: false, throwOnError: false }); }
+    catch { r = `<code>${escHtml(m)}</code>`; }
     html = html.replace(`%%MI${i}%%`, r);
   });
 
@@ -1726,89 +2023,14 @@ function addCodeButtons(bubble) {
     });
   });
 
-  // Traiter les graphiques
-  bubble.querySelectorAll(".chart-container").forEach(container => {
-    const func = container.dataset.function;
-    if (func) {
-      renderFunctionGraph(container, func);
-    }
-  });
-}
-
-// =============================================
-// GRAPHIQUES INTERACTIFS
-// =============================================
-function renderFunctionGraph(container, funcText) {
-  try {
-    const canvas = document.createElement("canvas");
-    container.innerHTML = "";
-    container.appendChild(canvas);
-
-    const funcMatch = funcText.match(/y\s*=\s*([^;]+)/i);
-    if (!funcMatch) {
-      container.innerHTML = `<div style="color: var(--text2); padding: 10px;">Graphique non valide. Essayez "y = x^2 + 1"</div>`;
-      return;
-    }
-
-    const expr = funcMatch[1].trim();
-    const f = math.compile(expr);
-
-    const ctx = canvas.getContext("2d");
-    const chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: Array.from({ length: 100 }, (_, i) => i - 50),
-        datasets: [{
-          label: `f(x) = ${expr}`,
-          data: Array.from({ length: 100 }, (_, i) => {
-            const x = (i - 50) / 10;
-            try {
-              return { x: x, y: f.evaluate({ x: x }) };
-            } catch {
-              return { x: x, y: NaN };
-            }
-          }),
-          borderColor: "#4488ff",
-          backgroundColor: "rgba(68, 136, 255, 0.1)",
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: "linear",
-            position: "bottom",
-            grid: { color: "rgba(255, 255, 255, 0.1)" },
-            ticks: { color: "var(--text2)" }
-          },
-          y: {
-            grid: { color: "rgba(255, 255, 255, 0.1)" },
-            ticks: { color: "var(--text2)" }
-          }
-        },
-        plugins: {
-          legend: {
-            labels: { color: "var(--text)" }
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => `f(${context.parsed.x.toFixed(2)}) = ${context.parsed.y.toFixed(2)}`
-            }
-          }
-        }
-      }
-    });
-  } catch (e) {
-    container.innerHTML = `<div style="color: var(--text2); padding: 10px;">Erreur: ${escHtml(e.message)}</div>`;
+  // Rendre les graphiques Wikimind
+  if (window.WMCharts) {
+    window.WMCharts.renderAll(bubble);
   }
 }
 
 // =============================================
-// CHAT STATE MANAGEMENT
+// CHAT STATE
 // =============================================
 function setStarted(v) {
   chatStarted = v;
@@ -1818,8 +2040,7 @@ function setStarted(v) {
     chatInput.placeholder = "";
   } else {
     document.body.classList.add("chat-empty-state");
-    _phPos = 0;
-    _phDir = 1;
+    _phPos = 0; _phDir = 1;
     clearTimeout(_phTimer);
     runPlaceholder();
   }
@@ -1830,12 +2051,32 @@ function scrollBottom() {
 }
 
 // =============================================
-// MESSAGE APPEND FUNCTIONS
+// MESSAGES
 // =============================================
-function appendUserMsg(text) {
+function appendUserMsg(text, files = []) {
   const g = document.createElement("div");
   g.className = "msg-group user";
-  g.innerHTML = `<div class="msg-inner"><div class="bubble user">${escHtml(text)}</div><div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div></div>`;
+  
+  let filesHtml = "";
+  if (files && files.length > 0) {
+    filesHtml = files.map(f => `
+      <div class="file-attachment">
+        <div class="file-attachment-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="file-attachment-info">
+          <div class="file-attachment-name">${escHtml(f.name)}</div>
+          <div class="file-attachment-size">${fmtSize(f.size)}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+  
+  g.innerHTML = `<div class="msg-inner">
+    ${filesHtml}
+    ${text ? `<div class="bubble user">${escHtml(text)}</div>` : ""}
+    <div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div>
+  </div>`;
   messagesEl.appendChild(g);
   scrollBottom();
 }
@@ -1851,8 +2092,8 @@ function appendThinking() {
 }
 
 function removeThinking() {
-  const thinkingEl = document.getElementById("thinking-group");
-  if (thinkingEl) thinkingEl.remove();
+  const el = document.getElementById("thinking-group");
+  if (el) el.remove();
 }
 
 function appendAIMsg(msgObj, isStreaming = false) {
@@ -1875,49 +2116,43 @@ function appendAIMsg(msgObj, isStreaming = false) {
   meta.className = "msg-meta";
   meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName || selectedModelName}</span>`;
 
-  // Actions bar (TOUJOURS VISIBLE)
   const actBar = document.createElement("div");
   actBar.className = "msg-actions";
 
-  // Copy
   const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier");
   btnCopy.addEventListener("click", () => {
     navigator.clipboard.writeText(msgObj.content || bubble.innerText || "").then(() => {
-      btnCopy.classList.add("copy-anim");
       btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
       setTimeout(() => {
-        btnCopy.classList.remove("copy-anim");
         btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
       }, 1600);
     });
   });
 
-  // Like
   const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
   if (msgObj.liked === 1) btnLike.classList.add("liked");
 
-  // Dislike
   const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
   if (msgObj.liked === -1) btnDislike.classList.add("disliked");
 
   btnLike.addEventListener("click", () => handleReaction(msgObj, 1, btnLike, btnDislike, g));
   btnDislike.addEventListener("click", () => handleReaction(msgObj, -1, btnLike, btnDislike, g));
 
-  // Regen
   const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Regénérer");
   btnRegen.addEventListener("click", () => regenMsg(msgObj, g));
 
-  // Info
+  // Bouton info — FIX popup visible
   const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
   const popup = document.createElement("div");
   popup.className = "msg-info-popup";
   buildInfoPopup(popup, msgObj);
+  btnInfo.style.position = "relative";
   btnInfo.appendChild(popup);
   btnInfo.addEventListener("click", (e) => {
     e.stopPropagation();
+    document.querySelectorAll(".msg-info-popup.open").forEach(p => { if (p !== popup) p.classList.remove("open"); });
     popup.classList.toggle("open");
   });
-  document.addEventListener("click", () => popup.classList.remove("open"));
 
   actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
   inner.append(bubble, meta, actBar);
@@ -1945,37 +2180,28 @@ function buildInfoPopup(popup, msgObj) {
   `;
 }
 
+document.addEventListener("click", () => {
+  document.querySelectorAll(".msg-info-popup.open").forEach(p => p.classList.remove("open"));
+});
+
 // =============================================
-// REACTIONS HANDLING
+// REACTIONS
 // =============================================
 async function handleReaction(msgObj, val, btnLike, btnDislike, groupEl) {
   if (!msgObj.msgId) return;
   const prev = msgObj.liked || 0;
   const newVal = prev === val ? 0 : val;
   msgObj.liked = newVal;
-
   btnLike.classList.toggle("liked", newVal === 1);
   btnDislike.classList.toggle("disliked", newVal === -1);
-  if (newVal !== 0) {
-    (newVal === 1 ? btnLike : btnDislike).classList.add("like-anim");
-    setTimeout(() => {
-      btnLike.classList.remove("like-anim");
-      btnDislike.classList.remove("like-anim");
-    }, 300);
-  }
-
-  // Save to user conversation
   if (userId && currentConvId) {
     const idx = messages.findIndex(m => m.msgId === msgObj.msgId);
-    if (idx >= 0) {
-      messages[idx].liked = newVal;
-      await saveConversation();
-    }
+    if (idx >= 0) { messages[idx].liked = newVal; await saveConversation(); }
   }
 }
 
 // =============================================
-// REGENERATE MESSAGE
+// REGENERATE
 // =============================================
 async function regenMsg(msgObj, groupEl) {
   if (streaming) return;
@@ -1992,41 +2218,52 @@ async function regenMsg(msgObj, groupEl) {
 // =============================================
 async function sendMessage() {
   const text = chatInput.value.trim();
-  if (!text || streaming) return;
+  if ((!text && attachedFiles.length === 0) || streaming) return;
 
-  // Initialiser l'ID utilisateur (connecté ou invité)
   userId = getOrCreateUserId();
-
   if (!chatStarted) setStarted(true);
   if (!currentConvId) currentConvId = genId();
+
+  // Construire le contenu du message avec fichiers
+  let fullContent = text;
+  const filesForDisplay = [...attachedFiles];
+  
+  if (attachedFiles.length > 0) {
+    const filesContext = attachedFiles.map(f => {
+      const maxLen = 8000;
+      const content = f.content.length > maxLen ? f.content.slice(0, maxLen) + '\n\n[...tronqué]' : f.content;
+      return `### Fichier : ${f.name}\n\`\`\`\n${content}\n\`\`\``;
+    }).join('\n\n');
+    
+    fullContent = text ? `${text}\n\n${filesContext}` : filesContext;
+  }
 
   const userMsgId = genId();
   const userMsg = {
     role: "user",
-    content: text,
+    content: fullContent,
+    displayContent: text,
     msgId: userMsgId,
     ts: Date.now(),
     model: selectedModel,
-    modelName: selectedModelName
+    modelName: selectedModelName,
+    files: filesForDisplay.map(f => ({ name: f.name, size: f.size }))
   };
   messages.push(userMsg);
-  appendUserMsg(text);
+  appendUserMsg(text, filesForDisplay);
+  
+  // Reset
   chatInput.value = "";
+  attachedFiles = [];
+  renderAttachedFilesPreview();
   autoResize();
   sendBtn.disabled = true;
 
-  // Save conversation title if it's the first message
-  if (userId && messages.length === 1) {
-    await saveConversationTitle(text);
-  }
-
-  // Save user message to Firebase
-  if (userId && currentConvId) {
-    await saveConversation();
-  }
+  if (userId && messages.length === 1) await saveConversationTitle(text || filesForDisplay[0]?.name || "Nouveau");
+  if (userId && currentConvId) await saveConversation();
 
   try {
-    await doStream(text, false);
+    await doStream(fullContent, false);
   } catch (error) {
     console.error("Error in sendMessage:", error);
     removeThinking();
@@ -2036,7 +2273,7 @@ async function sendMessage() {
 }
 
 // =============================================
-// STREAM HANDLING
+// STREAM
 // =============================================
 async function doStream(userText, isRegen) {
   if (streaming) return;
@@ -2060,7 +2297,14 @@ async function doStream(userText, isRegen) {
   };
 
   messages.push(aiMsgObj);
-  const thinkingEl = appendThinking();
+  appendThinking();
+
+  // Construire contexte connecteurs
+  let systemExtra = "";
+  if (activeConnectors.length > 0) {
+    const connNames = activeConnectors.map(id => CONNECTORS_LIST.find(c => c.id === id)?.name).filter(Boolean);
+    systemExtra = `\nConnecteurs actifs pour cette conversation : ${connNames.join(', ')}. Mentionne-les si pertinent.`;
+  }
 
   try {
     const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -2079,9 +2323,14 @@ async function doStream(userText, isRegen) {
             content: "Tu es Wikimind AI, l'assistant intelligent de la plateforme Wikimind. " +
                     "Tu es concis, précis et utile. " +
                     "Pour les formules mathématiques, utilise la syntaxe LaTeX : $formule$ pour l'inline et $$formule$$ pour les blocs. " +
-                    "Pour les graphiques, utilise la syntaxe ```graphique\n y = x^2 + 1 \n```. " +
-                    "Pour les tableaux, utilise la syntaxe markdown standard. " +
-                    "Réponds en français sauf si l'utilisateur écrit autrement."
+                    "Pour les graphiques interactifs, utilise EXACTEMENT cette syntaxe :\n" +
+                    "```graphique\ntype: courbe\ny = x^2 + 1\nxmin: -5\nxmax: 5\ntitle: Mon graphique\n```\n" +
+                    "Types disponibles : courbe, barres, camembert, nuage, ligne, multicourbes\n" +
+                    "Pour plusieurs courbes : type: multicourbes, puis courbe1: sin(x), label: sin(x), courbe2: cos(x), label: cos(x)\n" +
+                    "Pour barres/camembert : labels: A,B,C et values: 1,2,3\n" +
+                    "Pour les tableaux, utilise la syntaxe markdown standard.\n" +
+                    "Réponds en français sauf si l'utilisateur écrit autrement." +
+                    systemExtra
           },
           ...messages.filter(m => m.role !== "ai" || m.msgId !== aiMsgId).map(m => ({
             role: m.role === "ai" ? "assistant" : m.role,
@@ -2091,17 +2340,11 @@ async function doStream(userText, isRegen) {
       })
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    if (!res.body) {
-      throw new Error("No response body");
-    }
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    if (!res.body) throw new Error("No response body");
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let fullResponse = "";
 
     while (true) {
       const { done, value } = await reader.read();
@@ -2116,9 +2359,8 @@ async function doStream(userText, isRegen) {
           if (data !== "[DONE]") {
             try {
               const json = JSON.parse(data);
-              if (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) {
+              if (json.choices?.[0]?.delta?.content) {
                 const content = json.choices[0].delta.content;
-                fullResponse += content;
                 aiMsgObj.content += content;
 
                 let bubble = document.getElementById("stream-bubble");
@@ -2131,15 +2373,12 @@ async function doStream(userText, isRegen) {
                   addCodeButtons(bubble);
                 }
               }
-            } catch (e) {
-              console.error("Error parsing JSON:", e);
-            }
+            } catch (e) { /* ignore */ }
           }
         }
       }
     }
 
-    // Finalize the message
     aiMsgObj.responseTime = Date.now() - _streamStart;
     removeThinking();
 
@@ -2152,19 +2391,14 @@ async function doStream(userText, isRegen) {
       appendAIMsg(aiMsgObj);
     }
 
-    // Save the conversation
-    if (userId && currentConvId) {
-      await saveConversation();
-    }
+    if (userId && currentConvId) await saveConversation();
 
   } catch (error) {
     console.error("Stream error:", error);
     removeThinking();
     messages.pop();
-    if (userId && currentConvId) {
-      await saveConversation();
-    }
-    toast("Une erreur est survenue. Veuillez réessayer.");
+    if (userId && currentConvId) await saveConversation();
+    if (error.name !== 'AbortError') toast("Une erreur est survenue. Veuillez réessayer.");
   } finally {
     streaming = false;
     stopBtn.classList.remove("on");
@@ -2174,7 +2408,7 @@ async function doStream(userText, isRegen) {
 }
 
 // =============================================
-// STOP STREAMING
+// STOP
 // =============================================
 stopBtn.addEventListener("click", () => {
   if (abortCtrl) {
@@ -2188,13 +2422,11 @@ stopBtn.addEventListener("click", () => {
 });
 
 // =============================================
-// CONVERSATION MANAGEMENT
+// CONVERSATIONS
 // =============================================
 async function saveConversation() {
   if (!userId || !currentConvId) return;
-
   try {
-    // S'assurer que toutes les propriétés sont définies
     const messagesToSave = messages.map(msg => ({
       role: msg.role || "user",
       content: msg.content || "",
@@ -2206,10 +2438,6 @@ async function saveConversation() {
       liked: msg.liked || 0
     }));
 
-    // Sauvegarder sous users/{userId}/wikimind/conversations/{currentConvId}/messages
-    await set(ref(db, `users/${userId}/wikimind/conversations/${currentConvId}/messages`), messagesToSave);
-
-    // Mettre à jour les métadonnées
     const firstUserMsg = messages.find(m => m.role === "user");
     const title = firstUserMsg
       ? (firstUserMsg.content.length > 50 ? firstUserMsg.content.slice(0, 50) + "..." : firstUserMsg.content)
@@ -2219,7 +2447,8 @@ async function saveConversation() {
       title: title,
       createdAt: messages[0]?.ts || Date.now(),
       updatedAt: Date.now(),
-      model: selectedModelName
+      model: selectedModelName,
+      messages: messagesToSave
     });
 
     await updateConversationList();
@@ -2230,7 +2459,6 @@ async function saveConversation() {
 
 async function saveConversationTitle(text) {
   if (!userId || !currentConvId) return;
-
   try {
     const title = text.length > 50 ? text.slice(0, 50) + "..." : text;
     await set(ref(db, `users/${userId}/wikimind/conversations/${currentConvId}`), {
@@ -2250,79 +2478,49 @@ async function loadConversations() {
     convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Connectez-vous pour voir vos conversations</div>';
     return;
   }
-
   try {
-    const convRef = ref(db, `users/${userId}/wikimind/conversations`);
-    const snapshot = await get(convRef);
-
+    const snapshot = await get(ref(db, `users/${userId}/wikimind/conversations`));
     if (snapshot.exists()) {
-      const userConvs = snapshot.val();
-      conversations = [];
-
-      for (const convId in userConvs) {
-        if (userConvs[convId].title) {
-          conversations.push({
-            id: convId,
-            title: userConvs[convId].title,
-            createdAt: userConvs[convId].createdAt || Date.now()
-          });
-        }
-      }
-
-      conversations.sort((a, b) => b.createdAt - a.createdAt);
+      const data = snapshot.val();
+      conversations = Object.entries(data)
+        .filter(([, v]) => v.title)
+        .map(([id, v]) => ({ id, title: v.title, createdAt: v.createdAt || Date.now() }))
+        .sort((a, b) => b.createdAt - a.createdAt);
       renderConversationList();
     } else {
       convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Aucune conversation</div>';
     }
   } catch (error) {
     console.error("Error loading conversations:", error);
-    convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Erreur de chargement</div>';
   }
 }
 
 async function updateConversationList() {
   if (!userId) return;
-
   try {
-    const convRef = ref(db, `users/${userId}/wikimind/conversations`);
-    const snapshot = await get(convRef);
-
+    const snapshot = await get(ref(db, `users/${userId}/wikimind/conversations`));
     if (snapshot.exists()) {
-      const userConvs = snapshot.val();
-      conversations = [];
-
-      for (const convId in userConvs) {
-        if (userConvs[convId].title) {
-          conversations.push({
-            id: convId,
-            title: userConvs[convId].title,
-            createdAt: userConvs[convId].createdAt || Date.now()
-          });
-        }
-      }
-
-      conversations.sort((a, b) => b.createdAt - a.createdAt);
+      const data = snapshot.val();
+      conversations = Object.entries(data)
+        .filter(([, v]) => v.title)
+        .map(([id, v]) => ({ id, title: v.title, createdAt: v.createdAt || Date.now() }))
+        .sort((a, b) => b.createdAt - a.createdAt);
       renderConversationList();
     }
-  } catch (error) {
-    console.error("Error updating conversation list:", error);
-  }
+  } catch (error) { /* ignore */ }
 }
 
 function renderConversationList() {
   convList.innerHTML = "";
-
   if (conversations.length === 0) {
     convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Aucune conversation</div>';
     return;
   }
-
   conversations.forEach(conv => {
     const item = document.createElement("div");
-    item.className = "conv-item";
+    item.className = "conv-item" + (conv.id === currentConvId ? " active" : "");
     item.dataset.convId = conv.id;
     item.innerHTML = `<span class="conv-item-title">${escHtml(conv.title)}</span>`;
-
     item.addEventListener("click", () => loadConversation(conv.id));
     convList.appendChild(item);
   });
@@ -2330,19 +2528,15 @@ function renderConversationList() {
 
 async function loadConversation(convId) {
   if (streaming) return;
-
   currentConvId = convId;
   messages = [];
 
   try {
-    const messagesRef = ref(db, `users/${userId}/wikimind/conversations/${convId}/messages`);
-    const snapshot = await get(messagesRef);
-
+    const snapshot = await get(ref(db, `users/${userId}/wikimind/conversations/${convId}/messages`));
     if (snapshot.exists()) {
-      const savedMessages = snapshot.val();
-      const messagesArray = Object.values(savedMessages);
-
-      messagesArray.forEach(msg => {
+      const saved = snapshot.val();
+      const arr = Array.isArray(saved) ? saved : Object.values(saved);
+      arr.forEach(msg => {
         messages.push({
           role: msg.role || "user",
           content: msg.content || "",
@@ -2355,14 +2549,15 @@ async function loadConversation(convId) {
         });
       });
 
-      // Render messages
       messagesEl.innerHTML = "";
       messages.forEach(msg => {
-        if (msg.role === "user") {
-          appendUserMsg(msg.content);
-        } else {
-          appendAIMsg(msg);
-        }
+        if (msg.role === "user") appendUserMsg(msg.content);
+        else appendAIMsg(msg);
+      });
+
+      // Marquer actif
+      document.querySelectorAll(".conv-item").forEach(el => {
+        el.classList.toggle("active", el.dataset.convId === convId);
       });
 
       setStarted(messages.length > 0);
@@ -2377,17 +2572,18 @@ async function loadConversation(convId) {
 
 async function newConversation() {
   if (streaming) return;
-
   currentConvId = genId();
   messages = [];
   messagesEl.innerHTML = "";
+  attachedFiles = [];
+  renderAttachedFilesPreview();
   setStarted(false);
   closeSidebarFn();
   chatInput.focus();
 }
 
 // =============================================
-// AUTHENTICATION
+// AUTH
 // =============================================
 function updateAuthUI() {
   if (currentUser) {
@@ -2395,19 +2591,12 @@ function updateAuthUI() {
     $("s-name").textContent = currentUser.displayName || currentUser.email || "Utilisateur";
     $("s-avatar").textContent = initials(currentUser.displayName || currentUser.email || "U");
     $("s-plan").textContent = "Free";
-    if (sidebar.classList.contains("open")) {
-      loadConversations();
-    }
+    if (sidebar.classList.contains("open")) loadConversations();
   } else {
     userId = getOrCreateUserId();
     $("s-name").textContent = "Mode invité";
     $("s-avatar").textContent = "?";
     $("s-plan").textContent = "Free";
-    currentConvId = null;
-    messages = [];
-    conversations = [];
-    messagesEl.innerHTML = "";
-    setStarted(false);
   }
 }
 
@@ -2415,20 +2604,13 @@ async function handleAuth(tab) {
   const email = $("auth-email").value.trim();
   const pass = $("auth-pass").value.trim();
   const name = $("auth-name").value.trim();
-
-  if (!email || !pass) {
-    toast("Veuillez remplir tous les champs.");
-    return;
-  }
-
+  if (!email || !pass) { toast("Veuillez remplir tous les champs."); return; }
   try {
     if (tab === "login") {
       await signInWithEmailAndPassword(auth, email, pass);
     } else {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-      if (name) {
-        await updateProfile(userCredential.user, { displayName: name });
-      }
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      if (name) await updateProfile(cred.user, { displayName: name });
     }
     overlay.style.display = "none";
     toast("Connexion réussie !");
@@ -2444,12 +2626,10 @@ async function handleAuth(tab) {
   }
 }
 
-// Auth tabs
 document.querySelectorAll(".auth-tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
-
     if (tab.dataset.tab === "register") {
       $("auth-name").style.display = "block";
       $("auth-submit").textContent = "S'inscrire";
@@ -2460,54 +2640,41 @@ document.querySelectorAll(".auth-tab").forEach(tab => {
   });
 });
 
-// Auth submit
 $("auth-submit").addEventListener("click", () => {
   const activeTab = document.querySelector(".auth-tab.active");
   handleAuth(activeTab.dataset.tab);
 });
 
-// Social auth
 $("btn-google").addEventListener("click", async () => {
   try {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    await signInWithPopup(auth, new GoogleAuthProvider());
     overlay.style.display = "none";
     toast("Connexion réussie avec Google !");
-  } catch (error) {
-    toast("Erreur de connexion avec Google.");
-  }
+  } catch { toast("Erreur de connexion avec Google."); }
 });
 
 $("btn-microsoft").addEventListener("click", async () => {
   try {
-    const provider = new OAuthProvider("microsoft.com");
-    await signInWithPopup(auth, provider);
+    await signInWithPopup(auth, new OAuthProvider("microsoft.com"));
     overlay.style.display = "none";
     toast("Connexion réussie avec Microsoft !");
-  } catch (error) {
-    toast("Erreur de connexion avec Microsoft.");
-  }
+  } catch { toast("Erreur de connexion avec Microsoft."); }
 });
 
 $("btn-facebook").addEventListener("click", async () => {
   try {
-    const provider = new FacebookAuthProvider();
-    await signInWithPopup(auth, provider);
+    await signInWithPopup(auth, new FacebookAuthProvider());
     overlay.style.display = "none";
     toast("Connexion réussie avec Facebook !");
-  } catch (error) {
-    toast("Erreur de connexion avec Facebook.");
-  }
+  } catch { toast("Erreur de connexion avec Facebook."); }
 });
 
-// Guest mode
 $("guest-btn").addEventListener("click", () => {
   overlay.style.display = "none";
   userId = getOrCreateUserId();
-  toast("Mode invité activé. Les conversations sont sauvegardées localement.");
+  toast("Mode invité activé.");
 });
 
-// Sign out
 $("user-row").addEventListener("click", async () => {
   if (currentUser) {
     await signOut(auth);
@@ -2517,19 +2684,12 @@ $("user-row").addEventListener("click", async () => {
   }
 });
 
-// =============================================
-// AUTH STATE CHANGE
-// =============================================
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   updateAuthUI();
-
   if (user) {
     userId = user.uid;
     overlay.style.display = "none";
-    if (conversations.length > 0) {
-      await loadConversation(conversations[0].id);
-    }
   }
 });
 
@@ -2539,31 +2699,20 @@ onAuthStateChanged(auth, async (user) => {
 chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    if (!chatInput.value.trim() || streaming) return;
+    if ((!chatInput.value.trim() && attachedFiles.length === 0) || streaming) return;
     sendMessage();
   }
 });
 
 sendBtn.addEventListener("click", () => {
-  if (!chatInput.value.trim() || streaming) return;
+  if ((!chatInput.value.trim() && attachedFiles.length === 0) || streaming) return;
   sendMessage();
 });
 
-// Enable/disable send button based on input
-chatInput.addEventListener("input", () => {
-  sendBtn.disabled = !chatInput.value.trim() || streaming;
-});
-
-// New chat button
 $("new-chat-btn").addEventListener("click", newConversation);
 
-// =============================================
-// INITIALIZE
-// =============================================
-// Initialiser l'ID utilisateur (invité par défaut)
+// Init
 userId = getOrCreateUserId();
-
-// Initialiser le placeholder
 runPlaceholder();
 </script>
 </body>
