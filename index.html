@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wikimind AI</title>
+<title>Wikimind</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -20,13 +20,13 @@
 }
 
 :root {
-  --bg: #000000; /* Noir pur */
+  --bg: #000000;
   --bg2: #0a0a0a;
   --bg3: #141414;
   --bg4: #1e1e1e;
   --border: rgba(255, 255, 255, 0.1);
   --border2: rgba(255, 255, 255, 0.2);
-  --text: #ffffff; /* Blanc pur */
+  --text: #ffffff;
   --text2: #a0a0a0;
   --text3: #606060;
   --primary: #888888;
@@ -38,7 +38,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Geist', sans-serif;
-  font-size: 16px; /* Police globale plus grosse */
+  font-size: 16px;
 }
 
 /* ========== SIDEBAR ========== */
@@ -230,13 +230,13 @@ html, body {
   height: 100vh;
 }
 
+/* TOPBAR SANS TRAIT */
 #topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   height: 52px;
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -303,7 +303,7 @@ html, body {
   border-radius: 3px;
 }
 
-/* ========== WELCOME SCREEN (POSITIONNÉ PLUS HAUT) ========== */
+/* ========== WELCOME SCREEN (TITRE "WIKIMIND" RÉDUIT) ========== */
 #welcome-screen {
   position: fixed;
   top: 0;
@@ -318,7 +318,6 @@ html, body {
   opacity: 1;
   transition: opacity 0.5s ease;
   pointer-events: none;
-  margin-top: -60px;
 }
 
 body:not(.chat-empty-state) #welcome-screen {
@@ -327,64 +326,17 @@ body:not(.chat-empty-state) #welcome-screen {
 }
 
 #welcome-title {
-  font-size: clamp(4rem, 15vw, 8rem);
+  font-size: clamp(3rem, 12vw, 6rem); /* Réduit de ~25% par rapport à 8rem */
   font-weight: 900;
   letter-spacing: -0.05em;
   color: var(--text);
   line-height: 1;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   font-style: normal;
   text-shadow: none;
 }
 
-#welcome-sub {
-  font-size: 1.2rem;
-  color: var(--text3);
-  margin-bottom: 0;
-}
-
-/* ========== SUGGESTION CHIPS (PLUS BAS) ========== */
-.suggestion-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  justify-content: center;
-  max-width: min(600px, 90vw);
-  margin-top: 30px;
-  pointer-events: all;
-  position: fixed;
-  top: 55%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 11;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-body:not(.chat-empty-state) .suggestion-chips {
-  opacity: 0;
-  transform: translate(-50%, -60%);
-  pointer-events: none;
-}
-
-.chip {
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1px solid var(--border2);
-  background: transparent;
-  color: var(--text3);
-  font-family: 'Geist', sans-serif;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  pointer-events: all;
-}
-.chip:hover {
-  background: var(--bg3);
-  color: var(--text);
-  border-color: var(--border2);
-}
-
-/* ========== MESSAGES (POLICE PLUS GROSSE) ========== */
+/* ========== MESSAGES ========== */
 #messages {
   display: flex;
   flex-direction: column;
@@ -430,10 +382,10 @@ body:not(.chat-empty-state) .suggestion-chips {
 }
 
 .bubble {
-  padding: 14px 18px;
+  padding: 12px 16px;
   border-radius: 16px;
-  font-size: 1.1rem; /* Police plus grosse */
-  line-height: 1.8;
+  font-size: 1rem;
+  line-height: 1.7;
   word-break: break-word;
 }
 .bubble.user {
@@ -488,53 +440,10 @@ body:not(.chat-empty-state) .suggestion-chips {
 .act-btn.disliked {
   color: #f87171;
 }
-@keyframes copyPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
-.act-btn.copy-anim {
-  animation: copyPop 0.3s ease;
-}
-@keyframes likePop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.4); }
-  100% { transform: scale(1); }
-}
-.act-btn.like-anim {
-  animation: likePop 0.3s ease;
-}
-
-/* dots popup */
-.msg-info-popup {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  padding: 10px 14px;
-  min-width: 200px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
-  z-index: 500;
-  display: none;
-  font-size: 0.8rem;
-  color: var(--text2);
-  line-height: 1.8;
-  white-space: nowrap;
-}
-.msg-info-popup.open {
-  display: block;
-}
-.msg-info-popup strong {
-  color: var(--text);
-  font-weight: 600;
-}
 
 /* ========== META ========== */
 .msg-meta {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text3);
   margin-top: 2px;
   display: flex;
@@ -545,7 +454,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   justify-content: flex-end;
 }
 .model-tag-sm {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--text3);
@@ -557,27 +466,27 @@ body:not(.chat-empty-state) .suggestion-chips {
 
 /* ========== MARKDOWN ========== */
 .bubble.ai h1 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
   margin: 16px 0 8px;
   color: var(--text);
 }
 .bubble.ai h2 {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 700;
   margin: 14px 0 6px;
   color: var(--text);
 }
 .bubble.ai h3 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   margin: 12px 0 5px;
   color: #ddd;
 }
 .bubble.ai p {
-  margin-bottom: 12px;
-  font-size: 1.1rem;
-  line-height: 1.8;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 .bubble.ai p:last-child {
   margin-bottom: 0;
@@ -598,17 +507,14 @@ body:not(.chat-empty-state) .suggestion-chips {
   list-style: disc;
   padding-left: 1.5em;
   margin: 8px 0;
-  font-size: 1.1rem;
 }
 .bubble.ai ol {
   list-style: decimal;
   padding-left: 1.5em;
   margin: 8px 0;
-  font-size: 1.1rem;
 }
 .bubble.ai li {
-  margin-bottom: 6px;
-  font-size: 1.1rem;
+  margin-bottom: 4px;
 }
 .bubble.ai blockquote {
   border-left: 3px solid var(--border2);
@@ -616,7 +522,6 @@ body:not(.chat-empty-state) .suggestion-chips {
   margin: 10px 0;
   color: var(--text2);
   font-style: italic;
-  font-size: 1rem;
 }
 .bubble.ai hr {
   border: none;
@@ -625,7 +530,7 @@ body:not(.chat-empty-state) .suggestion-chips {
 }
 .bubble.ai code {
   font-family: 'Geist Mono', monospace;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   background: var(--bg4);
   padding: 2px 6px;
   border-radius: 5px;
@@ -639,13 +544,12 @@ body:not(.chat-empty-state) .suggestion-chips {
   overflow-x: auto;
   margin: 10px 0;
   position: relative;
-  font-size: 0.95rem;
 }
 .bubble.ai pre code {
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--text);
   line-height: 1.6;
 }
@@ -655,7 +559,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   justify-content: space-between;
   padding: 6px 16px 0;
   margin-bottom: -4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text3);
   font-family: 'Geist Mono', monospace;
 }
@@ -666,7 +570,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   color: var(--text2);
   padding: 2px 8px;
   font-family: 'Geist', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -675,18 +579,17 @@ body:not(.chat-empty-state) .suggestion-chips {
   color: var(--text);
 }
 
-/* ========== TABLEAUX (NOUVEAU) ========== */
+/* ========== TABLEAUX ========== */
 .bubble.ai table {
   border-collapse: collapse;
   width: 100%;
-  margin: 12px 0;
+  margin: 10px 0;
   background: var(--bg3);
   border-radius: 8px;
   overflow: hidden;
-  font-size: 1rem;
 }
 .bubble.ai th, .bubble.ai td {
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   text-align: left;
   color: var(--text);
@@ -694,13 +597,12 @@ body:not(.chat-empty-state) .suggestion-chips {
 .bubble.ai th {
   background: var(--bg4);
   font-weight: 600;
-  font-size: 1rem;
 }
 .bubble.ai tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.02);
 }
 
-/* ========== GRAPHIQUES (NOUVEAU) ========== */
+/* ========== GRAPHIQUES ========== */
 .chart-container {
   width: 100%;
   max-width: 600px;
@@ -722,7 +624,6 @@ body:not(.chat-empty-state) .suggestion-chips {
   padding: 10px 0;
   margin: 8px 0;
   overflow-x: auto;
-  font-size: 1.2rem;
 }
 .katex {
   font-size: 1.1rem;
@@ -735,7 +636,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   gap: 8px;
   padding: 12px 0;
   color: var(--text3);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 .thinking-dots {
   display: flex;
@@ -765,7 +666,7 @@ body:not(.chat-empty-state) .suggestion-chips {
   }
 }
 
-/* ========== INPUT ZONE (POLICE PLUS GROSSE) ========== */
+/* ========== INPUT ZONE ========== */
 #input-zone {
   flex-shrink: 0;
   padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
@@ -774,7 +675,7 @@ body:not(.chat-empty-state) .suggestion-chips {
 
 body.chat-empty-state #input-zone {
   position: fixed;
-  top: 60%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 0;
@@ -821,7 +722,7 @@ body.chat-empty-state #input-container {
   outline: none;
   color: var(--text);
   font-family: 'Geist', sans-serif;
-  font-size: 1rem; /* Police plus grosse */
+  font-size: 0.95rem;
   padding: 16px 16px 8px;
   resize: none;
   min-height: 52px;
@@ -831,7 +732,6 @@ body.chat-empty-state #input-container {
 }
 #chat-input::placeholder {
   color: var(--text3);
-  font-size: 1rem;
 }
 
 /* ========== INPUT ROW ========== */
@@ -887,7 +787,7 @@ body.chat-empty-state #input-container {
   background: transparent;
   color: var(--text2);
   font-family: 'Geist', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -918,7 +818,6 @@ body.chat-empty-state #input-container {
   transform: translateY(-50%) rotate(180deg);
 }
 
-/* Dropdown */
 #bubble-model-dropdown {
   position: absolute;
   background: var(--bg2);
@@ -953,7 +852,7 @@ body.chat-empty-state #input-container {
   gap: 12px;
   padding: 12px 16px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border-bottom: 1px solid var(--border);
   transition: background 0.1s;
 }
@@ -969,10 +868,9 @@ body.chat-empty-state #input-container {
 .model-opt-name {
   font-weight: 600;
   color: var(--text);
-  font-size: 0.9rem;
 }
 .model-opt-desc {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text2);
   margin-top: 1px;
 }
@@ -986,17 +884,17 @@ body.chat-empty-state #input-container {
   color: #fff;
 }
 
-/* ========== PLUS MENU ========== */
+/* ========== PLUS MENU (NOUVELLE VERSION AVEC ICÔNES) ========== */
 #plus-menu {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 12px);
   left: 0;
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 12px;
   overflow: hidden;
   z-index: 200;
-  min-width: 190px;
+  min-width: 240px;
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.65);
   display: none;
 }
@@ -1014,16 +912,17 @@ body.chat-empty-state #input-container {
     transform: translateY(0);
   }
 }
+
 .pm-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 12px 16px;
   font-size: 0.85rem;
   color: var(--text2);
   cursor: pointer;
-  border-bottom: 1px solid var(--border);
   transition: all 0.1s;
+  border-bottom: 1px solid var(--border);
 }
 .pm-item:last-child {
   border-bottom: none;
@@ -1033,9 +932,13 @@ body.chat-empty-state #input-container {
   color: var(--text);
 }
 .pm-item svg {
-  opacity: 0.5;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 
+/* ========== SEND/STOP BUTTONS ========== */
 #send-btn {
   width: 32px;
   height: 32px;
@@ -1116,13 +1019,13 @@ body.chat-empty-state #input-container {
   }
 }
 .auth-head h2 {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text);
 }
 .auth-head p {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text2);
   margin-top: 4px;
   line-height: 1.5;
@@ -1139,7 +1042,7 @@ body.chat-empty-state #input-container {
   padding: 7px;
   text-align: center;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text2);
   border: none;
@@ -1159,7 +1062,7 @@ body.chat-empty-state #input-container {
   border-radius: 10px;
   color: var(--text);
   font-family: 'Geist', sans-serif;
-  font-size: 1rem;
+  font-size: 0.9rem;
   padding: 11px 14px;
   outline: none;
   transition: border-color 0.15s;
@@ -1183,7 +1086,7 @@ body.chat-empty-state #input-container {
   background: var(--text);
   color: var(--bg);
   font-family: 'Geist', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -1203,7 +1106,7 @@ body.chat-empty-state #input-container {
   background: var(--border);
 }
 .auth-sep span {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text3);
 }
 .social-btns {
@@ -1223,7 +1126,7 @@ body.chat-empty-state #input-container {
   background: transparent;
   color: var(--text);
   font-family: 'Geist', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -1238,14 +1141,14 @@ body.chat-empty-state #input-container {
   flex-shrink: 0;
 }
 #auth-err {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #ff4444;
   display: none;
   padding: 2px 0;
 }
 .auth-guest {
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text2);
   cursor: pointer;
   padding: 2px;
@@ -1265,7 +1168,7 @@ body.chat-empty-state #input-container {
   border: 1px solid var(--border2);
   padding: 8px 16px;
   border-radius: 9px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text);
   opacity: 0;
   transition: all 0.22s ease;
@@ -1295,7 +1198,7 @@ body.chat-empty-state #input-container {
     height: 12px;
   }
   .bubble {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 }
 </style>
@@ -1327,21 +1230,9 @@ body.chat-empty-state #input-container {
   </div>
 </aside>
 
-<!-- WELCOME SCREEN -->
+<!-- WELCOME SCREEN (SANS SUGGESTION CHIPS) -->
 <div id="welcome-screen">
-  <div id="welcome-title">WIKIMIND AI</div>
-  <div id="welcome-sub">Posez n'importe quelle question.</div>
-</div>
-
-<!-- SUGGESTION CHIPS -->
-<div class="suggestion-chips">
-  <button class="chip" data-q="Explique-moi la relativité restreinte">Relativité restreinte</button>
-  <button class="chip" data-q="Comment fonctionne une IA ?">Comment fonctionne une IA ?</button>
-  <button class="chip" data-q="Résous cette intégrale : ∫x² dx">Intégrale de x²</button>
-  <button class="chip" data-q="Écris-moi un poème sur la nuit">Poème sur la nuit</button>
-  <button class="chip" data-q="Donne-moi les bases de Python">Bases de Python</button>
-  <button class="chip" data-q="Trace-moi la fonction y = x^2 + 1">Graphique y = x² + 1</button>
-  <button class="chip" data-q="Crée un tableau avec 3 colonnes">Tableau de données</button>
+  <div id="welcome-title">WIKIMIND</div>
 </div>
 
 <div id="app">
@@ -1369,6 +1260,7 @@ body.chat-empty-state #input-container {
           <textarea id="chat-input" placeholder="" rows="1"></textarea>
           <div id="input-row">
             <div class="input-row-left">
+              <!-- Model selector -->
               <div id="bubble-model-wrap">
                 <button id="bubble-model-btn" data-tier="small">
                   <span id="bubble-model-label">Small 5.1</span>
@@ -1397,22 +1289,65 @@ body.chat-empty-state #input-container {
                   </div>
                 </div>
               </div>
+              <!-- NOUVEAU MENU PLUS AVEC ICÔNES -->
               <div id="plus-menu">
-                <div class="pm-item" id="pm-img">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  Image (bientôt)
+                <div class="pm-item" id="pm-upload">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  Télécharger des fichiers
                 </div>
-                <div class="pm-item" id="pm-file">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  Fichier (bientôt)
+                <div class="pm-item" id="pm-skills">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  Skills
                 </div>
-                <div class="pm-item" id="pm-web">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                  Recherche web (bientôt)
+                <div class="pm-item" id="pm-connectors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                  Connecteurs
+                </div>
+                <div class="pm-item" id="pm-libraries">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                  Bibliothèques
+                </div>
+                <div class="pm-item" id="pm-workflows">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                  Workflows
+                </div>
+                <div class="pm-item" id="pm-agents">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Agents
+                </div>
+                <div class="pm-item" id="pm-reset">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <line x1="3" y1="3" x2="3" y2="8"/>
+                    <line x1="3" y1="8" x2="8" y2="8"/>
+                  </svg>
+                  Réinitialiser l'entrée
                 </div>
               </div>
               <button class="i-btn" id="plus-btn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
               </button>
             </div>
             <div class="input-row-right">
@@ -1420,7 +1355,10 @@ body.chat-empty-state #input-container {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
               </button>
               <button id="send-btn" disabled>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="19" x2="12" y2="5"/>
+                  <polyline points="5 12 12 5 19 12"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -1451,15 +1389,27 @@ body.chat-empty-state #input-container {
     <div class="auth-sep"><span>ou continuer avec</span></div>
     <div class="social-btns">
       <button class="social-btn" id="btn-google">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
         Continuer avec Google
       </button>
       <button class="social-btn" id="btn-microsoft">
-        <svg viewBox="0 0 24 24" fill="none"><rect x="1" y="1" width="10.5" height="10.5" fill="#F25022"/><rect x="12.5" y="1" width="10.5" height="10.5" fill="#7FBA00"/><rect x="1" y="12.5" width="10.5" height="10.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/></svg>
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="1" y="1" width="10.5" height="10.5" fill="#F25022"/>
+          <rect x="12.5" y="1" width="10.5" height="10.5" fill="#7FBA00"/>
+          <rect x="1" y="12.5" width="10.5" height="10.5" fill="#00A4EF"/>
+          <rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/>
+        </svg>
         Continuer avec Microsoft
       </button>
       <button class="social-btn" id="btn-facebook">
-        <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        <svg viewBox="0 0 24 24" fill="#1877F2">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
         Continuer avec Facebook
       </button>
     </div>
@@ -1471,22 +1421,21 @@ body.chat-empty-state #input-container {
 
 <script type="module">
 // =============================================
-// FIREBASE CONFIGURATION
-// Utilisation de wikimind5 pour TOUT (auth + data)
+// FIREBASE CONFIGURATION (wikimind-3-comments)
 // =============================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push, remove } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
 
-// Configuration pour wikimind5 (utilisé pour TOUT)
+// Configuration pour wikimind-3-comments
 const firebaseConfig = {
-  apiKey: "AIzaSyBZ9585EYnmH2nrH6pRHl1o9WqiEs1J3b8",
-  authDomain: "wikimind5.firebaseapp.com",
-  databaseURL: "https://wikimind5-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "wikimind5",
-  storageBucket: "wikimind5.firebasestorage.app",
-  messagingSenderId: "892166712269",
-  appId: "1:892166712269:web:0c110e0889f40b16f13284"
+  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain: "wikimind-3-comments.firebaseapp.com",
+  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wikimind-3-comments",
+  storageBucket: "wikimind-3-comments.firebasestorage.app",
+  messagingSenderId: "137479541640",
+  appId: "1:137479541640:web:4ed2510a9908055052e03d"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -1543,7 +1492,7 @@ const initials = (n) => n ? n.split(" ").map(w => w[0]).join("").toUpperCase().s
 const escHtml = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmtTime = (ms) => ms < 1000 ? ms + "ms" : (ms / 1000).toFixed(1) + "s";
 
-// Génère un ID pour les invités (stocké dans localStorage)
+// Génère un ID pour les invités
 function getOrCreateUserId() {
   if (currentUser) {
     return currentUser.uid;
@@ -1605,22 +1554,41 @@ document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(opt => {
   });
 });
 
-document.addEventListener("click", () => {
-  closeModelDD();
-  plusMenu.classList.remove("open");
-});
-
 // =============================================
-// PLUS MENU
+// PLUS MENU (NOUVELLE VERSION AVEC ICÔNES)
 // =============================================
 plusBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   plusMenu.classList.toggle("open");
 });
 
-["pm-img", "pm-file", "pm-web"].forEach(id => {
-  $(id)?.addEventListener("click", () => {
-    toast("Fonctionnalité bientôt disponible.");
+// Fermer le menu quand on clique ailleurs
+document.addEventListener("click", () => {
+  closeModelDD();
+  plusMenu.classList.remove("open");
+});
+
+// Actions pour les éléments du menu plus (à implémenter plus tard)
+document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
+  item.addEventListener("click", () => {
+    const id = item.id;
+    if (id === "pm-upload") {
+      toast("Téléchargement de fichiers - Bientôt disponible");
+    } else if (id === "pm-skills") {
+      toast("Skills - Bientôt disponible");
+    } else if (id === "pm-connectors") {
+      toast("Connecteurs - Bientôt disponible");
+    } else if (id === "pm-libraries") {
+      toast("Bibliothèques - Bientôt disponible");
+    } else if (id === "pm-workflows") {
+      toast("Workflows - Bientôt disponible");
+    } else if (id === "pm-agents") {
+      toast("Agents - Bientôt disponible");
+    } else if (id === "pm-reset") {
+      chatInput.value = "";
+      autoResize();
+      toast("Entrée réinitialisée");
+    }
     plusMenu.classList.remove("open");
   });
 });
@@ -1629,14 +1597,13 @@ plusBtn.addEventListener("click", (e) => {
 // TYPING PLACEHOLDER
 // =============================================
 const PLACEHOLDER_PHRASES = [
-  "Explique-moi un concept complexe...",
-  "Résous cette équation...",
-  "Écris-moi un texte sur...",
-  "Comment fonctionne...",
+  "Explique-moi un concept...",
+  "Résous une équation...",
+  "Écris un texte...",
+  "Comment ça fonctionne ?",
   "Aide-moi à coder...",
-  "Trace-moi un graphique...",
-  "Crée un tableau de données...",
-  "Traduis ce texte..."
+  "Trace un graphique...",
+  "Crée un tableau..."
 ];
 let _phIdx = 0, _phPos = 0, _phDir = 1, _phTimer = null;
 
@@ -2221,7 +2188,7 @@ stopBtn.addEventListener("click", () => {
 });
 
 // =============================================
-// CONVERSATION MANAGEMENT (COMPATIBLE AVEC VOS RÈGLES EXISTANTES)
+// CONVERSATION MANAGEMENT
 // =============================================
 async function saveConversation() {
   if (!userId || !currentConvId) return;
@@ -2280,7 +2247,7 @@ async function saveConversationTitle(text) {
 
 async function loadConversations() {
   if (!userId) {
-    convList.innerHTML = '<div style="color:var(--text3);font-size:0.9rem;padding:8px;">Connectez-vous pour voir vos conversations</div>';
+    convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Connectez-vous pour voir vos conversations</div>';
     return;
   }
 
@@ -2305,11 +2272,11 @@ async function loadConversations() {
       conversations.sort((a, b) => b.createdAt - a.createdAt);
       renderConversationList();
     } else {
-      convList.innerHTML = '<div style="color:var(--text3);font-size:0.9rem;padding:8px;">Aucune conversation</div>';
+      convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Aucune conversation</div>';
     }
   } catch (error) {
     console.error("Error loading conversations:", error);
-    convList.innerHTML = '<div style="color:var(--text3);font-size:0.9rem;padding:8px;">Erreur de chargement</div>';
+    convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Erreur de chargement</div>';
   }
 }
 
@@ -2346,7 +2313,7 @@ function renderConversationList() {
   convList.innerHTML = "";
 
   if (conversations.length === 0) {
-    convList.innerHTML = '<div style="color:var(--text3);font-size:0.9rem;padding:8px;">Aucune conversation</div>';
+    convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Aucune conversation</div>';
     return;
   }
 
@@ -2564,20 +2531,6 @@ onAuthStateChanged(auth, async (user) => {
       await loadConversation(conversations[0].id);
     }
   }
-});
-
-// =============================================
-// SUGGESTION CHIPS
-// =============================================
-document.querySelectorAll(".chip").forEach(chip => {
-  chip.addEventListener("click", () => {
-    const question = chip.dataset.q;
-    if (question) {
-      chatInput.value = question;
-      autoResize();
-      sendMessage();
-    }
-  });
 });
 
 // =============================================
