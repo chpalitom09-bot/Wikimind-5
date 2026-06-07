@@ -1178,97 +1178,127 @@ body.chat-empty-state #input-container {
 
 /* Bouton 3 points dans les connector cards */
 .conn-perms-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text3);
-  cursor: pointer;
-  width: 26px; height: 26px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+  background: transparent; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text3); cursor: pointer; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   transition: all 0.12s;
 }
 .conn-perms-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
 
-/* MODALE PERMISSIONS */
+/* Thinking avec connecteur */
+.thinking-connector { gap: 8px; }
+.thinking-conn-icon {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* MODALE PERMISSIONS — style screenshot */
 #perms-modal-overlay {
   position: fixed; inset: 0; z-index: 2000;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
   display: none; align-items: center; justify-content: center;
 }
 #perms-modal-overlay.open { display: flex; }
 #perms-modal {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 18px;
-  width: 420px; max-width: 94vw;
-  overflow: hidden;
+  background: #1a1a1a; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; width: 440px; max-width: 95vw; max-height: 85vh;
+  display: flex; flex-direction: column; overflow: hidden;
   animation: boxIn 0.2s cubic-bezier(0.4,0,0.2,1);
 }
 .perms-modal-head {
-  display: flex; align-items: center; gap: 12px;
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
+  padding: 22px 22px 16px; flex-shrink: 0;
 }
-.perms-modal-icon {
-  width: 38px; height: 38px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.perms-modal-icon img { width: 26px; height: 26px; object-fit: contain; }
-.perms-modal-title { font-size: 1rem; font-weight: 700; color: var(--text); }
-.perms-modal-sub { font-size: 0.75rem; color: var(--text2); margin-top: 1px; }
+.perms-modal-icon { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); flex-shrink: 0; }
+.perms-modal-head-info { flex: 1; }
+.perms-modal-title { font-size: 1.15rem; font-weight: 700; color: #fff; }
+.perms-modal-status { font-size: 0.78rem; color: #4ade80; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+.perms-modal-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; }
 .perms-modal-close {
-  margin-left: auto; background: transparent; border: none;
-  color: var(--text3); cursor: pointer; width: 28px; height: 28px;
-  border-radius: 7px; display: flex; align-items: center; justify-content: center;
-  transition: all 0.12s;
+  background: rgba(255,255,255,0.06); border: none; color: rgba(255,255,255,0.5);
+  cursor: pointer; width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
 }
-.perms-modal-close:hover { background: var(--bg3); color: var(--text); }
-.perms-modal-body { padding: 16px 22px; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
-.perms-modal-body > p { font-size: 0.78rem; color: var(--text2); margin: 0 0 4px; line-height: 1.5; }
-.perm-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 10px; cursor: pointer; transition: all 0.12s;
+.perms-modal-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+/* Tabs */
+.perms-tabs {
+  display: flex; border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0 22px; flex-shrink: 0; gap: 0;
 }
-.perm-row:hover { border-color: var(--border2); }
-.perm-row.enabled { border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.06); }
-.perm-row-icon {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: var(--bg4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+.perms-tab {
+  background: transparent; border: none; border-bottom: 2px solid transparent;
+  color: rgba(255,255,255,0.4); font-family: 'Geist', sans-serif; font-size: 0.88rem;
+  font-weight: 500; padding: 10px 14px 9px; cursor: pointer; transition: all 0.14s;
+  margin-bottom: -1px;
 }
-.perm-row-icon svg { width: 14px; height: 14px; }
-.perm-row-info { flex: 1; }
-.perm-row-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
-.perm-row-danger { font-size: 0.7rem; color: #f87171; margin-top: 1px; }
-.perm-toggle {
-  width: 34px; height: 20px; border-radius: 10px;
-  background: var(--bg4); border: 1.5px solid var(--border2);
-  position: relative; flex-shrink: 0; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+.perms-tab.active { color: #fff; border-bottom-color: #fff; }
+.perms-tab:hover:not(.active) { color: rgba(255,255,255,0.7); }
+/* Body scroll */
+.perms-modal-body {
+  flex: 1; overflow-y: auto; padding: 16px 22px 10px;
+  scrollbar-width: thin; scrollbar-color: #333 transparent;
 }
-.perm-toggle::after {
-  content: ''; position: absolute; top: 2px; left: 2px;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--text3); transition: transform 0.15s, background 0.15s;
+.perms-modal-body::-webkit-scrollbar { width: 4px; }
+.perms-modal-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+/* Refresh btn */
+.perms-refresh-btn {
+  width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.85rem;
+  font-weight: 600; padding: 11px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 7px; transition: background 0.13s;
 }
-.perm-toggle.on { background: rgba(74,222,128,0.2); border-color: #4ade80; }
-.perm-toggle.on::after { transform: translateX(14px); background: #4ade80; }
+.perms-refresh-btn:hover { background: rgba(255,255,255,0.11); }
+/* Group labels */
+.perms-group-label {
+  font-size: 0.72rem; color: rgba(255,255,255,0.35); text-transform: uppercase;
+  letter-spacing: .07em; margin: 14px 0 8px; display: flex; align-items: center; gap: 7px;
+}
+.perms-badge {
+  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
+  border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; font-weight: 700;
+  text-transform: none; letter-spacing: 0;
+}
+/* Perm row v2 */
+.perm-row2 {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.perm-row2:last-child { border-bottom: none; }
+.perm-row2-left { flex: 1; }
+.perm-row2-title { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.perm-row2-desc { font-size: 0.78rem; color: rgba(255,255,255,0.45); line-height: 1.5; }
+.perm-row2-right { display: flex; align-items: center; flex-shrink: 0; padding-top: 2px; }
+/* Toggle v2 */
+.perm-toggle2 {
+  width: 38px; height: 22px; border-radius: 11px;
+  background: rgba(255,255,255,0.12); border: none;
+  position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+}
+.perm-toggle2::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(255,255,255,0.5); transition: transform 0.15s, background 0.15s;
+}
+.perm-toggle2.on { background: #22c55e; }
+.perm-toggle2.on::after { transform: translateX(16px); background: #fff; }
+/* Overview */
+.perms-overview { padding: 4px 0; }
+.perms-overview-row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.perms-overview-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+/* Footer */
 .perms-modal-footer {
-  padding: 14px 22px; border-top: 1px solid var(--border);
-  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 12px 22px 18px; display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.07);
 }
 .perms-btn-reconnect {
-  background: transparent; border: 1px solid var(--border2); border-radius: 9px;
-  color: var(--text2); font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 600;
-  padding: 8px 16px; cursor: pointer; transition: all 0.12s;
+  background: transparent; border: 1px solid rgba(255,255,255,0.15); border-radius: 9px;
+  color: rgba(255,255,255,0.6); font-family: 'Geist', sans-serif; font-size: 0.8rem;
+  font-weight: 600; padding: 8px 16px; cursor: pointer; transition: all 0.12s;
 }
-.perms-btn-reconnect:hover { background: var(--bg3); color: var(--text); }
+.perms-btn-reconnect:hover { background: rgba(255,255,255,0.07); color: #fff; }
 .perms-btn-save {
-  background: var(--text); border: none; border-radius: 9px;
-  color: var(--bg); font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 700;
+  background: #fff; border: none; border-radius: 9px; color: #000;
+  font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 700;
   padding: 8px 18px; cursor: pointer; transition: opacity 0.12s;
 }
 .perms-btn-save:hover { opacity: 0.88; }
@@ -2195,29 +2225,7 @@ async function showGoogleConnectInfo(conn) {
 async function getGmailToken(connId) {
   const entry = googleTokens[connId];
   if (!entry) return null;
-  const token = typeof entry === 'string' ? entry : entry.token;
-  if (!token) return null;
-  // Tester rapidement si le token est valide
-  try {
-    const test = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + token);
-    if (test.ok) return token;
-  } catch {}
-  // Token expiré → re-auth silencieuse
-  try {
-    const conn = CONNECTORS_LIST.find(c => c.id === connId);
-    if (!conn) return null;
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'none' });
-    getScopesForConnector(conn).forEach(s => provider.addScope(s));
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (credential?.accessToken) {
-      googleTokens[connId] = { token: credential.accessToken, ts: Date.now() };
-      saveGoogleTokens();
-      return credential.accessToken;
-    }
-  } catch {}
-  return null;
+  return typeof entry === 'string' ? entry : (entry.token || null);
 }
 
 // =============================================
@@ -2455,43 +2463,117 @@ const PERM_ICONS = {
 };
 const PERM_DANGER = { send: 'Action irréversible', delete: 'Action irréversible — emails mis à la corbeille', write: 'Modifie vos données' };
 
+const PERM_DESCS = {
+  read_inbox: "Lit les métadonnées (expéditeur, sujet, date) de vos emails.",
+  read_full: "Lit le contenu complet des emails. Prend un objet, des adresses et retourne le corps.",
+  send: "Envoie un email depuis votre compte Gmail. Prend un destinataire, objet et corps HTML.",
+  draft: "Crée un nouveau brouillon dans votre compte Gmail. Le brouillon n'est pas envoyé automatiquement.",
+  reply: "Répond à un email existant dans le même fil de discussion.",
+  delete: "Déplace un email à la corbeille. Retourne l'identifiant du message supprimé.",
+  labels: "Lit, crée et applique des étiquettes Gmail à vos emails.",
+  read: "Lit les données en lecture seule.",
+  write: "Modifie ou crée des données.",
+};
+function getPermDesc(id) { return PERM_DESCS[id] || "Accès à cette fonctionnalité."; }
+
 let _permsConnId = null;
 
-function openPermsModal(connId) {
+window.openPermsModal = function(connId) {
   const conn = CONNECTORS_LIST.find(c => c.id === connId);
   if (!conn) return;
   _permsConnId = connId;
 
-  $("perms-modal-icon-wrap").innerHTML = `<div style="background:${conn.color}20;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1.5px solid ${conn.color}30"><img src="${conn.icon}" width="24" height="24" style="object-fit:contain"></div>`;
+  $("perms-modal-icon-wrap").innerHTML = `<img src="${conn.icon}" alt="${conn.name}" width="36" height="36" style="object-fit:contain">`;
   $("perms-modal-title").textContent = conn.name;
-  $("perms-modal-sub").textContent = conn.connected ? 'Connecté — gérez les permissions ci-dessous' : 'Non connecté';
 
+  // Render tabs
   const body = $("perms-modal-body");
-  body.innerHTML = `<p>Activez ou désactivez chaque permission pour contrôler ce que l'IA peut faire avec <strong>${conn.name}</strong>.</p>`;
+  body.innerHTML = '';
 
-  (conn.availablePerms || []).forEach(perm => {
-    const row = document.createElement("div");
-    row.className = "perm-row" + (perm.enabled ? " enabled" : "");
-    row.dataset.id = perm.id;
-    const icon = PERM_ICONS[perm.id] || PERM_ICONS.read;
+  // Tab bar
+  const tabs = document.createElement("div");
+  tabs.className = "perms-tabs";
+  tabs.innerHTML = `<button class="perms-tab" data-tab="apercu">Aperçu</button><button class="perms-tab active" data-tab="fonctions">Fonctions</button>`;
+  body.appendChild(tabs);
+
+  // Tab content container
+  const tabContent = document.createElement("div");
+  tabContent.id = "perms-tab-content";
+  body.appendChild(tabContent);
+
+  function renderTab(tab) {
+    tabs.querySelectorAll('.perms-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    if (tab === 'apercu') {
+      tabContent.innerHTML = `
+        <div class="perms-overview">
+          <div class="perms-overview-row">
+            <div class="perms-overview-icon" style="background:${conn.color}18"><img src="${conn.icon}" width="22" height="22" style="object-fit:contain"></div>
+            <div>
+              <div style="font-size:0.9rem;font-weight:700;color:var(--text)">${conn.name}</div>
+              <div style="font-size:0.75rem;color:${conn.connected ? '#4ade80' : 'var(--text3)'}">● ${conn.connected ? 'Connecté' : 'Non connecté'}</div>
+            </div>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text2);line-height:1.6;margin:12px 0 0">${conn.desc}</p>
+          <div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border)">
+            <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Permissions actives</div>
+            ${(conn.availablePerms||[]).filter(p=>p.enabled).map(p=>`<div style="font-size:0.8rem;color:var(--text2);padding:3px 0">✓ ${p.label}</div>`).join('') || '<div style="font-size:0.8rem;color:var(--text3)">Aucune permission active</div>'}
+          </div>
+        </div>`;
+    } else {
+      const hasDanger = (conn.availablePerms||[]).some(p => PERM_DANGER[p.id]);
+      tabContent.innerHTML = `
+        <div style="margin-bottom:10px">
+          <button class="perms-refresh-btn" id="perms-refresh-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Actualiser les outils
+          </button>
+        </div>`;
+
+      // Grouper : lecture seule vs interactifs
+      const readOnly = (conn.availablePerms||[]).filter(p => !['send','draft','reply','delete','write','labels'].includes(p.id));
+      const interactive = (conn.availablePerms||[]).filter(p => ['send','draft','reply','delete','write','labels'].includes(p.id));
+
+      if (interactive.length) {
+        tabContent.innerHTML += `<div class="perms-group-label">Outils interactifs <span class="perms-badge">${interactive.length}</span></div>`;
+        interactive.forEach(perm => appendPermRow(tabContent, perm, conn));
+      }
+      if (readOnly.length) {
+        tabContent.innerHTML += `<div class="perms-group-label" style="margin-top:14px">Outils en lecture seule <span class="perms-badge">${readOnly.length}</span></div>`;
+        readOnly.forEach(perm => appendPermRow(tabContent, perm, conn));
+      }
+
+      $("perms-refresh-btn")?.addEventListener("click", () => { toast("Outils actualisés"); renderTab('fonctions'); });
+    }
+  }
+
+  function appendPermRow(container, perm, conn) {
     const danger = PERM_DANGER[perm.id] || "";
+    const row = document.createElement("div");
+    row.className = "perm-row2" + (perm.enabled ? " enabled" : "");
     row.innerHTML = `
-      <div class="perm-row-icon">${icon}</div>
-      <div class="perm-row-info">
-        <div class="perm-row-label">${perm.label}</div>
-        ${danger ? `<div class="perm-row-danger">⚠ ${danger}</div>` : ''}
+      <div class="perm-row2-left">
+        <div class="perm-row2-title">${perm.label}</div>
+        <div class="perm-row2-desc">${getPermDesc(perm.id)}${danger ? ` <span style="color:#f87171">⚠ ${danger}</span>` : ''}</div>
       </div>
-      <div class="perm-toggle ${perm.enabled ? 'on' : ''}" data-pid="${perm.id}"></div>
-    `;
-    row.addEventListener("click", () => {
-      const toggle = row.querySelector(".perm-toggle");
+      <div class="perm-row2-right">
+        <span style="font-size:0.72rem;color:var(--text3);margin-right:8px">Toujours autoriser</span>
+        <div class="perm-toggle2 ${perm.enabled ? 'on' : ''}" data-pid="${perm.id}"></div>
+      </div>`;
+    row.querySelector('.perm-toggle2').addEventListener("click", (e) => {
+      e.stopPropagation();
       perm.enabled = !perm.enabled;
-      toggle.classList.toggle("on", perm.enabled);
-      row.classList.toggle("enabled", perm.enabled);
+      row.querySelector('.perm-toggle2').classList.toggle('on', perm.enabled);
+      row.classList.toggle('enabled', perm.enabled);
     });
-    body.appendChild(row);
+    container.appendChild(row);
+  }
+
+  tabs.addEventListener("click", (e) => {
+    const tab = e.target.closest('.perms-tab')?.dataset.tab;
+    if (tab) renderTab(tab);
   });
 
+  renderTab('fonctions');
   $("perms-modal-overlay").classList.add("open");
 }
 
@@ -2905,7 +2987,26 @@ function appendThinking() {
   const g = document.createElement("div");
   g.className = "msg-group ai";
   g.id = "thinking-group";
-  g.innerHTML = `<div class="msg-inner"><div class="thinking-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Wikimind réfléchit...</span></div></div>`;
+
+  // Si connecteur actif, afficher "Ouverture de Gmail..." avec logo
+  let thinkingHTML = '';
+  if (activeConnectors.length > 0) {
+    const conn = CONNECTORS_LIST.find(c => c.id === activeConnectors[0]);
+    if (conn) {
+      thinkingHTML = `<div class="thinking-bubble thinking-connector">
+        <div class="thinking-conn-icon" style="background:${conn.color}20;border:1px solid ${conn.color}30">
+          <img src="${conn.icon}" alt="${conn.name}" width="14" height="14" style="object-fit:contain">
+        </div>
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
+        <span>Lecture de ${conn.name}...</span>
+      </div>`;
+    }
+  }
+  if (!thinkingHTML) {
+    thinkingHTML = `<div class="thinking-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Wikimind réfléchit...</span></div>`;
+  }
+
+  g.innerHTML = `<div class="msg-inner">${thinkingHTML}</div>`;
   messagesEl.appendChild(g);
   scrollBottom();
   return g;
@@ -3681,17 +3782,15 @@ runPlaceholder();
   <div id="perms-modal">
     <div class="perms-modal-head">
       <div class="perms-modal-icon" id="perms-modal-icon-wrap"></div>
-      <div>
+      <div class="perms-modal-head-info">
         <div class="perms-modal-title" id="perms-modal-title">Permissions</div>
-        <div class="perms-modal-sub" id="perms-modal-sub">Gérez ce que l'IA peut faire avec ce connecteur</div>
+        <div class="perms-modal-status">Connecté</div>
       </div>
       <button class="perms-modal-close" id="perms-modal-close-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="perms-modal-body" id="perms-modal-body">
-      <p>Activez ou désactivez chaque permission pour contrôler ce que l'IA peut faire.</p>
-    </div>
+    <div class="perms-modal-body" id="perms-modal-body"></div>
     <div class="perms-modal-footer">
       <button class="perms-btn-reconnect" id="perms-btn-reconnect">Re-connecter</button>
       <button class="perms-btn-save" id="perms-btn-save">Enregistrer</button>
