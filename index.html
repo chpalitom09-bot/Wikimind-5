@@ -1526,9 +1526,9 @@ body.chat-empty-state #input-container {
 }
 .pm-connector-item:hover { background: var(--bg3); }
 .pm-connector-item img {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
   object-fit: contain;
 }
 .pm-connector-item-info { flex: 1; min-width: 0; }
@@ -1657,12 +1657,11 @@ body.chat-empty-state #input-container {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  padding: 6px;
 }
 .connector-card-icon img {
-  width: 100%; height: 100%;
+  width: 28px; height: 28px;
   object-fit: contain;
-  border-radius: 0;
+  border-radius: 4px;
 }
 .connector-card-info { flex: 1; min-width: 0; }
 .connector-card-name {
@@ -2269,9 +2268,8 @@ $("sidebar-code-btn").addEventListener("click", () => {
   btn.classList.toggle("code-active", window._wmCodeMode);
   
   if (window._wmCodeMode) {
-    // Basculer vers Code 5.1 (Codestral)
-    const codeModel = WIKIMIND_MODELS.find(m => m.id === 'wm-code-5.1')
-      || WIKIMIND_MODELS.find(m => m.id === 'wm-large-5.2')
+    // Basculer vers le meilleur modèle code disponible
+    const codeModel = WIKIMIND_MODELS.find(m => m.id === 'wm-large-5.2') // Codestral
       || WIKIMIND_MODELS.find(m => m.tier === 'large');
     if (codeModel) {
       applyModelById(codeModel.id);
@@ -3021,13 +3019,7 @@ async function loadModels() {
     if (!res.ok) throw new Error("fetch models.json failed");
     const data = await res.json();
     WIKIMIND_MODELS = data.models;
-    if (data.apiKeys) {
-      WM_API_KEYS = data.apiKeys;
-      // Si groq key est le placeholder, utiliser la clé assemblée dans le HTML
-      if (!WM_API_KEYS.groq || WM_API_KEYS.groq === '__SPLIT__' || WM_API_KEYS.groq === 'NOUVELLE_CLE_GROQ_ICI') {
-        WM_API_KEYS.groq = _gk;
-      }
-    }
+    if (data.apiKeys) WM_API_KEYS = data.apiKeys;
     const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
     selectedModel     = def.apiModel;
     selectedModelName = def.displayName;
@@ -3072,10 +3064,7 @@ function providerBadge(provider) {
   return "";
 }
 
-function codeBadge() {
-  return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
-    background:rgba(77,143,255,0.15);color:#4d8fff;border-radius:4px;padding:1px 5px;margin-left:4px;">CODE</span>`;
-}
+function visionBadge() {
   return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
     background:rgba(74,222,128,0.15);color:#4ade80;border-radius:4px;padding:1px 5px;margin-left:4px;">VISION</span>`;
 }
@@ -3090,10 +3079,9 @@ function buildMainDropdown() {
   let html = "";
   mainModels.forEach(m => {
     const sel = m.apiModel === selectedModel;
-    const badge = m.isCodeModel ? codeBadge() : '';
     html += `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}">
       <div class="model-opt-info">
-        <div class="model-opt-name" style="display:flex;align-items:center;gap:4px">${m.displayName}${badge}</div>
+        <div class="model-opt-name">${m.displayName}</div>
         <div class="model-opt-desc">${m.description}</div>
       </div>${checkSVG()}</div>`;
   });
@@ -3546,10 +3534,7 @@ function appendThinking() {
     }
   }
   if (!thinkingHTML) {
-    const _tier = window._wmSelectedModelObj?.tier || 'small';
-    const isSlow = _tier === 'medium' || _tier === 'large';
-    const thinkMsg = isSlow ? `Wikimind réfléchit…` : `Wikimind réfléchit...`;
-    thinkingHTML = `<div class="thinking-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><span>${thinkMsg}</span></div>`;
+    thinkingHTML = `<div class="thinking-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Wikimind réfléchit...</span></div>`;
   }
 
   g.innerHTML = `<div class="msg-inner">${thinkingHTML}</div>`;
@@ -3874,42 +3859,6 @@ async function doStream(userText, isRegen, visionContent = null) {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
 
-    const _tier = window._wmSelectedModelObj?.tier || 'small';
-    const _isCode = window._wmSelectedModelObj?.isCodeModel || false;
-    // Flash et Small → streaming token par token (rapide, pas de freeze)
-    // Medium, Large, Code → batch mode (accumule + render final fluide)
-    const isBatchMode = (_tier === 'medium' || _tier === 'large' || _isCode);
-
-    // Throttle DOM update — on re-render au max toutes les 80ms (anti-freeze)
-    let _lastRender = 0;
-    let _rafPending = false;
-    let _bubble = null;
-
-    function scheduleRender() {
-      if (_rafPending) return;
-      _rafPending = true;
-      requestAnimationFrame(() => {
-        _rafPending = false;
-        const now = Date.now();
-        if (now - _lastRender < 80) {
-          // Trop tôt → reschedule
-          setTimeout(scheduleRender, 80 - (now - _lastRender));
-          return;
-        }
-        _lastRender = now;
-        if (!_bubble) return;
-        // En mode batch on affiche juste le texte brut pendant le streaming
-        if (isBatchMode) {
-          _bubble.textContent = aiMsgObj.content + "▌";
-        } else {
-          _bubble.innerHTML = renderContent(aiMsgObj.content);
-          addCodeButtons(_bubble);
-        }
-        scrollBottom();
-      });
-    }
-
-    // Collecte les tokens
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -3927,18 +3876,15 @@ async function doStream(userText, isRegen, visionContent = null) {
                 const content = json.choices[0].delta.content;
                 aiMsgObj.content += content;
 
-                if (!_bubble) {
+                let bubble = document.getElementById("stream-bubble");
+                if (!bubble) {
                   removeThinking();
                   appendAIMsg(aiMsgObj, true);
-                  _bubble = document.getElementById("stream-bubble");
-                  if (isBatchMode && _bubble) {
-                    _bubble.style.fontFamily = "'Geist Mono', monospace";
-                    _bubble.style.fontSize = "0.85rem";
-                    _bubble.style.whiteSpace = "pre-wrap";
-                    _bubble.style.color = "var(--text2)";
-                  }
+                  bubble = document.getElementById("stream-bubble");
+                } else {
+                  bubble.innerHTML = renderContent(aiMsgObj.content);
+                  addCodeButtons(bubble);
                 }
-                scheduleRender();
               }
             } catch (e) { /* ignore */ }
           }
@@ -3952,23 +3898,8 @@ async function doStream(userText, isRegen, visionContent = null) {
     const streamBubble = document.getElementById("stream-bubble");
     if (streamBubble) {
       streamBubble.id = "";
-      if (isBatchMode) {
-        // Fast-type animation — render markdown final, puis anime le reveal
-        streamBubble.style.fontFamily = "";
-        streamBubble.style.fontSize = "";
-        streamBubble.style.whiteSpace = "";
-        streamBubble.style.color = "";
-        streamBubble.innerHTML = renderContent(aiMsgObj.content);
-        addCodeButtons(streamBubble);
-        // Petite animation fade-in douce sur le contenu final
-        streamBubble.style.opacity = "0";
-        streamBubble.style.transition = "opacity 0.25s ease";
-        requestAnimationFrame(() => { streamBubble.style.opacity = "1"; });
-      } else {
-        streamBubble.innerHTML = renderContent(aiMsgObj.content);
-        addCodeButtons(streamBubble);
-      }
-      scrollBottom();
+      streamBubble.innerHTML = renderContent(aiMsgObj.content);
+      addCodeButtons(streamBubble);
     } else {
       appendAIMsg(aiMsgObj);
     }
