@@ -3,7 +3,7 @@
   "defaultModel": "wm-small-5.1",
   "apiKeys": {
     "mistral": "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj",
-    "groq": "NOUVELLE_CLE_GROQ_ICI"
+    "groq": "__SPLIT__"
   },
   "models": [
     {
@@ -47,6 +47,21 @@
       "supportsStreaming": true,
       "maxTokens": 32768,
       "contextWindow": 131072
+    },
+    {
+      "id": "wm-code-5.1",
+      "displayName": "Code 5.1",
+      "apiModel": "codestral-latest",
+      "tier": "large",
+      "category": "main",
+      "description": "Spécialisé code, 80+ langages",
+      "provider": "mistral",
+      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 32768,
+      "contextWindow": 262144,
+      "isCodeModel": true
     },
     {
       "id": "wm-flash-groq-llama-instant",
