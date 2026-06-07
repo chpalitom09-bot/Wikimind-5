@@ -1810,33 +1810,55 @@ const CONNECTORS_LIST = [
     id: 'gmail',
     name: 'Gmail',
     desc: 'Accédez à vos emails et envoyez des messages',
-    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>`,
+    icon: 'gmail-connect.png',
     color: '#EA4335',
-    connected: false
+    connected: false,
+    // Toutes les permissions possibles pour ce connecteur
+    availablePerms: [
+      { id: 'read_inbox',    label: 'Lire les emails',        scope: 'https://www.googleapis.com/auth/gmail.readonly', enabled: true },
+      { id: 'read_full',     label: 'Lire le contenu complet',scope: 'https://www.googleapis.com/auth/gmail.readonly', enabled: true },
+      { id: 'send',          label: 'Envoyer des emails',     scope: 'https://www.googleapis.com/auth/gmail.send',     enabled: false },
+      { id: 'draft',         label: 'Créer des brouillons',   scope: 'https://www.googleapis.com/auth/gmail.compose', enabled: false },
+      { id: 'reply',         label: 'Répondre aux emails',    scope: 'https://www.googleapis.com/auth/gmail.compose', enabled: false },
+      { id: 'delete',        label: 'Supprimer des emails',   scope: 'https://mail.google.com/',                       enabled: false },
+      { id: 'labels',        label: 'Gérer les étiquettes',   scope: 'https://www.googleapis.com/auth/gmail.labels',  enabled: false },
+    ]
   },
   {
     id: 'gcalendar',
     name: 'Google Calendar',
     desc: 'Consultez et gérez vos événements',
-    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.89 4 3 4.9 3 6v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z" fill="#4285F4"/></svg>`,
+    icon: 'calendar-connect.png',
     color: '#4285F4',
-    connected: false
+    connected: false,
+    availablePerms: [
+      { id: 'read',   label: 'Lire les événements',    scope: 'https://www.googleapis.com/auth/calendar.readonly', enabled: true },
+      { id: 'write',  label: 'Créer des événements',   scope: 'https://www.googleapis.com/auth/calendar',         enabled: false },
+      { id: 'delete', label: 'Supprimer des événements',scope:'https://www.googleapis.com/auth/calendar',         enabled: false },
+    ]
   },
   {
     id: 'gsheets',
     name: 'Google Sheets',
     desc: 'Lisez et écrivez dans vos feuilles de calcul',
-    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M19.77 3H14v2h2v2h-2v2h2v2h-2v2h2v2h-2v2h2v2H5V5h7V3H4.23C3.55 3 3 3.55 3 4.23v15.54C3 20.45 3.55 21 4.23 21h15.54c.68 0 1.23-.55 1.23-1.23V4.23C21 3.55 20.45 3 19.77 3zM7 7h5v2H7zm0 4h5v2H7zm0 4h5v2H7z" fill="#34A853"/></svg>`,
+    icon: 'sheet-connect.png',
     color: '#34A853',
-    connected: false
+    connected: false,
+    availablePerms: [
+      { id: 'read',   label: 'Lire les feuilles',      scope: 'https://www.googleapis.com/auth/spreadsheets.readonly', enabled: true },
+      { id: 'write',  label: 'Modifier les feuilles',  scope: 'https://www.googleapis.com/auth/spreadsheets',          enabled: false },
+    ]
   },
   {
-    id: 'gdrive',
-    name: 'Google Drive',
-    desc: 'Accédez à vos fichiers et documents',
-    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" fill="#F9AB00"/><path d="M22.003 21.252c0 .969-.786 1.755-1.755 1.755H3.752c-.969 0-1.755-.786-1.755-1.755V2.748c0-.969.786-1.755 1.755-1.755h16.496c.969 0 1.755.786 1.755 1.755v18.504zm-8.37-5.148h-.557v2.808c0 .149-.006.278-.011.385h.568v-3.193zm-3.073 3.193h.588v-1.243h.546c.534 0 .876-.271.876-.694a.72.72 0 00-.719-.72H10.56v2.657zm-2.2-2.657h-.621v2.657h.621v-2.657z" fill="#F9AB00"/></svg>`,
+    id: 'ganalytics',
+    name: 'Google Analytics',
+    desc: 'Analysez le trafic et les performances',
+    icon: 'analytics-connect.png',
     color: '#F9AB00',
-    connected: false
+    connected: false,
+    availablePerms: [
+      { id: 'read', label: 'Lire les données', scope: 'https://www.googleapis.com/auth/analytics.readonly', enabled: true },
+    ]
   }
 ];
 
@@ -1847,7 +1869,13 @@ function loadConnectorsState() {
     if (saved) {
       const state = JSON.parse(saved);
       CONNECTORS_LIST.forEach(c => {
-        if (state[c.id] !== undefined) c.connected = state[c.id];
+        if (state[c.id] !== undefined) c.connected = state[c.id].connected ?? state[c.id];
+        if (state[c.id]?.perms) {
+          state[c.id].perms.forEach(sp => {
+            const perm = c.availablePerms?.find(p => p.id === sp.id);
+            if (perm) perm.enabled = sp.enabled;
+          });
+        }
       });
     }
   } catch {}
@@ -1855,7 +1883,12 @@ function loadConnectorsState() {
 
 function saveConnectorsState() {
   const state = {};
-  CONNECTORS_LIST.forEach(c => { state[c.id] = c.connected; });
+  CONNECTORS_LIST.forEach(c => {
+    state[c.id] = {
+      connected: c.connected,
+      perms: c.availablePerms?.map(p => ({ id: p.id, enabled: p.enabled })) || []
+    };
+  });
   localStorage.setItem('wm_connectors', JSON.stringify(state));
 }
 
@@ -1966,22 +1999,31 @@ function renderConnectorsGrid() {
   const grid = $("connectors-grid");
   grid.innerHTML = "";
   CONNECTORS_LIST.forEach(conn => {
+    const enabledCount = conn.availablePerms?.filter(p => p.enabled).length || 0;
     const card = document.createElement("div");
     card.className = "connector-card" + (conn.connected ? " connected" : "");
     card.innerHTML = `
-      <div class="connector-card-icon" style="background:${conn.color}18;border:1.5px solid ${conn.color}30">
-        ${conn.svgIcon}
+      <div class="connector-card-icon">
+        <img src="${conn.icon}" alt="${conn.name}" width="28" height="28" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-size:1.3rem>${conn.name[0]}</span>'">
       </div>
       <div class="connector-card-info">
         <div class="connector-card-name">${conn.name}</div>
-        <div class="connector-card-desc">${conn.desc}</div>
+        <div class="connector-card-desc">${conn.connected ? `${enabledCount} permission${enabledCount > 1 ? 's' : ''} active${enabledCount > 1 ? 's' : ''}` : conn.desc}</div>
       </div>
-      <div class="connector-card-status ${conn.connected ? 'connected' : 'disconnected'}">
-        <div class="connector-status-dot"></div>
-        ${conn.connected ? 'Connecté' : 'Connecter'}
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${conn.connected ? `<button class="conn-perms-btn" data-id="${conn.id}" title="Gérer les permissions" onclick="event.stopPropagation();openPermsModal('${conn.id}')">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </button>` : ''}
+        <div class="connector-card-status ${conn.connected ? 'connected' : 'disconnected'}">
+          <div class="connector-status-dot"></div>
+          ${conn.connected ? 'Connecté' : 'Connecter'}
+        </div>
       </div>
     `;
-    card.addEventListener("click", () => toggleConnector(conn.id));
+    card.addEventListener("click", (e) => {
+      if (e.target.closest('.conn-perms-btn')) return;
+      toggleConnector(conn.id);
+    });
     grid.appendChild(card);
   });
 }
@@ -2012,30 +2054,32 @@ function toggleConnector(connId) {
   renderActiveConnectorsRow();
 }
 
-// Tokens OAuth Google stockés par connecteur
+// =============================================
+// OAUTH GOOGLE RÉEL + GESTION TOKENS
+// =============================================
 const googleTokens = {};
 try { Object.assign(googleTokens, JSON.parse(localStorage.getItem('wm_google_tokens') || '{}')); } catch {}
-
 function saveGoogleTokens() { localStorage.setItem('wm_google_tokens', JSON.stringify(googleTokens)); }
 
-const GOOGLE_SCOPES = {
-  gmail: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
-  gcalendar: 'https://www.googleapis.com/auth/calendar.readonly',
-  gsheets: 'https://www.googleapis.com/auth/spreadsheets.readonly',
-  gdrive: 'https://www.googleapis.com/auth/drive.readonly'
-};
+// Calculer les scopes nécessaires selon permissions activées
+function getScopesForConnector(conn) {
+  if (!conn.availablePerms) return [];
+  const scopes = new Set();
+  conn.availablePerms.filter(p => p.enabled).forEach(p => scopes.add(p.scope));
+  return Array.from(scopes);
+}
 
 async function showGoogleConnectInfo(conn) {
-  // Utiliser Firebase signInWithPopup avec les scopes Gmail
   try {
     const provider = new GoogleAuthProvider();
-    const scope = GOOGLE_SCOPES[conn.id];
-    if (scope) scope.split(' ').forEach(s => provider.addScope(s));
-    
+    // Forcer le re-consentement pour obtenir un access_token frais
+    provider.setCustomParameters({ prompt: 'consent', access_type: 'offline' });
+    getScopesForConnector(conn).forEach(s => provider.addScope(s));
+
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (credential?.accessToken) {
-      googleTokens[conn.id] = credential.accessToken;
+      googleTokens[conn.id] = { token: credential.accessToken, ts: Date.now() };
       saveGoogleTokens();
     }
     conn.connected = true;
@@ -2044,41 +2088,183 @@ async function showGoogleConnectInfo(conn) {
     renderPlusMenuConnectors();
     toast(`${conn.name} connecté ✓`);
   } catch (err) {
-    // Si déjà connecté sans re-auth, on simule quand même la connexion
-    conn.connected = true;
-    saveConnectorsState();
-    renderConnectorsGrid();
-    renderPlusMenuConnectors();
-    toast(`${conn.name} connecté`);
+    console.error('OAuth error:', err);
+    if (err.code === 'auth/popup-closed-by-user') { toast('Connexion annulée'); return; }
+    toast(`Erreur de connexion : ${err.message?.slice(0,60) || err.code}`);
   }
 }
 
-// Construire le contexte connecteur Gmail pour le prompt
-async function buildConnectorContext(connId) {
-  if (connId === 'gmail' && googleTokens.gmail) {
-    try {
-      const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5&q=is:unread', {
-        headers: { 'Authorization': 'Bearer ' + googleTokens.gmail }
-      });
-      if (!res.ok) return `[Gmail connecté - impossible de lire les emails (token expiré)]`;
-      const data = await res.json();
-      if (!data.messages?.length) return `[Gmail : aucun email non lu]`;
-      
-      const emails = await Promise.all(data.messages.slice(0, 3).map(async m => {
-        const em = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From,Subject,Date`, {
-          headers: { 'Authorization': 'Bearer ' + googleTokens.gmail }
-        });
-        const ed = await em.json();
-        const headers = ed.payload?.headers || [];
-        const get = (name) => headers.find(h => h.name === name)?.value || '';
-        return `- De: ${get('From')} | Sujet: ${get('Subject')} | ${get('Date')}`;
-      }));
-      
-      return `[Gmail — ${data.messages.length} email(s) non lus]\nDerniers emails non lus :\n${emails.join('\n')}`;
-    } catch { return `[Gmail connecté - erreur de lecture]`; }
+// Obtenir le token Gmail (renouveler si nécessaire)
+async function getGmailToken(connId) {
+  const entry = googleTokens[connId];
+  if (!entry) return null;
+  const token = typeof entry === 'string' ? entry : entry.token;
+  if (!token) return null;
+  // Tester rapidement si le token est valide
+  try {
+    const test = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + token);
+    if (test.ok) return token;
+  } catch {}
+  // Token expiré → re-auth silencieuse
+  try {
+    const conn = CONNECTORS_LIST.find(c => c.id === connId);
+    if (!conn) return null;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'none' });
+    getScopesForConnector(conn).forEach(s => provider.addScope(s));
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential?.accessToken) {
+      googleTokens[connId] = { token: credential.accessToken, ts: Date.now() };
+      saveGoogleTokens();
+      return credential.accessToken;
+    }
+  } catch {}
+  return null;
+}
+
+// =============================================
+// GMAIL API — lecture complète
+// =============================================
+async function gmailFetch(path, token) {
+  const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${path}`, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  if (!res.ok) throw new Error(`Gmail API ${res.status}: ${await res.text().catch(()=>'')}`);
+  return res.json();
+}
+
+function decodeBase64(str) {
+  try {
+    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    return decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  } catch { return ''; }
+}
+
+function extractEmailBody(payload) {
+  if (!payload) return '';
+  // Texte brut d'abord
+  if (payload.mimeType === 'text/plain' && payload.body?.data) return decodeBase64(payload.body.data);
+  // Sinon HTML
+  if (payload.mimeType === 'text/html' && payload.body?.data) {
+    const html = decodeBase64(payload.body.data);
+    return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
   }
+  // Parts récursif
+  if (payload.parts) {
+    for (const part of payload.parts) {
+      const body = extractEmailBody(part);
+      if (body) return body;
+    }
+  }
+  return '';
+}
+
+// Construire le contexte complet pour l'IA
+async function buildConnectorContext(connId) {
   const conn = CONNECTORS_LIST.find(c => c.id === connId);
+  if (!conn?.connected) return '';
+
+  if (connId === 'gmail') {
+    const token = await getGmailToken('gmail');
+    if (!token) return `[Gmail : token manquant — reconnectez le connecteur]`;
+
+    const hasPerm = (id) => conn.availablePerms?.find(p => p.id === id)?.enabled;
+
+    try {
+      // Récupérer les 10 derniers emails (lus + non lus)
+      const list = await gmailFetch('messages?maxResults=10', token);
+      if (!list.messages?.length) return `[Gmail : boîte vide ou inaccessible]`;
+
+      const emails = await Promise.all(list.messages.slice(0, hasPerm('read_full') ? 5 : 3).map(async m => {
+        const msg = await gmailFetch(`messages/${m.id}?format=${hasPerm('read_full') ? 'full' : 'metadata'}&metadataHeaders=From,Subject,Date,To`, token);
+        const hdrs = msg.payload?.headers || [];
+        const h = (n) => hdrs.find(x => x.name === n)?.value || '';
+        const snippet = msg.snippet ? msg.snippet.slice(0, 200) : '';
+        const body = hasPerm('read_full') ? extractEmailBody(msg.payload) : snippet;
+        const unread = msg.labelIds?.includes('UNREAD') ? '🔴' : '📧';
+        return `${unread} ID:${m.id}\n  De: ${h('From')}\n  À: ${h('To')}\n  Sujet: ${h('Subject')}\n  Date: ${h('Date')}\n  ${body ? `Contenu: ${body.slice(0,300)}` : `Aperçu: ${snippet}`}`;
+      }));
+
+      const permsList = conn.availablePerms?.filter(p => p.enabled).map(p => p.label).join(', ');
+      return `[Gmail — ${list.messages.length}+ emails récupérés | Permissions: ${permsList}]\n\n${emails.join('\n\n')}`;
+    } catch (err) {
+      console.error('Gmail API error:', err);
+      return `[Gmail : erreur de lecture — ${err.message}]`;
+    }
+  }
+
+  if (connId === 'gcalendar') {
+    const token = await getGmailToken('gcalendar');
+    if (!token) return `[Google Calendar : reconnectez le connecteur]`;
+    try {
+      const now = new Date().toISOString();
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=5&timeMin=${now}&orderBy=startTime&singleEvents=true`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (!data.items?.length) return `[Google Calendar : aucun événement à venir]`;
+      const events = data.items.map(e => `- ${e.summary} | ${e.start?.dateTime || e.start?.date}`).join('\n');
+      return `[Google Calendar — ${data.items.length} événements à venir]\n${events}`;
+    } catch (err) { return `[Google Calendar : erreur — ${err.message}]`; }
+  }
+
   return conn ? `[${conn.name} connecté]` : '';
+}
+
+// =============================================
+// GMAIL — ACTIONS (envoyer, brouillon, répondre, supprimer)
+// =============================================
+async function gmailSend(to, subject, body, replyToMsgId = null) {
+  const conn = CONNECTORS_LIST.find(c => c.id === 'gmail');
+  const hasSend = conn?.availablePerms?.find(p => p.id === 'send')?.enabled;
+  if (!hasSend) return { error: 'Permission "Envoyer des emails" non activée' };
+  const token = await getGmailToken('gmail');
+  if (!token) return { error: 'Token Gmail manquant' };
+
+  const mimeMsg = [`To: ${to}`, `Subject: ${subject}`, 'Content-Type: text/plain; charset=utf-8', '', body].join('\n');
+  const encoded = btoa(unescape(encodeURIComponent(mimeMsg))).replace(/\+/g, '-').replace(/\//g, '_');
+  const payload = replyToMsgId ? { raw: encoded, threadId: replyToMsgId } : { raw: encoded };
+  try {
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) return { error: `Erreur envoi: ${res.status}` };
+    return { success: true };
+  } catch (e) { return { error: e.message }; }
+}
+
+async function gmailCreateDraft(to, subject, body) {
+  const conn = CONNECTORS_LIST.find(c => c.id === 'gmail');
+  if (!conn?.availablePerms?.find(p => p.id === 'draft')?.enabled) return { error: 'Permission "Créer des brouillons" non activée' };
+  const token = await getGmailToken('gmail');
+  if (!token) return { error: 'Token Gmail manquant' };
+  const mimeMsg = [`To: ${to}`, `Subject: ${subject}`, 'Content-Type: text/plain; charset=utf-8', '', body].join('\n');
+  const encoded = btoa(unescape(encodeURIComponent(mimeMsg))).replace(/\+/g, '-').replace(/\//g, '_');
+  try {
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: { raw: encoded } })
+    });
+    if (!res.ok) return { error: `Erreur brouillon: ${res.status}` };
+    return { success: true };
+  } catch (e) { return { error: e.message }; }
+}
+
+async function gmailDelete(msgId) {
+  const conn = CONNECTORS_LIST.find(c => c.id === 'gmail');
+  if (!conn?.availablePerms?.find(p => p.id === 'delete')?.enabled) return { error: 'Permission "Supprimer des emails" non activée' };
+  const token = await getGmailToken('gmail');
+  if (!token) return { error: 'Token Gmail manquant' };
+  try {
+    await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msgId}/trash`, {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + token }
+    });
+    return { success: true };
+  } catch (e) { return { error: e.message }; }
 }
 
 // Rendu connecteurs actifs dans le menu +
