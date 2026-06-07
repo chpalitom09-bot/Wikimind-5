@@ -1079,10 +1079,10 @@ body.chat-empty-state #input-container {
 .i-btn {
   width: 30px;
   height: 30px;
-  border-radius: 7px;
-  border: none;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
   background: transparent;
-  color: var(--text3);
+  color: var(--text2);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1092,6 +1092,7 @@ body.chat-empty-state #input-container {
 .i-btn:hover {
   background: var(--bg3);
   color: var(--text);
+  border-color: var(--border2);
 }
 
 /* ========== MODEL SELECTOR ========== */
@@ -1240,24 +1241,22 @@ body.chat-empty-state #input-container {
 
 /* ========== PLUS MENU ========== */
 #plus-menu {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 0;
+  position: fixed;
   background: var(--bg2);
   border: 1px solid var(--border2);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  z-index: 200;
+  z-index: 10001;
   min-width: 240px;
-  box-shadow: 0 10px 36px rgba(0,0,0,0.65);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.85);
   display: none;
 }
 #plus-menu.open {
   display: block;
-  animation: fadeUp2 0.15s ease;
+  animation: fadeUp2 0.15s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 @keyframes fadeUp2 {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -3108,23 +3107,30 @@ function applyModel(modelObj) {
   document.querySelectorAll(`[data-model-id="${modelObj.id}"]`).forEach(o => o.classList.add("selected"));
 }
 
+function positionAboveBtn(el, btn) {
+  const r = btn.getBoundingClientRect();
+  el.style.top = "auto";
+  el.style.bottom = (window.innerHeight - r.top + 8) + "px";
+  // Aligner à gauche du bouton, sans déborder à droite
+  let left = r.left;
+  const elW = el.offsetWidth || 260;
+  if (left + elW > window.innerWidth - 8) left = window.innerWidth - elW - 8;
+  if (left < 8) left = 8;
+  el.style.left = left + "px";
+}
+
 function positionDropdown() {
-  const btnRect = bubbleModelBtn.getBoundingClientRect();
-  bubbleModelDropdown.style.left = btnRect.left + "px";
-  bubbleModelDropdown.style.bottom = (window.innerHeight - btnRect.top + 8) + "px";
-  bubbleModelDropdown.style.top = "auto";
+  positionAboveBtn(bubbleModelDropdown, bubbleModelBtn);
 }
 
 function positionMorePanel() {
   const ddRect = bubbleModelDropdown.getBoundingClientRect();
-  modelMorePanel.style.left = (ddRect.right + 6) + "px";
+  const panelW = modelMorePanel.offsetWidth || 260;
+  let left = ddRect.right + 6;
+  if (left + panelW > window.innerWidth - 8) left = ddRect.left - panelW - 6;
+  modelMorePanel.style.left = left + "px";
   modelMorePanel.style.bottom = (window.innerHeight - ddRect.bottom) + "px";
   modelMorePanel.style.top = "auto";
-  // Check if overflows right
-  const panelW = 260;
-  if (ddRect.right + 6 + panelW > window.innerWidth - 8) {
-    modelMorePanel.style.left = (ddRect.left - panelW - 6) + "px";
-  }
 }
 
 function toggleMorePanel(moreBtn) {
@@ -3142,6 +3148,7 @@ function closeModelDD() {
   bubbleModelDropdown.classList.remove("open");
   modelMorePanel.classList.remove("open");
   modelOverlay.classList.remove("open");
+  plusMenu.classList.remove("open");
 }
 
 bubbleModelBtn.addEventListener("click", (e) => {
@@ -3168,7 +3175,17 @@ modelMorePanel.addEventListener("click", (e) => e.stopPropagation());
 plusBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   renderPlusMenuConnectors();
-  plusMenu.classList.toggle("open");
+  const willOpen = !plusMenu.classList.contains("open");
+  closeModelDD();
+  if (willOpen) {
+    plusMenu.classList.add("open");
+    // Forcer affichage pour mesurer, puis positionner
+    requestAnimationFrame(() => positionAboveBtn(plusMenu, plusBtn));
+    modelOverlay.classList.add("open");
+  } else {
+    plusMenu.classList.remove("open");
+    modelOverlay.classList.remove("open");
+  }
 });
 
 document.addEventListener("click", () => {
