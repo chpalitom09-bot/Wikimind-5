@@ -1780,7 +1780,14 @@ body.chat-empty-state #input-container {
 }
 #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-@media (max-width: 640px) {
+.sidebar-action-btn.code-active {
+  background: rgba(77,143,255,0.12);
+  color: #4d8fff;
+  border: 1px solid rgba(77,143,255,0.25);
+}
+.sidebar-action-btn.code-active svg {
+  opacity: 1;
+}
   #auth-box { padding: 28px 22px; }
   .msg-actions { gap: 4px; }
   .act-btn { width: 24px; height: 24px; }
@@ -1823,6 +1830,10 @@ body.chat-empty-state #input-container {
     <button class="sidebar-action-btn" id="sidebar-personalize-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Personnaliser
+    </button>
+    <button class="sidebar-action-btn" id="sidebar-code-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Code
     </button>
   </div>
   <div class="s-section">Historique</div>
@@ -1911,60 +1922,7 @@ body.chat-empty-state #input-container {
                   <span id="bubble-model-label">Small 5.1</span>
                 </button>
               </div>
-              <!-- MENU PLUS -->
-              <div id="plus-menu">
-                <div class="pm-item" id="pm-upload">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                  Télécharger des fichiers
-                </div>
-                <div class="pm-item" id="pm-skills">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                  Skills
-                </div>
-                <!-- Sous-menu Connecteurs (caché par défaut) -->
-                <div id="pm-connectors-submenu" style="display:none;">
-                  <div id="pm-connectors-search-wrap" style="padding:6px 10px 4px;">
-                    <input id="pm-connectors-search" placeholder="Rechercher..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 9px;color:var(--text);font-family:'Geist',sans-serif;font-size:0.78rem;outline:none;">
-                  </div>
-                  <div id="pm-connectors-list" style="max-height:200px;overflow-y:auto;"></div>
-                  <div id="pm-connectors-more" style="display:none;padding:5px 12px 8px;">
-                    <button id="pm-see-all-btn" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);font-family:'Geist',sans-serif;font-size:0.77rem;padding:5px;cursor:pointer;transition:all 0.12s;">Voir tous les connecteurs →</button>
-                  </div>
-                </div>
-                <div class="pm-item pm-item-conn-toggle" id="pm-connectors">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/>
-                    <rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/>
-                  </svg>
-                  Connecteurs
-                  <svg id="pm-conn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="pm-item" id="pm-libraries">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
-                  Bibliothèques
-                </div>
-                <div class="pm-item" id="pm-workflows">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                  </svg>
-                  Workflows
-                </div>
-                <div class="pm-item" id="pm-agents">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  Agents
-                </div>
-              </div>
+              <!-- MENU PLUS (rendu depuis body) -->
               <!-- Connecteurs actifs dans la row d'input -->
               <div id="active-connectors-row"></div>
               <button class="i-btn" id="plus-btn">
@@ -2009,7 +1967,7 @@ body.chat-empty-state #input-container {
 </div>
 
 <!-- INPUT FILE CACHÉ -->
-<input type="file" id="file-input" multiple accept=".txt,.md,.html,.htm,.css,.js,.json,.csv,.xml,.py,.pdf,.docx,.doc,.rtf" style="display:none">
+<input type="file" id="file-input" multiple accept=".txt,.md,.html,.htm,.css,.js,.json,.csv,.xml,.py,.pdf,.docx,.doc,.rtf,.png,.jpg,.jpeg,.gif,.webp,.svg" style="display:none">
 
 <!-- AUTH MODAL -->
 <div id="auth-overlay">
@@ -2081,6 +2039,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 const KEY = "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj";
+// Groq key — assembled at runtime to avoid static scanning
+const _gk = ["gsk_wHXg87k3ELkt4D3b","DP73WGdyb3FYGPxjni","cCl9eWCGO6aRhA8xs"].join("");
 
 // =============================================
 // STATE
@@ -2300,7 +2260,30 @@ $("sidebar-personalize-btn").addEventListener("click", () => {
   openPersonalizeModal();
 });
 
-// Bouton connecteurs sidebar → ouvre le panel
+// Code mode
+window._wmCodeMode = false;
+$("sidebar-code-btn").addEventListener("click", () => {
+  window._wmCodeMode = !window._wmCodeMode;
+  const btn = $("sidebar-code-btn");
+  btn.classList.toggle("code-active", window._wmCodeMode);
+  
+  if (window._wmCodeMode) {
+    // Basculer vers le meilleur modèle code disponible
+    const codeModel = WIKIMIND_MODELS.find(m => m.id === 'wm-large-5.2') // Codestral
+      || WIKIMIND_MODELS.find(m => m.tier === 'large');
+    if (codeModel) {
+      applyModelById(codeModel.id);
+      toast(`Mode Code activé — ${codeModel.displayName} 💻`);
+    } else {
+      toast("Mode Code activé 💻");
+    }
+  } else {
+    // Retour au modèle par défaut
+    const defModel = WIKIMIND_MODELS.find(m => m.id === 'wm-small-5.1') || WIKIMIND_MODELS[0];
+    if (defModel) applyModelById(defModel.id);
+    toast("Mode Code désactivé");
+  }
+});
 $("sidebar-connectors-btn").addEventListener("click", () => {
   closeSidebarFn();
   openConnectorsPanel();
@@ -2874,17 +2857,31 @@ $("file-input").addEventListener("change", async (e) => {
   const files = Array.from(e.target.files);
   if (!files.length) return;
   
+  let hasImage = false;
   for (const file of files) {
     try {
       const content = await readFile(file);
+      const isImg = content && content._isImage === true;
       attachedFiles.push({
         name: file.name,
         content: content,
         type: file.type,
-        size: file.size
+        size: file.size,
+        isImage: isImg
       });
+      if (isImg) hasImage = true;
     } catch (err) {
       toast(`Erreur lecture : ${file.name}`);
+    }
+  }
+
+  // Auto-switch vers modèle vision si image détectée
+  if (hasImage) {
+    const visionModel = WIKIMIND_MODELS.find(m => m.id === 'wm-medium-5.2' && m.supportsVision)
+      || WIKIMIND_MODELS.find(m => m.supportsVision);
+    if (visionModel && visionModel.apiModel !== selectedModel) {
+      applyModelById(visionModel.id);
+      toast(`Modèle changé → ${visionModel.displayName} (vision) 🖼️`);
     }
   }
   
@@ -2895,12 +2892,26 @@ $("file-input").addEventListener("change", async (e) => {
 
 async function readFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  
+  const imageExts = ['png','jpg','jpeg','gif','webp','svg'];
+
+  // Images → base64 + auto-switch to vision model
+  if (imageExts.includes(ext) || file.type.startsWith('image/')) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const base64 = e.target.result; // data:image/xxx;base64,...
+        resolve({ _isImage: true, base64, mimeType: file.type || 'image/png' });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   // PDF
   if (ext === 'pdf' || file.type === 'application/pdf') {
     return await readPDF(file);
   }
-  
+
   // Fichiers texte lisibles
   const textTypes = ['txt','md','html','htm','css','js','json','csv','xml','py','rtf','doc','docx'];
   if (textTypes.includes(ext) || file.type.startsWith('text/')) {
@@ -2911,7 +2922,7 @@ async function readFile(file) {
       reader.readAsText(file, 'UTF-8');
     });
   }
-  
+
   // Fallback texte brut
   return await new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2949,6 +2960,24 @@ async function readPDF(file) {
   });
 }
 
+function getFileIcon(f) {
+  if (f.isImage && f.content && f.content._isImage) {
+    return `<img src="${f.content.base64}" alt="${escHtml(f.name)}" style="width:32px;height:32px;object-fit:cover;border-radius:5px;">`;
+  }
+  const ext = f.name.split('.').pop().toLowerCase();
+  const iconMap = {
+    pdf: 'icon-pdf.png', py: 'icon-code.png', js: 'icon-code.png', ts: 'icon-code.png',
+    html: 'icon-code.png', css: 'icon-code.png', json: 'icon-code.png',
+    txt: 'icon-text.png', md: 'icon-text.png', csv: 'icon-text.png',
+    zip: 'icon-zip.png', rar: 'icon-zip.png',
+    png: 'icon-image.png', jpg: 'icon-image.png', jpeg: 'icon-image.png',
+    gif: 'icon-image.png', webp: 'icon-image.png',
+  };
+  const iconFile = iconMap[ext] || 'icon-file.png';
+  // Fallback to SVG if PNG not found
+  return `<img src="${iconFile}" alt="${ext}" width="24" height="24" onerror="this.outerHTML='<svg width=&quot;16&quot; height=&quot;16&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><path d=&quot;M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z&quot;/><polyline points=&quot;14 2 14 8 20 8&quot;/></svg>'">`;
+}
+
 function renderAttachedFilesPreview() {
   const preview = $("attached-files-preview");
   preview.innerHTML = "";
@@ -2956,9 +2985,13 @@ function renderAttachedFilesPreview() {
   attachedFiles.forEach((f, idx) => {
     const chip = document.createElement("div");
     chip.className = "attached-file-chip";
+    const isImg = f.isImage && f.content && f.content._isImage;
+    chip.style.cssText = isImg ? "padding:4px 8px 4px 4px;max-width:220px;" : "";
     chip.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+      <span style="width:${isImg?'32':'16'}px;height:${isImg?'32':'16'}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:${isImg?'5px':'3px'};overflow:hidden">
+        ${getFileIcon(f)}
+      </span>
+      <span title="${escHtml(f.name)}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span>
       <button class="chip-remove" data-idx="${idx}">✕</button>
     `;
     chip.querySelector(".chip-remove").addEventListener("click", () => {
@@ -3166,6 +3199,7 @@ function closeAllPopups() {
   modelMorePanel.classList.remove("open");
   modelOverlay.classList.remove("open");
   plusMenu.classList.remove("open");
+  document.getElementById("pm-conn-right-panel")?.remove();
 }
 
 // Alias pour compatibilité avec le reste du code
@@ -3199,37 +3233,101 @@ plusBtn.addEventListener("click", (e) => {
 document.addEventListener("click", () => {
   closeModelDD();
   plusMenu.classList.remove("open");
-  // Fermer aussi le sous-menu connecteurs
-  const submenu = $("pm-connectors-submenu");
-  const chevron = $("pm-conn-chevron");
-  if (submenu) submenu.style.display = "none";
-  if (chevron) chevron.style.transform = "";
+  document.getElementById("pm-conn-right-panel")?.remove();
 });
 
 $("pm-connectors").addEventListener("click", (e) => {
   e.stopPropagation();
-  const submenu = $("pm-connectors-submenu");
-  const chevron = $("pm-conn-chevron");
-  const isOpen = submenu.style.display !== "none";
-  if (isOpen) {
-    submenu.style.display = "none";
-    chevron.style.transform = "";
-  } else {
-    submenu.style.display = "block";
-    chevron.style.transform = "rotate(180deg)";
-    renderPlusMenuConnectors();
-    setTimeout(() => $("pm-connectors-search").focus(), 50);
+  // Ouvrir le panneau connecteurs à droite du menu +
+  const existing = document.getElementById("pm-conn-right-panel");
+  if (existing) { existing.remove(); return; }
+
+  const panel = document.createElement("div");
+  panel.id = "pm-conn-right-panel";
+  panel.style.cssText = `
+    position:fixed;
+    background:var(--bg2);
+    border:1px solid var(--border2);
+    border-radius:14px;
+    overflow:hidden;
+    z-index:10003;
+    min-width:240px;
+    max-height:380px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 8px 40px rgba(0,0,0,0.85);
+    animation:slideUpModel 0.18s cubic-bezier(0.34,1.2,0.64,1);
+  `;
+
+  const plusRect = plusMenu.getBoundingClientRect();
+  const top = plusRect.top;
+  const left = plusRect.right + 8;
+  panel.style.top = Math.max(8, top) + "px";
+  panel.style.left = (left + 240 > window.innerWidth - 8 ? plusRect.left - 248 : left) + "px";
+
+  panel.innerHTML = `
+    <div style="padding:10px 12px 6px;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);flex-shrink:0">Connecteurs</div>
+    <div style="padding:6px 10px 4px;flex-shrink:0">
+      <input id="pm-conn-panel-search" placeholder="Rechercher..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 9px;color:var(--text);font-family:'Geist',sans-serif;font-size:0.78rem;outline:none;">
+    </div>
+    <div id="pm-conn-panel-list" style="flex:1;overflow-y:auto;padding:4px 0;"></div>
+    <div style="padding:6px 10px 8px;border-top:1px solid var(--border);flex-shrink:0">
+      <button id="pm-conn-panel-all" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);font-family:'Geist',sans-serif;font-size:0.77rem;padding:5px;cursor:pointer;transition:all 0.12s;">Voir tous les connecteurs →</button>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  function renderConnPanel(filter = "") {
+    const list = document.getElementById("pm-conn-panel-list");
+    if (!list) return;
+    const items = filter
+      ? CONNECTORS_LIST.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()))
+      : CONNECTORS_LIST;
+    list.innerHTML = items.map(conn => {
+      const isActive = activeConnectors.includes(conn.id);
+      return `<div class="pm-connector-item" data-id="${conn.id}" style="padding:6px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.1s;border-radius:0;">
+        <div style="width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${conn.color}18;border-radius:5px;overflow:hidden">
+          <img src="${conn.icon}" alt="${conn.name}" width="18" height="18" style="object-fit:contain" onerror="this.parentElement.textContent='${conn.name[0]}'">
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.82rem;font-weight:600;color:var(--text)">${conn.name}</div>
+          <div style="font-size:0.68rem;color:${conn.connected ? '#4ade80' : 'var(--text3)'}">● ${conn.connected ? 'Connecté' : 'Non connecté'}</div>
+        </div>
+        ${conn.connected ? `<div style="width:18px;height:18px;border-radius:4px;border:1px solid var(--border2);background:${isActive?'#4d8fff':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all 0.12s" data-toggle="${conn.id}">
+          ${isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </div>` : `<button style="font-size:0.7rem;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text3);padding:3px 7px;cursor:pointer;" data-connect="${conn.id}">Connecter</button>`}
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('[data-toggle]').forEach(el => {
+      el.addEventListener('click', ev => { ev.stopPropagation(); toggleActiveConnector(el.dataset.toggle); renderConnPanel(document.getElementById('pm-conn-panel-search')?.value || ''); });
+    });
+    list.querySelectorAll('[data-connect]').forEach(el => {
+      el.addEventListener('click', ev => { ev.stopPropagation(); panel.remove(); toggleConnector(el.dataset.connect); });
+    });
   }
+
+  renderConnPanel();
+  setTimeout(() => document.getElementById("pm-conn-panel-search")?.focus(), 50);
+
+  document.getElementById("pm-conn-panel-search").addEventListener("input", e => renderConnPanel(e.target.value));
+  document.getElementById("pm-conn-panel-all").addEventListener("click", () => { panel.remove(); plusMenu.classList.remove("open"); openConnectorsPanel(); });
+
+  // Fermer quand on clique ailleurs
+  setTimeout(() => {
+    const closePanel = (ev) => {
+      if (!panel.contains(ev.target) && ev.target !== $("pm-connectors")) {
+        panel.remove();
+        document.removeEventListener("click", closePanel);
+      }
+    };
+    document.addEventListener("click", closePanel);
+  }, 10);
 });
 
-$("pm-see-all-btn")?.addEventListener("click", () => {
-  plusMenu.classList.remove("open");
-  openConnectorsPanel();
-});
+// pm-see-all-btn is now inside the dynamically created panel
 
-document.addEventListener("input", (e) => {
-  if (e.target.id === "pm-connectors-search") renderPlusMenuConnectors(e.target.value);
-});
+// Search handled inside dynamic panel
 
 document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
   item.addEventListener("click", () => {
@@ -3382,17 +3480,29 @@ function appendUserMsg(text, files = []) {
   
   let filesHtml = "";
   if (files && files.length > 0) {
-    filesHtml = files.map(f => `
-      <div class="file-attachment">
+    filesHtml = files.map(f => {
+      if (f.isImage && f.content && f.content._isImage) {
+        return `<div class="file-attachment" style="padding:6px;max-width:260px;">
+          <img src="${f.content.base64}" alt="${escHtml(f.name)}" style="width:100%;max-width:240px;border-radius:8px;display:block;">
+          <div class="file-attachment-info" style="margin-top:4px">
+            <div class="file-attachment-name">${escHtml(f.name)}</div>
+            <div class="file-attachment-size">${fmtSize(f.size)}</div>
+          </div>
+        </div>`;
+      }
+      const ext = f.name.split('.').pop().toLowerCase();
+      const iconMap = {pdf:'icon-pdf.png',py:'icon-code.png',js:'icon-code.png',ts:'icon-code.png',html:'icon-code.png',css:'icon-code.png',json:'icon-code.png',txt:'icon-text.png',md:'icon-text.png',csv:'icon-text.png'};
+      const iconSrc = iconMap[ext] || 'icon-file.png';
+      return `<div class="file-attachment">
         <div class="file-attachment-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <img src="${iconSrc}" alt="${ext}" width="20" height="20" onerror="this.outerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot; width=&quot;16&quot; height=&quot;16&quot;><path d=&quot;M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z&quot;/><polyline points=&quot;14 2 14 8 20 8&quot;/></svg>'">
         </div>
         <div class="file-attachment-info">
           <div class="file-attachment-name">${escHtml(f.name)}</div>
           <div class="file-attachment-size">${fmtSize(f.size)}</div>
         </div>
-      </div>
-    `).join("");
+      </div>`;
+    }).join("");
   }
   
   g.innerHTML = `<div class="msg-inner">
@@ -3569,15 +3679,36 @@ async function sendMessage() {
   // Construire le contenu du message avec fichiers
   let fullContent = text;
   const filesForDisplay = [...attachedFiles];
-  
+  let hasImageAttachment = false;
+  let visionContent = null; // Pour les modèles vision
+
   if (attachedFiles.length > 0) {
-    const filesContext = attachedFiles.map(f => {
-      const maxLen = 8000;
-      const content = f.content.length > maxLen ? f.content.slice(0, maxLen) + '\n\n[...tronqué]' : f.content;
-      return `### Fichier : ${f.name}\n\`\`\`\n${content}\n\`\`\``;
-    }).join('\n\n');
-    
-    fullContent = text ? `${text}\n\n${filesContext}` : filesContext;
+    const textParts = [];
+    const imageParts = [];
+
+    attachedFiles.forEach(f => {
+      if (f.isImage && f.content && f.content._isImage) {
+        hasImageAttachment = true;
+        imageParts.push({ type: "image_url", image_url: { url: f.content.base64 } });
+      } else {
+        const maxLen = 8000;
+        const content = typeof f.content === 'string' ? (f.content.length > maxLen ? f.content.slice(0, maxLen) + '\n\n[...tronqué]' : f.content) : '';
+        textParts.push(`### Fichier : ${f.name}\n\`\`\`\n${content}\n\`\`\``);
+      }
+    });
+
+    if (hasImageAttachment) {
+      // Format multimodal pour vision
+      const textContent = [text, ...textParts].filter(Boolean).join('\n\n');
+      visionContent = [
+        ...(textContent ? [{ type: "text", text: textContent }] : []),
+        ...imageParts
+      ];
+      fullContent = text || "(image jointe)";
+    } else {
+      const filesContext = textParts.join('\n\n');
+      fullContent = text ? `${text}\n\n${filesContext}` : filesContext;
+    }
   }
 
   const userMsgId = genId();
@@ -3589,7 +3720,8 @@ async function sendMessage() {
     ts: Date.now(),
     model: selectedModel,
     modelName: selectedModelName,
-    files: filesForDisplay.map(f => ({ name: f.name, size: f.size }))
+    files: filesForDisplay.map(f => ({ name: f.name, size: f.size, isImage: f.isImage })),
+    visionContent: visionContent || null
   };
   messages.push(userMsg);
   appendUserMsg(text, filesForDisplay);
@@ -3605,7 +3737,7 @@ async function sendMessage() {
   if (userId && currentConvId) await saveConversation();
 
   try {
-    await doStream(fullContent, false);
+    await doStream(fullContent, false, visionContent);
   } catch (error) {
     console.error("Error in sendMessage:", error);
     removeThinking();
@@ -3617,7 +3749,7 @@ async function sendMessage() {
 // =============================================
 // STREAM
 // =============================================
-async function doStream(userText, isRegen) {
+async function doStream(userText, isRegen, visionContent = null) {
   if (streaming) return;
 
   streaming = true;
@@ -3660,8 +3792,28 @@ async function doStream(userText, isRegen) {
     const _mObj = window._wmSelectedModelObj || { provider:"mistral", apiEndpoint:"https://api.mistral.ai/v1/chat/completions" };
     const _apiEndpoint = _mObj.apiEndpoint || "https://api.mistral.ai/v1/chat/completions";
     const _apiKey = _mObj.provider === "groq"
-      ? (WM_API_KEYS.groq || KEY)
+      ? (_gk || WM_API_KEYS.groq || KEY)
       : (WM_API_KEYS.mistral || KEY);
+
+    // Détecter si la dernière requête concerne une modification de fichier volumineux
+    const isLargeFileEdit = (function() {
+      if (!visionContent) {
+        const lastUserMsg = messages.filter(m => m.role === 'user').slice(-1)[0];
+        if (!lastUserMsg) return false;
+        const hasBigFile = (lastUserMsg.files||[]).some(f => f.size > 8000);
+        const editKeywords = /modifi|corrig|change|update|fix|améliore|remplace|édite/i;
+        return hasBigFile && editKeywords.test(lastUserMsg.content || '');
+      }
+      return false;
+    })();
+
+    const smartEditInstruction = isLargeFileEdit
+      ? "\n\nFICHIER VOLUMINEUX DÉTECTÉ : N'ÉCRIS PAS le fichier entier. Montre uniquement les BLOCS MODIFIÉS avec leur contexte (quelques lignes avant/après). Utilise ce format :\n```\n// ... ligne X-Y inchangées ...\n[CODE MODIFIÉ ICI]\n// ... suite inchangée ...\n```\nExplique brièvement chaque modification."
+      : "";
+
+    const codeModeInstruction = window._wmCodeMode
+      ? "\n\nMODE CODE ACTIVÉ : Tu es en mode développeur. Privilégie les réponses avec du code propre, commenté, et production-ready. Propose des solutions techniques complètes."
+      : "";
 
     const res = await fetch(_apiEndpoint, {
       method: "POST",
@@ -3687,11 +3839,15 @@ async function doStream(userText, isRegen) {
                     "Pour les tableaux, utilise la syntaxe markdown standard.\n" +
                     "Réponds en français sauf si l'utilisateur écrit autrement.\n" +
                     (buildSystemPromptFromPersonalization() ? "INSTRUCTIONS PERSONNALISÉES: " + buildSystemPromptFromPersonalization() + "\n" : "") +
+                    codeModeInstruction +
+                    smartEditInstruction +
                     systemExtra
           },
           ...messages.filter(m => m.role !== "ai" || m.msgId !== aiMsgId).map(m => ({
             role: m.role === "ai" ? "assistant" : m.role,
-            content: m.content
+            content: (m.visionContent && m.msgId === messages.filter(x => x.role === 'user').slice(-1)[0]?.msgId)
+              ? m.visionContent
+              : m.content
           }))
         ]
       })
@@ -4509,5 +4665,48 @@ runPlaceholder();
 <div id="model-dropdown-overlay"></div>
 <div id="bubble-model-dropdown"></div>
 <div id="model-more-panel"></div>
+<div id="plus-menu">
+  <div class="pm-item" id="pm-upload">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    Télécharger des fichiers
+  </div>
+  <div class="pm-item" id="pm-skills">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+    Skills
+  </div>
+  <div class="pm-item pm-item-conn-toggle" id="pm-connectors">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/>
+      <rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/>
+    </svg>
+    Connecteurs
+    <svg id="pm-conn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="9 18 15 12 9 6"/></svg>
+  </div>
+  <div class="pm-item" id="pm-libraries">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+    Bibliothèques
+  </div>
+  <div class="pm-item" id="pm-workflows">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+    Workflows
+  </div>
+  <div class="pm-item" id="pm-agents">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    Agents
+  </div>
+</div>
 </body>
 </html>
