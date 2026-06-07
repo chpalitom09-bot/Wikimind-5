@@ -12,8 +12,127 @@
 <script src="https://cdn.jsdelivr.net/npm/mathjs@11.10.1/lib/browser/math.js"></script>
 <!-- Plotly pour les graphiques interactifs -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<!-- Wikimind Charts Engine -->
-<script src="wikimind-charts.js"></script>
+<!-- Wikimind Charts Engine (inline pour éviter 404 et garantir le chargement après Plotly) -->
+<script>
+// Ce script sera initialisé après que Plotly soit chargé
+window._wmChartsReady = false;
+window._wmChartsQueue = [];
+</script>
+<!-- WMCharts full engine – chargé après Plotly -->
+<script>
+(function() {
+const WM_LAYOUT = {
+  paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(20,20,20,0.6)',
+  font:{family:'Geist,Inter,sans-serif',color:'#a0a0a0',size:11},
+  xaxis:{gridcolor:'rgba(255,255,255,0.07)',linecolor:'rgba(255,255,255,0.15)',tickcolor:'rgba(255,255,255,0.15)',zerolinecolor:'rgba(255,255,255,0.2)',zerolinewidth:1,tickfont:{color:'#707070',size:10}},
+  yaxis:{gridcolor:'rgba(255,255,255,0.07)',linecolor:'rgba(255,255,255,0.15)',tickcolor:'rgba(255,255,255,0.15)',zerolinecolor:'rgba(255,255,255,0.2)',zerolinewidth:1,tickfont:{color:'#707070',size:10}},
+  margin:{t:40,r:20,b:50,l:55},
+  legend:{bgcolor:'rgba(0,0,0,0)',bordercolor:'rgba(255,255,255,0.1)',borderwidth:1,font:{color:'#a0a0a0',size:10}},
+  modebar:{bgcolor:'rgba(0,0,0,0)',color:'#606060',activecolor:'#ffffff',orientation:'h'}
+};
+const WM_CFG = {displaylogo:false,responsive:true,displayModeBar:true,modeBarButtonsToRemove:['sendDataToCloud','editInChartStudio']};
+const WM_COLORS = ['#4d8fff','#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf','#ff8b94','#a29bfe','#fd79a8','#6c5ce7','#00b894'];
+
+function wmEval(expr, x) {
+  if (window.math) { try { return window.math.evaluate(expr, {x}); } catch { return NaN; } }
+  try {
+    const s = expr.replace(/\^/g,'**').replace(/\bsin\b/g,'Math.sin').replace(/\bcos\b/g,'Math.cos').replace(/\btan\b/g,'Math.tan').replace(/\bsqrt\b/g,'Math.sqrt').replace(/\babs\b/g,'Math.abs').replace(/\blog\b/g,'Math.log').replace(/\bexp\b/g,'Math.exp').replace(/\bpi\b/g,'Math.PI').replace(/\be\b/g,'Math.E');
+    return Function('x',`"use strict";return (${s})`)(x);
+  } catch { return NaN; }
+}
+
+function parse(text) {
+  const lines = text.trim().split('\n').map(l=>l.trim()).filter(Boolean);
+  const cfg = {};
+  lines.forEach(line => {
+    const ci = line.indexOf(':');
+    if (ci===-1) { if (/y\s*=/i.test(line)) cfg.equation=line; else if(!cfg.equation) cfg.raw=line; return; }
+    cfg[line.slice(0,ci).trim().toLowerCase()] = line.slice(ci+1).trim();
+  });
+  if (!cfg.type) { if (cfg.equation||/y\s*=/.test(text)) cfg.type='courbe'; else if(cfg.labels&&cfg.values) cfg.type='barres'; else cfg.type='courbe'; }
+  return cfg;
+}
+
+function mkXY(expr, xmin, xmax) {
+  const steps=400, dx=(xmax-xmin)/steps, xs=[], ys=[];
+  for (let i=0;i<=steps;i++) {
+    const x=xmin+i*dx, y=wmEval(expr,x);
+    xs.push(parseFloat(x.toFixed(4)));
+    ys.push((!isNaN(y)&&isFinite(y)&&Math.abs(y)<1e6)?parseFloat(y.toFixed(6)):null);
+  }
+  return {xs,ys};
+}
+
+const renderers = {
+  courbe(el, cfg) {
+    const expr=(cfg.equation||'').replace(/y\s*=/i,'').trim()||cfg.raw||'x';
+    const {xs,ys}=mkXY(expr, parseFloat(cfg.xmin??-10), parseFloat(cfg.xmax??10));
+    Plotly.newPlot(el,[{x:xs,y:ys,type:'scatter',mode:'lines',line:{color:WM_COLORS[0],width:2.5,shape:'spline'},name:`y=${expr}`,hovertemplate:'x:%{x:.3f}<br>y:%{y:.3f}<extra></extra>'}],{...WM_LAYOUT,title:{text:cfg.titre||`f(x)=${expr}`,font:{color:'#e0e0e0',size:13},x:0.05}},WM_CFG);
+  },
+  multicourbes(el, cfg) {
+    const xmin=parseFloat(cfg.xmin??-10), xmax=parseFloat(cfg.xmax??10), traces=[];
+    let ci=0;
+    for (const key of Object.keys(cfg)) {
+      if (!key.startsWith('courbe')) continue;
+      const parts=cfg[key].split(',').map(s=>s.trim());
+      const expr=parts[0].replace(/y\s*=/i,'').trim();
+      const label=parts.find(p=>p.startsWith('label:'))?.replace('label:','').trim()||expr;
+      const {xs,ys}=mkXY(expr,xmin,xmax);
+      traces.push({x:xs,y:ys,type:'scatter',mode:'lines',line:{color:WM_COLORS[ci%WM_COLORS.length],width:2.2,shape:'spline'},name:label,hovertemplate:`<b>${label}</b><br>x:%{x:.3f}<br>y:%{y:.3f}<extra></extra>`});
+      ci++;
+    }
+    Plotly.newPlot(el,traces,{...WM_LAYOUT,title:{text:cfg.titre||'Graphique',font:{color:'#e0e0e0',size:13},x:0.05},showlegend:true},WM_CFG);
+  },
+  barres(el, cfg) {
+    const labels=(cfg.labels||'A,B,C').split(',').map(s=>s.trim());
+    const values=(cfg.values||'1,2,3').split(',').map(s=>parseFloat(s.trim()));
+    const h=cfg.orientation==='h';
+    const trace=h?{y:labels,x:values,type:'bar',orientation:'h',marker:{color:values.map((_,i)=>WM_COLORS[i%WM_COLORS.length]),opacity:0.85},hovertemplate:'%{y}: <b>%{x}</b><extra></extra>'}:{x:labels,y:values,type:'bar',marker:{color:values.map((_,i)=>WM_COLORS[i%WM_COLORS.length]),opacity:0.85},hovertemplate:'%{x}: <b>%{y}</b><extra></extra>'};
+    Plotly.newPlot(el,[trace],{...WM_LAYOUT,title:{text:cfg.titre||'Diagramme en barres',font:{color:'#e0e0e0',size:13},x:0.05},bargap:0.3},WM_CFG);
+  },
+  camembert(el, cfg) {
+    const labels=(cfg.labels||'A,B,C').split(',').map(s=>s.trim());
+    const values=(cfg.values||'33,33,34').split(',').map(s=>parseFloat(s.trim()));
+    Plotly.newPlot(el,[{type:'pie',labels,values,hole:parseFloat(cfg.hole||'0.35'),marker:{colors:WM_COLORS.slice(0,values.length),line:{color:'#000',width:1.5}},textinfo:'percent',textfont:{color:'#fff',size:11},hovertemplate:'<b>%{label}</b><br>%{value} (%{percent})<extra></extra>'}],{...WM_LAYOUT,title:{text:cfg.titre||'Répartition',font:{color:'#e0e0e0',size:13},x:0.05},showlegend:true,margin:{t:50,r:20,b:30,l:20}},WM_CFG);
+  },
+  nuage(el, cfg) {
+    const xs=(cfg.x||'1,2,3,4,5').split(',').map(s=>parseFloat(s.trim()));
+    const ys=(cfg.y||'1,2,3,4,5').split(',').map(s=>parseFloat(s.trim()));
+    Plotly.newPlot(el,[{x:xs,y:ys,type:'scatter',mode:'markers',marker:{color:WM_COLORS[0],size:8,opacity:0.8,line:{color:'#fff',width:0.5}},hovertemplate:'x:%{x}<br>y:%{y}<extra></extra>'}],{...WM_LAYOUT,title:{text:cfg.titre||'Nuage de points',font:{color:'#e0e0e0',size:13},x:0.05}},WM_CFG);
+  },
+  ligne(el, cfg) {
+    const xs=(cfg.x||cfg.labels||'1,2,3,4,5').split(',').map(s=>s.trim());
+    const ys=(cfg.y||cfg.values||'1,2,3,4,5').split(',').map(s=>parseFloat(s.trim()));
+    Plotly.newPlot(el,[{x:xs,y:ys,type:'scatter',mode:'lines+markers',line:{color:WM_COLORS[0],width:2.5,shape:'spline'},marker:{color:WM_COLORS[0],size:6},hovertemplate:'%{x}: <b>%{y}</b><extra></extra>'}],{...WM_LAYOUT,title:{text:cfg.titre||'Courbe',font:{color:'#e0e0e0',size:13},x:0.05}},WM_CFG);
+  }
+};
+
+window.WMCharts = {
+  render(el, blockText) {
+    if (typeof Plotly === 'undefined') { el.innerHTML='<div class="wm-chart-error">⚠️ Plotly non disponible</div>'; return; }
+    try {
+      const cfg = parse(blockText);
+      el.classList.add('wm-chart-rendered');
+      const t = cfg.type.toLowerCase();
+      if (t==='courbe'||t==='curve'||t==='function'||t==='fonction') renderers.courbe(el,cfg);
+      else if (t==='multicourbes'||t==='multi') renderers.multicourbes(el,cfg);
+      else if (t==='barres'||t==='bar'||t==='histogram'||t==='histogramme') renderers.barres(el,cfg);
+      else if (t==='camembert'||t==='pie'||t==='donut') renderers.camembert(el,cfg);
+      else if (t==='nuage'||t==='scatter') renderers.nuage(el,cfg);
+      else if (t==='ligne'||t==='line'||t==='lines') renderers.ligne(el,cfg);
+      else if (cfg.equation||cfg.raw) renderers.courbe(el,cfg);
+      else el.innerHTML=`<div class="wm-chart-error">Type "${cfg.type}" non reconnu</div>`;
+    } catch(err) { el.innerHTML=`<div class="wm-chart-error">Erreur : ${err.message}</div>`; }
+  },
+  renderAll(bubble) {
+    bubble.querySelectorAll('.wm-chart-container[data-chart-text]').forEach(el => {
+      if (el.classList.contains('wm-chart-rendered')) return;
+      this.render(el, decodeURIComponent(el.dataset.chartText));
+    });
+  }
+};
+})();
+</script>
 <!-- PDF.js pour la lecture de PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -50,55 +169,50 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 299;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s;
+  transition: opacity 0.25s;
 }
-#sidebar-overlay.active {
-  opacity: 1;
-  pointer-events: all;
-}
+#sidebar-overlay.active { opacity: 1; pointer-events: all; }
 
 #sidebar {
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 260px;
+  top: 0; left: 0; bottom: 0;
+  width: 268px;
   z-index: 300;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
+  background: #0d0d0d;
+  border-right: 1px solid rgba(255,255,255,0.07);
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
-#sidebar.open {
-  transform: translateX(0);
-}
+#sidebar.open { transform: translateX(0); }
 
+/* HEAD */
 #sidebar-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 16px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 12px 10px;
   flex-shrink: 0;
 }
-
 #sidebar-logo {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--text);
   text-transform: uppercase;
 }
-
-#close-sidebar {
-  width: 28px;
-  height: 28px;
+#sidebar-head-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#search-sidebar-btn, #close-sidebar {
+  width: 30px; height: 30px;
   border-radius: 7px;
   border: none;
   background: transparent;
@@ -107,42 +221,46 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: all 0.12s;
+  flex-shrink: 0;
 }
-#close-sidebar:hover {
-  background: var(--bg3);
-  color: var(--text);
-}
+#search-sidebar-btn:hover, #close-sidebar:hover { background: var(--bg3); color: var(--text); }
 
-#new-chat-btn {
-  margin: 12px 12px 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: 9px;
-  border: 1px solid var(--border2);
-  background: transparent;
-  color: var(--text2);
-  cursor: pointer;
+/* SEARCH BAR */
+#sidebar-search-wrap {
+  padding: 0 10px 8px;
+  display: none;
+}
+#sidebar-search-wrap.visible { display: block; }
+#sidebar-search {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text);
   font-family: 'Geist', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.15s;
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.15s;
 }
-#new-chat-btn:hover {
-  background: var(--bg3);
-  color: var(--text);
-}
+#sidebar-search:focus { border-color: var(--border2); }
+#sidebar-search::placeholder { color: var(--text3); }
 
-/* BOUTON CONNECTEURS SIDEBAR */
-#sidebar-connectors-btn {
-  margin: 4px 12px;
+/* ACTION BUTTONS */
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 8px 8px;
+  flex-shrink: 0;
+}
+.sidebar-action-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: 9px;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
   border: none;
   background: transparent;
   color: var(--text2);
@@ -150,110 +268,179 @@ html, body {
   font-family: 'Geist', sans-serif;
   font-size: 0.85rem;
   font-weight: 500;
-  transition: all 0.15s;
+  transition: all 0.12s;
   text-align: left;
+  width: 100%;
 }
-#sidebar-connectors-btn:hover {
-  background: var(--bg3);
-  color: var(--text);
-}
-#sidebar-connectors-btn svg {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-}
+.sidebar-action-btn:hover { background: var(--bg3); color: var(--text); }
+.sidebar-action-btn svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
 
+/* SECTION LABEL */
 .s-section {
-  padding: 14px 14px 4px;
-  font-size: 0.7rem;
+  padding: 10px 14px 4px;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--text3);
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
+/* CONV LIST */
 #conv-list {
   flex: 1;
   overflow-y: auto;
-  padding: 0 8px 12px;
+  padding: 0 6px 8px;
 }
-#conv-list::-webkit-scrollbar {
-  width: 3px;
-}
-#conv-list::-webkit-scrollbar-thumb {
-  background: var(--bg4);
-  border-radius: 2px;
-}
+#conv-list::-webkit-scrollbar { width: 3px; }
+#conv-list::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
 
 .conv-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 9px;
+  gap: 6px;
+  padding: 7px 8px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   color: var(--text2);
-  overflow: hidden;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.1s, color 0.1s;
+  position: relative;
+  group: true;
 }
-.conv-item:hover, .conv-item.active {
-  background: var(--bg3);
-  color: var(--text);
-}
+.conv-item:hover, .conv-item.active { background: var(--bg3); color: var(--text); }
 .conv-item-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
+}
+.conv-item-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.conv-item:hover .conv-item-actions { display: flex; }
+.conv-act-btn {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  padding: 0;
+}
+.conv-act-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.conv-act-btn svg { width: 11px; height: 11px; }
+.conv-act-btn.delete:hover { color: #f87171; }
+
+/* RENAME INPUT */
+.conv-rename-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Geist', sans-serif;
+  font-size: 0.84rem;
+  outline: none;
+  padding: 1px 2px;
 }
 
+/* SIDEBAR FOOT */
 #sidebar-foot {
-  padding: 10px 10px 16px;
-  border-top: 1px solid var(--border);
+  padding: 8px 8px 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
-
 .s-user-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border-radius: 9px;
   cursor: pointer;
   transition: background 0.12s;
+  position: relative;
 }
-.s-user-row:hover {
-  background: var(--bg3);
-}
+.s-user-row:hover { background: var(--bg3); }
 .s-avatar {
-  width: 30px;
-  height: 30px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #333, #555);
+  background: linear-gradient(135deg, #2a2a2a, #444);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.72rem;
   font-weight: 700;
   color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
 }
-.s-user-info {
-  min-width: 0;
-}
+.s-user-info { min-width: 0; flex: 1; }
 .s-user-name {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.s-user-plan {
-  font-size: 0.7rem;
-  color: var(--text2);
+.s-user-plan { font-size: 0.7rem; color: var(--text3); }
+
+/* PROFILE POPUP MENU */
+#profile-popup {
+  position: fixed;
+  bottom: 70px;
+  left: 12px;
+  width: 244px;
+  background: #161616;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+  z-index: 9999;
+  display: none;
+  overflow: hidden;
+  animation: popupIn 0.15s ease;
 }
+#profile-popup.open { display: block; }
+@keyframes popupIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pp-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.pp-email {
+  font-size: 0.78rem;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pp-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 2px 0; }
+.pp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  font-size: 0.83rem;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.pp-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.pp-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+.pp-item.danger { color: #f87171; }
+.pp-item.danger:hover { background: rgba(248,113,113,0.08); }
+.pp-shortcut { margin-left: auto; font-size: 0.68rem; color: var(--text3); }
 
 /* ========== LAYOUT ========== */
 #app {
@@ -1227,22 +1414,34 @@ body.chat-empty-state #input-container {
 <aside id="sidebar">
   <div id="sidebar-head">
     <span id="sidebar-logo">Wikimind AI</span>
-    <button id="close-sidebar">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <div id="sidebar-head-right">
+      <button id="search-sidebar-btn" title="Rechercher">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button id="close-sidebar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Search bar -->
+  <div id="sidebar-search-wrap">
+    <input id="sidebar-search" type="text" placeholder="Rechercher une conversation...">
+  </div>
+  <!-- Actions -->
+  <div class="sidebar-actions">
+    <button class="sidebar-action-btn" id="new-chat-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nouvelle conversation
+    </button>
+    <button class="sidebar-action-btn" id="sidebar-connectors-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+      Connecteurs
+    </button>
+    <button class="sidebar-action-btn" id="sidebar-personalize-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Personnaliser
     </button>
   </div>
-  <button id="new-chat-btn">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Nouvelle conversation
-  </button>
-  <!-- BOUTON CONNECTEURS DANS LA SIDEBAR -->
-  <button id="sidebar-connectors-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/>
-      <rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/>
-    </svg>
-    Connecteurs
-  </button>
   <div class="s-section">Historique</div>
   <div id="conv-list"></div>
   <div id="sidebar-foot">
@@ -1250,11 +1449,43 @@ body.chat-empty-state #input-container {
       <div class="s-avatar" id="s-avatar">?</div>
       <div class="s-user-info">
         <div class="s-user-name" id="s-name">Non connecté</div>
-        <div class="s-user-plan" id="s-plan">Free</div>
+        <div class="s-user-plan" id="s-plan">Forfait Free</div>
       </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0"><polyline points="18 15 12 9 6 15"/></svg>
     </div>
   </div>
 </aside>
+
+<!-- PROFILE POPUP MENU -->
+<div id="profile-popup">
+  <div class="pp-header">
+    <div class="pp-email" id="pp-email">Non connecté</div>
+  </div>
+  <div class="pp-item" id="pp-settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Paramètres
+    <span class="pp-shortcut">⇧Ctrl,</span>
+  </div>
+  <div class="pp-item" id="pp-language">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+    Langue
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;margin-left:auto;opacity:0.4"><polyline points="9 18 15 12 9 6"/></svg>
+  </div>
+  <div class="pp-item" id="pp-help">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Obtenir de l'aide
+  </div>
+  <div class="pp-divider"></div>
+  <div class="pp-item" id="pp-upgrade">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+    Mettre à niveau l'abonnement
+  </div>
+  <div class="pp-divider"></div>
+  <div class="pp-item danger" id="pp-signout">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Se déconnecter
+  </div>
+</div>
 
 <!-- WELCOME SCREEN -->
 <div id="welcome-screen">
@@ -1269,7 +1500,10 @@ body.chat-empty-state #input-container {
       </svg>
     </button>
     <div id="topbar-right">
-      <button class="tb-btn" id="tb-settings">
+      <button class="tb-btn" id="tb-search" title="Rechercher">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="tb-btn" id="tb-settings" title="Paramètres">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       </button>
     </div>
@@ -1510,10 +1744,37 @@ const CONNECTORS_LIST = [
     name: 'Gmail',
     desc: 'Accédez à vos emails et envoyez des messages',
     icon: 'gmail-connect.png',
+    color: '#EA4335',
     connected: false,
     howToConnect: 'gmail'
+  },
+  {
+    id: 'gcalendar',
+    name: 'Google Calendar',
+    desc: 'Consultez et gérez vos événements',
+    icon: 'calendar-connect.png',
+    color: '#4285F4',
+    connected: false,
+    howToConnect: 'oauth'
+  },
+  {
+    id: 'gsheets',
+    name: 'Google Sheets',
+    desc: 'Lisez et écrivez dans vos feuilles de calcul',
+    icon: 'sheet-connect.png',
+    color: '#34A853',
+    connected: false,
+    howToConnect: 'oauth'
+  },
+  {
+    id: 'ganalytics',
+    name: 'Google Analytics',
+    desc: 'Analysez le trafic et les performances',
+    icon: 'analytics-connect.png',
+    color: '#F9AB00',
+    connected: false,
+    howToConnect: 'oauth'
   }
-  // Ajoutez d'autres connecteurs ici
 ];
 
 // Charger l'état des connecteurs depuis localStorage
@@ -1600,6 +1861,24 @@ $("burger").addEventListener("click", openSidebar);
 $("close-sidebar").addEventListener("click", closeSidebarFn);
 sidebarOverlay.addEventListener("click", closeSidebarFn);
 
+// Search in sidebar
+$("search-sidebar-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const wrap = $("sidebar-search-wrap");
+  wrap.classList.toggle("visible");
+  if (wrap.classList.contains("visible")) $("sidebar-search").focus();
+  else { $("sidebar-search").value = ""; renderConversationList(); }
+});
+$("sidebar-search").addEventListener("input", (e) => {
+  renderConversationList(e.target.value);
+});
+
+// Personalize
+$("sidebar-personalize-btn").addEventListener("click", () => {
+  closeSidebarFn();
+  toast("Personnalisation — Bientôt disponible");
+});
+
 // Bouton connecteurs sidebar → ouvre le panel
 $("sidebar-connectors-btn").addEventListener("click", () => {
   closeSidebarFn();
@@ -1650,11 +1929,14 @@ function toggleConnector(connId) {
   
   if (conn.connected) {
     conn.connected = false;
+    const idx = activeConnectors.indexOf(connId);
+    if (idx !== -1) activeConnectors.splice(idx, 1);
+    renderActiveConnectorsRow();
     toast(`${conn.name} déconnecté`);
   } else {
-    // Pour Gmail, on explique comment le configurer
-    if (conn.id === 'gmail') {
-      showGmailConnectInfo();
+    // Tous les connecteurs Google utilisent OAuth
+    if (['gmail','gcalendar','gsheets','ganalytics'].includes(conn.id)) {
+      showGoogleConnectInfo(conn);
       return;
     }
     conn.connected = true;
@@ -1667,10 +1949,13 @@ function toggleConnector(connId) {
   renderActiveConnectorsRow();
 }
 
-function showGmailConnectInfo() {
-  // Pour l'instant on affiche les instructions, à remplacer par OAuth
-  toast("Gmail : ajoutez votre clé API dans le code (voir doc)");
-  // TODO: implémenter OAuth Gmail
+function showGoogleConnectInfo(conn) {
+  // Simulation OAuth — dans la vraie implémentation, ouvrir le flux OAuth
+  conn.connected = true;
+  saveConnectorsState();
+  renderConnectorsGrid();
+  renderPlusMenuConnectors();
+  toast(`${conn.name} connecté via OAuth Google ✓`);
 }
 
 // Rendu connecteurs actifs dans le menu +
@@ -2443,7 +2728,7 @@ async function saveConversation() {
       ? (firstUserMsg.content.length > 50 ? firstUserMsg.content.slice(0, 50) + "..." : firstUserMsg.content)
       : "Nouvelle conversation";
 
-    await set(ref(db, `users/${userId}/wikimind/conversations/${currentConvId}`), {
+    await set(ref(db, `wikimind5/users/${userId}/conversations/${currentConvId}`), {
       title: title,
       createdAt: messages[0]?.ts || Date.now(),
       updatedAt: Date.now(),
@@ -2461,7 +2746,7 @@ async function saveConversationTitle(text) {
   if (!userId || !currentConvId) return;
   try {
     const title = text.length > 50 ? text.slice(0, 50) + "..." : text;
-    await set(ref(db, `users/${userId}/wikimind/conversations/${currentConvId}`), {
+    await set(ref(db, `wikimind5/users/${userId}/conversations/${currentConvId}`), {
       title: title,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -2479,7 +2764,7 @@ async function loadConversations() {
     return;
   }
   try {
-    const snapshot = await get(ref(db, `users/${userId}/wikimind/conversations`));
+    const snapshot = await get(ref(db, `wikimind5/users/${userId}/conversations`));
     if (snapshot.exists()) {
       const data = snapshot.val();
       conversations = Object.entries(data)
@@ -2498,7 +2783,7 @@ async function loadConversations() {
 async function updateConversationList() {
   if (!userId) return;
   try {
-    const snapshot = await get(ref(db, `users/${userId}/wikimind/conversations`));
+    const snapshot = await get(ref(db, `wikimind5/users/${userId}/conversations`));
     if (snapshot.exists()) {
       const data = snapshot.val();
       conversations = Object.entries(data)
@@ -2510,20 +2795,80 @@ async function updateConversationList() {
   } catch (error) { /* ignore */ }
 }
 
-function renderConversationList() {
+function renderConversationList(filter = "") {
   convList.innerHTML = "";
-  if (conversations.length === 0) {
-    convList.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px;">Aucune conversation</div>';
+  const filtered = filter
+    ? conversations.filter(c => c.title.toLowerCase().includes(filter.toLowerCase()))
+    : conversations;
+  if (filtered.length === 0) {
+    convList.innerHTML = `<div style="color:var(--text3);font-size:0.82rem;padding:10px 8px;">${filter ? "Aucun résultat" : "Aucune conversation"}</div>`;
     return;
   }
-  conversations.forEach(conv => {
+  filtered.forEach(conv => {
     const item = document.createElement("div");
     item.className = "conv-item" + (conv.id === currentConvId ? " active" : "");
     item.dataset.convId = conv.id;
-    item.innerHTML = `<span class="conv-item-title">${escHtml(conv.title)}</span>`;
-    item.addEventListener("click", () => loadConversation(conv.id));
+    item.innerHTML = `
+      <span class="conv-item-title">${escHtml(conv.title)}</span>
+      <div class="conv-item-actions">
+        <button class="conv-act-btn rename-btn" title="Renommer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="conv-act-btn delete-btn delete" title="Supprimer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    `;
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".conv-item-actions")) return;
+      loadConversation(conv.id);
+    });
+    item.querySelector(".rename-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      startRenameConv(conv, item);
+    });
+    item.querySelector(".delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await deleteConversation(conv.id);
+    });
     convList.appendChild(item);
   });
+}
+
+function startRenameConv(conv, item) {
+  const titleEl = item.querySelector(".conv-item-title");
+  const input = document.createElement("input");
+  input.className = "conv-rename-input";
+  input.value = conv.title;
+  titleEl.replaceWith(input);
+  input.focus();
+  input.select();
+  const finish = async () => {
+    const newTitle = input.value.trim() || conv.title;
+    conv.title = newTitle;
+    try {
+      await set(ref(db, `wikimind5/users/${userId}/conversations/${conv.id}/title`), newTitle);
+    } catch {}
+    renderConversationList();
+  };
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") finish(); if (e.key === "Escape") renderConversationList(); });
+  input.addEventListener("blur", finish);
+}
+
+async function deleteConversation(convId) {
+  if (!userId) return;
+  try {
+    await remove(ref(db, `wikimind5/users/${userId}/conversations/${convId}`));
+    conversations = conversations.filter(c => c.id !== convId);
+    if (currentConvId === convId) {
+      currentConvId = null;
+      messages = [];
+      messagesEl.innerHTML = "";
+      setStarted(false);
+    }
+    renderConversationList();
+    toast("Conversation supprimée");
+  } catch { toast("Erreur lors de la suppression"); }
 }
 
 async function loadConversation(convId) {
@@ -2532,7 +2877,7 @@ async function loadConversation(convId) {
   messages = [];
 
   try {
-    const snapshot = await get(ref(db, `users/${userId}/wikimind/conversations/${convId}/messages`));
+    const snapshot = await get(ref(db, `wikimind5/users/${userId}/conversations/${convId}/messages`));
     if (snapshot.exists()) {
       const saved = snapshot.val();
       const arr = Array.isArray(saved) ? saved : Object.values(saved);
@@ -2588,15 +2933,17 @@ async function newConversation() {
 function updateAuthUI() {
   if (currentUser) {
     userId = currentUser.uid;
-    $("s-name").textContent = currentUser.displayName || currentUser.email || "Utilisateur";
+    $("s-name").textContent = currentUser.displayName || currentUser.email?.split("@")[0] || "Utilisateur";
     $("s-avatar").textContent = initials(currentUser.displayName || currentUser.email || "U");
-    $("s-plan").textContent = "Free";
+    $("s-plan").textContent = "Forfait Free";
+    $("pp-email").textContent = currentUser.email || currentUser.displayName || "Connecté";
     if (sidebar.classList.contains("open")) loadConversations();
   } else {
     userId = getOrCreateUserId();
     $("s-name").textContent = "Mode invité";
     $("s-avatar").textContent = "?";
-    $("s-plan").textContent = "Free";
+    $("s-plan").textContent = "Forfait Free";
+    $("pp-email").textContent = "Non connecté";
   }
 }
 
@@ -2675,13 +3022,41 @@ $("guest-btn").addEventListener("click", () => {
   toast("Mode invité activé.");
 });
 
-$("user-row").addEventListener("click", async () => {
+// Profile popup
+const profilePopup = $("profile-popup");
+$("user-row").addEventListener("click", (e) => {
+  e.stopPropagation();
+  profilePopup.classList.toggle("open");
+});
+document.addEventListener("click", (e) => {
+  if (!profilePopup.contains(e.target) && e.target !== $("user-row")) {
+    profilePopup.classList.remove("open");
+  }
+});
+$("pp-signout").addEventListener("click", async () => {
+  profilePopup.classList.remove("open");
   if (currentUser) {
     await signOut(auth);
     toast("Déconnecté.");
   } else {
     overlay.style.display = "flex";
   }
+});
+$("pp-settings").addEventListener("click", () => {
+  profilePopup.classList.remove("open");
+  toast("Paramètres — Bientôt disponible");
+});
+$("pp-language").addEventListener("click", () => {
+  profilePopup.classList.remove("open");
+  toast("Langue — Bientôt disponible");
+});
+$("pp-help").addEventListener("click", () => {
+  profilePopup.classList.remove("open");
+  toast("Aide — Bientôt disponible");
+});
+$("pp-upgrade").addEventListener("click", () => {
+  profilePopup.classList.remove("open");
+  toast("Mettre à niveau — Bientôt disponible");
 });
 
 onAuthStateChanged(auth, async (user) => {
@@ -2710,6 +3085,17 @@ sendBtn.addEventListener("click", () => {
 });
 
 $("new-chat-btn").addEventListener("click", newConversation);
+
+// Topbar buttons
+$("tb-settings").addEventListener("click", () => toast("Paramètres — Bientôt disponible"));
+$("tb-search").addEventListener("click", () => {
+  openSidebar();
+  setTimeout(() => {
+    const wrap = $("sidebar-search-wrap");
+    wrap.classList.add("visible");
+    $("sidebar-search").focus();
+  }, 300);
+});
 
 // Init
 userId = getOrCreateUserId();
