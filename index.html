@@ -930,6 +930,19 @@ body:not(.chat-empty-state) #welcome-screen {
   50% { opacity: 1; transform: scale(1); }
 }
 
+/* ========== DISCLAIMER ========== */
+#input-disclaimer {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text3);
+  padding: 6px 0 0;
+  opacity: 0.7;
+  letter-spacing: 0.01em;
+}
+body.chat-empty-state #input-disclaimer {
+  display: none;
+}
+
 /* ========== INPUT ZONE ========== */
 #input-zone {
   flex-shrink: 0;
@@ -1935,6 +1948,7 @@ body.chat-empty-state #input-container {
             </div>
           </div>
         </div>
+        <div id="input-disclaimer">Wikimind est une IA et peut faire des erreurs. Vérifiez les informations importantes.</div>
       </div>
     </div>
   </div>
@@ -2461,42 +2475,46 @@ async function buildConnectorContext(connId) {
     } catch (err) { return `[Google Calendar : erreur — ${err.message}]`; }
   }
 
+  if (connId === 'gpeople') return await buildPeopleContext();
+  if (connId === 'gdocs') return await buildDocsContext();
+
   return conn ? `[${conn.name} connecté]` : '';
+}
 
-  if (connId === 'gpeople') {
-    const token = await getGmailToken('gpeople');
-    if (!token) return `[Google Contacts : reconnectez le connecteur]`;
-    try {
-      const res = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=20', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const data = await res.json();
-      if (!data.connections?.length) return `[Google Contacts : aucun contact]`;
-      const contacts = data.connections.map(p => {
-        const name = p.names?.[0]?.displayName || 'Inconnu';
-        const email = p.emailAddresses?.[0]?.value || '';
-        const phone = p.phoneNumbers?.[0]?.value || '';
-        return `- ${name}${email ? ` <${email}>` : ''}${phone ? ` | ${phone}` : ''}`;
-      }).join('\n');
-      return `[Google Contacts — ${data.connections.length} contacts]\n${contacts}`;
-    } catch (err) { return `[Google Contacts : erreur — ${err.message}]`; }
-  }
+// People connector
+async function buildPeopleContext() {
+  const token = await getGmailToken('gpeople');
+  if (!token) return `[Google Contacts : reconnectez le connecteur]`;
+  try {
+    const res = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=20', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!data.connections?.length) return `[Google Contacts : aucun contact]`;
+    const contacts = data.connections.map(p => {
+      const name = p.names?.[0]?.displayName || 'Inconnu';
+      const email = p.emailAddresses?.[0]?.value || '';
+      const phone = p.phoneNumbers?.[0]?.value || '';
+      return `- ${name}${email ? ` <${email}>` : ''}${phone ? ` | ${phone}` : ''}`;
+    }).join('\n');
+    return `[Google Contacts — ${data.connections.length} contacts]\n${contacts}`;
+  } catch (err) { return `[Google Contacts : erreur — ${err.message}]`; }
+}
 
-  if (connId === 'gdocs') {
-    const token = await getGmailToken('gdocs');
-    if (!token) return `[Google Docs : reconnectez le connecteur]`;
-    try {
-      const res = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.document'&pageSize=10&fields=files(id,name,modifiedTime)", {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const data = await res.json();
-      if (!data.files?.length) return `[Google Docs : aucun document]`;
-      const docs = data.files.map(f => `- ${f.name} (modifié: ${new Date(f.modifiedTime).toLocaleDateString('fr')})`).join('\n');
-      return `[Google Docs — ${data.files.length} documents récents]\n${docs}`;
-    } catch (err) { return `[Google Docs : erreur — ${err.message}]`; }
-  }
-
-  return '';
+// Docs connector
+async function buildDocsContext() {
+  const token = await getGmailToken('gdocs');
+  if (!token) return `[Google Docs : reconnectez le connecteur]`;
+  try {
+    const res = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.document'&pageSize=10&fields=files(id,name,modifiedTime)", {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!data.files?.length) return `[Google Docs : aucun document]`;
+    const docs = data.files.map(f => `- ${f.name} (modifié: ${new Date(f.modifiedTime).toLocaleDateString('fr')})`).join('\n');
+    return `[Google Docs — ${data.files.length} documents récents]\n${docs}`;
+  } catch (err) { return `[Google Docs : erreur — ${err.message}]`; }
+}
 
 // =============================================
 // GMAIL — ACTIONS (envoyer, brouillon, répondre, supprimer)
@@ -3966,6 +3984,11 @@ $("tb-search").addEventListener("click", () => {
     wrap.classList.add("visible");
     $("sidebar-search").focus();
   }, 300);
+});
+
+// Suppress extension noise errors (popup.js etc)
+window.addEventListener('error', (e) => {
+  if (e.filename && e.filename.includes('chrome-extension')) { e.stopImmediatePropagation(); e.preventDefault(); return false; }
 });
 
 // =============================================
