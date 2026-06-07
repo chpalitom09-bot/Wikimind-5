@@ -2982,132 +2982,35 @@ function updateSendBtn() {
 }
 
 // =============================================
-// WIKIMIND MODELS JSON
+// WIKIMIND MODELS — chargés depuis models.json
 // =============================================
-const WIKIMIND_MODELS = [
-  // ── PRINCIPAUX ──────────────────────────────────────────────────────────────
-  {
-    id: "wm-small-5.1",
-    displayName: "Small 5.1",
-    apiModel: "mistral-small-latest",
-    tier: "small",
-    category: "main",
-    description: "Rapide, idéal pour le quotidien",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-medium-5.1",
-    displayName: "Medium 5.1",
-    apiModel: "mistral-medium-latest",
-    tier: "medium",
-    category: "main",
-    description: "Équilibre performance / vitesse",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-large-5.1",
-    displayName: "Large 5.1",
-    apiModel: "mistral-large-latest",
-    tier: "large",
-    category: "main",
-    description: "Puissant, tâches complexes",
-    provider: "mistral",
-    supportsVision: false
-  },
-  // ── PLUS DE MODÈLES ──────────────────────────────────────────────────────────
-  {
-    id: "wm-small-4.7",
-    displayName: "Small 4.7",
-    apiModel: "ministral-3b-latest",
-    tier: "small",
-    category: "more",
-    description: "Ultra-léger, réponses instantanées",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-small-4.8",
-    displayName: "Small 4.8",
-    apiModel: "open-mistral-7b",
-    tier: "small",
-    category: "more",
-    description: "Modèle open-source 7B",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-small-5.0",
-    displayName: "Small 5.0",
-    apiModel: "ministral-8b-latest",
-    tier: "small",
-    category: "more",
-    description: "Compact mais efficace, open-source",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-small-5.1b",
-    displayName: "Small 5.1b",
-    apiModel: "open-mistral-nemo",
-    tier: "small",
-    category: "more",
-    description: "Multilingue, fenêtre 128k",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-medium-4.9",
-    displayName: "Medium 4.9",
-    apiModel: "open-mixtral-8x7b",
-    tier: "medium",
-    category: "more",
-    description: "MoE 8×7B open-source",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-medium-5.2",
-    displayName: "Medium 5.2",
-    apiModel: "pixtral-12b-2409",
-    tier: "medium",
-    category: "more",
-    description: "Vision multimodale 12B",
-    provider: "mistral",
-    supportsVision: true
-  },
-  {
-    id: "wm-large-5.0",
-    displayName: "Large 5.0",
-    apiModel: "open-mixtral-8x22b",
-    tier: "large",
-    category: "more",
-    description: "MoE 8×22B open-source, très capable",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-large-5.2",
-    displayName: "Large 5.2",
-    apiModel: "codestral-latest",
-    tier: "large",
-    category: "more",
-    description: "Spécialisé code, 80+ langages",
-    provider: "mistral",
-    supportsVision: false
-  },
-  {
-    id: "wm-large-5.3",
-    displayName: "Large 5.3",
-    apiModel: "pixtral-large-latest",
-    tier: "large",
-    category: "more",
-    description: "Vision large, performances maximales",
-    provider: "mistral",
-    supportsVision: true
+let WIKIMIND_MODELS = [];
+
+async function loadModels() {
+  try {
+    const res = await fetch("models.json");
+    if (!res.ok) throw new Error("fetch models.json failed");
+    const data = await res.json();
+    WIKIMIND_MODELS = data.models;
+    // Appliquer le modèle par défaut depuis le JSON
+    const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
+    selectedModel = def.apiModel;
+    selectedModelName = def.displayName;
+    bubbleModelLabel.textContent = def.displayName;
+    bubbleModelBtn.dataset.tier = def.tier;
+  } catch (err) {
+    console.warn("models.json introuvable, fallback intégré.", err);
+    // Fallback minimal si le JSON n'est pas accessible (ex: ouverture locale)
+    WIKIMIND_MODELS = [
+      { id:"wm-small-5.1", displayName:"Small 5.1", apiModel:"mistral-small-latest", tier:"small", category:"main", description:"Rapide, idéal pour le quotidien", provider:"mistral", apiEndpoint:"https://api.mistral.ai/v1/chat/completions", supportsVision:false, supportsStreaming:true },
+      { id:"wm-medium-5.1", displayName:"Medium 5.1", apiModel:"mistral-medium-latest", tier:"medium", category:"main", description:"Équilibre performance / vitesse", provider:"mistral", apiEndpoint:"https://api.mistral.ai/v1/chat/completions", supportsVision:false, supportsStreaming:true },
+      { id:"wm-large-5.1", displayName:"Large 5.1", apiModel:"mistral-large-latest", tier:"large", category:"main", description:"Puissant, tâches complexes", provider:"mistral", apiEndpoint:"https://api.mistral.ai/v1/chat/completions", supportsVision:false, supportsStreaming:true }
+    ];
   }
-];
+}
+
+// Chargement au démarrage (avant init Firebase/UI)
+loadModels();
 
 // =============================================
 // MODEL SELECTOR
