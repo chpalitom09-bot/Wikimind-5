@@ -349,7 +349,6 @@ html, body {
   color: var(--text2);
   transition: background 0.1s, color 0.1s;
   position: relative;
-  group: true;
 }
 .conv-item:hover, .conv-item.active { background: var(--bg3); color: var(--text); }
 .conv-item-title {
@@ -359,16 +358,19 @@ html, body {
   flex: 1;
   font-size: 0.84rem;
 }
+/* Bouton 3 points toujours présent, visible au hover */
 .conv-item-actions {
-  display: none;
+  display: flex;
   align-items: center;
-  gap: 2px;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
-.conv-item:hover .conv-item-actions { display: flex; }
+.conv-item:hover .conv-item-actions,
+.conv-item.active .conv-item-actions { opacity: 1; }
 .conv-act-btn {
-  width: 22px; height: 22px;
-  border-radius: 5px;
+  width: 24px; height: 24px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   color: var(--text3);
@@ -378,10 +380,35 @@ html, body {
   justify-content: center;
   transition: all 0.1s;
   padding: 0;
+  position: relative;
 }
 .conv-act-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
-.conv-act-btn svg { width: 11px; height: 11px; }
-.conv-act-btn.delete:hover { color: #f87171; }
+.conv-act-btn svg { width: 12px; height: 12px; }
+/* Dropdown contextuel du conv-item */
+.conv-ctx-menu {
+  position: absolute;
+  right: 0; top: calc(100% + 4px);
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 9999;
+  min-width: 150px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.7);
+  animation: popupIn 0.13s ease;
+}
+.conv-ctx-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 13px;
+  font-size: 0.82rem; color: var(--text2);
+  cursor: pointer; transition: all 0.1s;
+  border: none; background: transparent;
+  width: 100%; text-align: left; font-family: 'Geist', sans-serif;
+}
+.conv-ctx-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.conv-ctx-item.danger { color: #f87171; }
+.conv-ctx-item.danger:hover { background: rgba(248,113,113,0.08); }
+.conv-ctx-item svg { width: 13px; height: 13px; flex-shrink: 0; }
 
 /* RENAME INPUT */
 .conv-rename-input {
@@ -650,6 +677,14 @@ body:not(.chat-empty-state) #welcome-screen {
   border-bottom-right-radius: 5px;
   color: var(--text);
 }
+.bubble.user p { margin-bottom: 8px; }
+.bubble.user p:last-child { margin-bottom: 0; }
+.bubble.user strong { font-weight: 700; }
+.bubble.user em { font-style: italic; }
+.bubble.user ul { list-style: disc; padding-left: 1.4em; margin: 6px 0; }
+.bubble.user ol { list-style: decimal; padding-left: 1.4em; margin: 6px 0; }
+.bubble.user li { margin-bottom: 3px; }
+.bubble.user code { font-family: 'Geist Mono', monospace; font-size: 0.85rem; background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px; }
 .bubble.ai {
   background: transparent;
   padding-left: 0;
@@ -1303,8 +1338,96 @@ body.chat-empty-state #input-container {
 }
 .perms-btn-save:hover { opacity: 0.88; }
 
-/* Sous-menu connecteurs */
-#pm-connectors-submenu {
+/* ========== PERSONNALISATION MODAL ========== */
+#personalize-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+  display: none; align-items: center; justify-content: center;
+}
+#personalize-overlay.open { display: flex; }
+#personalize-modal {
+  background: #111; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; width: 780px; max-width: 96vw; max-height: 88vh;
+  display: flex; overflow: hidden;
+  animation: boxIn 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+.pers-left {
+  width: 220px; flex-shrink: 0;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  padding: 22px 14px; display: flex; flex-direction: column; gap: 4px;
+}
+.pers-left-title { font-size: 1.05rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; padding: 0 8px 12px; }
+.pers-nav-btn {
+  display: flex; align-items: center; gap: 9px; padding: 9px 10px;
+  border-radius: 9px; border: none; background: transparent;
+  color: rgba(255,255,255,0.45); font-family: 'Geist', sans-serif;
+  font-size: 0.83rem; font-weight: 500; cursor: pointer; transition: all 0.12s;
+  text-align: left; width: 100%;
+}
+.pers-nav-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+.pers-nav-btn.active { background: rgba(255,255,255,0.08); color: #fff; }
+.pers-nav-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.pers-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.pers-right-head {
+  padding: 22px 26px 18px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+}
+.pers-right-head h2 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+.pers-close {
+  background: rgba(255,255,255,0.06); border: none; color: rgba(255,255,255,0.5);
+  cursor: pointer; width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+}
+.pers-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.pers-body { flex: 1; overflow-y: auto; padding: 22px 26px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+.pers-body::-webkit-scrollbar { width: 4px; }
+.pers-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+.pers-preview { width: 300px; flex-shrink: 0; border-left: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; overflow: hidden; }
+.pers-preview-head { padding: 22px 18px 12px; font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: .07em; flex-shrink: 0; }
+.pers-preview-body { flex: 1; overflow-y: auto; padding: 0 18px 18px; }
+.pers-preview-msg { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 0.82rem; color: rgba(255,255,255,0.7); line-height: 1.6; }
+.pers-preview-msg.user-msg { background: rgba(255,255,255,0.07); border-radius: 12px 12px 4px 12px; }
+.pers-preview-icon { width: 28px; height: 28px; border-radius: 7px; overflow: hidden; margin-bottom: 6px; }
+/* Field styles */
+.pers-field { margin-bottom: 20px; }
+.pers-label { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 7px; display: block; }
+.pers-select {
+  width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.88rem;
+  padding: 10px 14px; outline: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff60' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  transition: border-color 0.14s; cursor: pointer;
+}
+.pers-select:hover { border-color: rgba(255,255,255,0.2); }
+.pers-select option { background: #1a1a1a; color: #fff; }
+.pers-textarea {
+  width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.88rem;
+  padding: 10px 14px; outline: none; resize: vertical; min-height: 80px; line-height: 1.6;
+  transition: border-color 0.14s;
+}
+.pers-textarea:focus { border-color: rgba(255,255,255,0.25); }
+.pers-textarea::placeholder { color: rgba(255,255,255,0.25); }
+/* Tone chips */
+.pers-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pers-chip {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+  background: transparent; color: rgba(255,255,255,0.5); font-family: 'Geist', sans-serif;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.12s;
+}
+.pers-chip:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.8); }
+.pers-chip.active { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); color: #fff; }
+.pers-chip.add-chip { color: rgba(255,255,255,0.3); }
+/* Footer */
+.pers-footer {
+  padding: 14px 26px 18px; display: flex; justify-content: flex-end; gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+}
+.pers-btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.15); border-radius: 9px; color: rgba(255,255,255,0.5); font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 8px 16px; cursor: pointer; transition: all 0.12s; }
+.pers-btn-cancel:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.pers-btn-save { background: #fff; border: none; border-radius: 9px; color: #000; font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 700; padding: 8px 18px; cursor: pointer; transition: opacity 0.12s; }
+.pers-btn-save:hover { opacity: 0.88; }
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
@@ -1940,7 +2063,6 @@ const CONNECTORS_LIST = [
     icon: 'gmail-connect.png',
     color: '#EA4335',
     connected: false,
-    // Toutes les permissions possibles pour ce connecteur
     availablePerms: [
       { id: 'read_inbox',    label: 'Lire les emails',        scope: 'https://www.googleapis.com/auth/gmail.readonly', enabled: true },
       { id: 'read_full',     label: 'Lire le contenu complet',scope: 'https://www.googleapis.com/auth/gmail.readonly', enabled: true },
@@ -1984,7 +2106,32 @@ const CONNECTORS_LIST = [
     color: '#F9AB00',
     connected: false,
     availablePerms: [
-      { id: 'read', label: 'Lire les données', scope: 'https://www.googleapis.com/auth/analytics.readonly', enabled: true },
+      { id: 'read', label: 'Lire les données analytics', scope: 'https://www.googleapis.com/auth/analytics.readonly', enabled: true },
+    ]
+  },
+  {
+    id: 'gpeople',
+    name: 'Google People',
+    desc: 'Accédez à vos contacts Google',
+    icon: 'people-connect.png',
+    color: '#34A853',
+    connected: false,
+    availablePerms: [
+      { id: 'contacts_read', label: 'Lire les contacts', scope: 'https://www.googleapis.com/auth/contacts.readonly', enabled: true },
+      { id: 'contacts_write',label: 'Modifier les contacts', scope: 'https://www.googleapis.com/auth/contacts', enabled: false },
+    ]
+  },
+  {
+    id: 'gdocs',
+    name: 'Google Docs',
+    desc: 'Lisez et modifiez vos documents',
+    icon: 'docs-connect.png',
+    color: '#4285F4',
+    connected: false,
+    availablePerms: [
+      { id: 'docs_read',  label: 'Lire les documents', scope: 'https://www.googleapis.com/auth/documents.readonly', enabled: true },
+      { id: 'docs_write', label: 'Modifier les documents', scope: 'https://www.googleapis.com/auth/documents', enabled: false },
+      { id: 'drive_read', label: 'Lire Google Drive',  scope: 'https://www.googleapis.com/auth/drive.readonly', enabled: false },
     ]
   }
 ];
@@ -2099,7 +2246,7 @@ $("sidebar-search").addEventListener("input", (e) => {
 // Personalize
 $("sidebar-personalize-btn").addEventListener("click", () => {
   closeSidebarFn();
-  toast("Personnalisation — Bientôt disponible");
+  openPersonalizeModal();
 });
 
 // Bouton connecteurs sidebar → ouvre le panel
@@ -2167,7 +2314,7 @@ function toggleConnector(connId) {
     toast(`${conn.name} déconnecté`);
   } else {
     // Tous les connecteurs Google utilisent OAuth
-    if (['gmail','gcalendar','gsheets','ganalytics'].includes(conn.id)) {
+    if (['gmail','gcalendar','gsheets','ganalytics','gpeople','gdocs'].includes(conn.id)) {
       showGoogleConnectInfo(conn);
       return;
     }
@@ -2277,11 +2424,11 @@ async function buildConnectorContext(connId) {
     const hasPerm = (id) => conn.availablePerms?.find(p => p.id === id)?.enabled;
 
     try {
-      // Récupérer les 10 derniers emails (lus + non lus)
-      const list = await gmailFetch('messages?maxResults=10', token);
+      // Récupérer les 20 derniers emails
+      const list = await gmailFetch('messages?maxResults=20', token);
       if (!list.messages?.length) return `[Gmail : boîte vide ou inaccessible]`;
 
-      const emails = await Promise.all(list.messages.slice(0, hasPerm('read_full') ? 5 : 3).map(async m => {
+      const emails = await Promise.all(list.messages.slice(0, hasPerm('read_full') ? 10 : 6).map(async m => {
         const msg = await gmailFetch(`messages/${m.id}?format=${hasPerm('read_full') ? 'full' : 'metadata'}&metadataHeaders=From,Subject,Date,To`, token);
         const hdrs = msg.payload?.headers || [];
         const h = (n) => hdrs.find(x => x.name === n)?.value || '';
@@ -2315,7 +2462,41 @@ async function buildConnectorContext(connId) {
   }
 
   return conn ? `[${conn.name} connecté]` : '';
-}
+
+  if (connId === 'gpeople') {
+    const token = await getGmailToken('gpeople');
+    if (!token) return `[Google Contacts : reconnectez le connecteur]`;
+    try {
+      const res = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=20', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (!data.connections?.length) return `[Google Contacts : aucun contact]`;
+      const contacts = data.connections.map(p => {
+        const name = p.names?.[0]?.displayName || 'Inconnu';
+        const email = p.emailAddresses?.[0]?.value || '';
+        const phone = p.phoneNumbers?.[0]?.value || '';
+        return `- ${name}${email ? ` <${email}>` : ''}${phone ? ` | ${phone}` : ''}`;
+      }).join('\n');
+      return `[Google Contacts — ${data.connections.length} contacts]\n${contacts}`;
+    } catch (err) { return `[Google Contacts : erreur — ${err.message}]`; }
+  }
+
+  if (connId === 'gdocs') {
+    const token = await getGmailToken('gdocs');
+    if (!token) return `[Google Docs : reconnectez le connecteur]`;
+    try {
+      const res = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.document'&pageSize=10&fields=files(id,name,modifiedTime)", {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (!data.files?.length) return `[Google Docs : aucun document]`;
+      const docs = data.files.map(f => `- ${f.name} (modifié: ${new Date(f.modifiedTime).toLocaleDateString('fr')})`).join('\n');
+      return `[Google Docs — ${data.files.length} documents récents]\n${docs}`;
+    } catch (err) { return `[Google Docs : erreur — ${err.message}]`; }
+  }
+
+  return '';
 
 // =============================================
 // GMAIL — ACTIONS (envoyer, brouillon, répondre, supprimer)
@@ -2976,7 +3157,7 @@ function appendUserMsg(text, files = []) {
   
   g.innerHTML = `<div class="msg-inner">
     ${filesHtml}
-    ${text ? `<div class="bubble user">${escHtml(text)}</div>` : ""}
+    ${text ? `<div class="bubble user">${renderContent(text)}</div>` : ""}
     <div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div>
   </div>`;
   messagesEl.appendChild(g);
@@ -3257,7 +3438,8 @@ async function doStream(userText, isRegen) {
                     "Pour plusieurs courbes : type: multicourbes, puis courbe1: sin(x), label: sin(x), courbe2: cos(x), label: cos(x)\n" +
                     "Pour barres/camembert : labels: A,B,C et values: 1,2,3\n" +
                     "Pour les tableaux, utilise la syntaxe markdown standard.\n" +
-                    "Réponds en français sauf si l'utilisateur écrit autrement." +
+                    "Réponds en français sauf si l'utilisateur écrit autrement.\n" +
+                    (buildSystemPromptFromPersonalization() ? "INSTRUCTIONS PERSONNALISÉES: " + buildSystemPromptFromPersonalization() + "\n" : "") +
                     systemExtra
           },
           ...messages.filter(m => m.role !== "ai" || m.msgId !== aiMsgId).map(m => ({
@@ -3487,11 +3669,8 @@ function renderConversationList(filter = "") {
     item.innerHTML = `
       <span class="conv-item-title">${escHtml(conv.title)}</span>
       <div class="conv-item-actions">
-        <button class="conv-act-btn rename-btn" title="Renommer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="conv-act-btn delete-btn delete" title="Supprimer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        <button class="conv-act-btn dots-btn" title="Options">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
         </button>
       </div>
     `;
@@ -3499,13 +3678,28 @@ function renderConversationList(filter = "") {
       if (e.target.closest(".conv-item-actions")) return;
       loadConversation(conv.id);
     });
-    item.querySelector(".rename-btn").addEventListener("click", (e) => {
+    item.querySelector(".dots-btn").addEventListener("click", (e) => {
       e.stopPropagation();
-      startRenameConv(conv, item);
-    });
-    item.querySelector(".delete-btn").addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await deleteConversation(conv.id);
+      // Fermer tout menu existant
+      document.querySelectorAll(".conv-ctx-menu").forEach(m => m.remove());
+      const menu = document.createElement("div");
+      menu.className = "conv-ctx-menu";
+      menu.innerHTML = `
+        <button class="conv-ctx-item rename-ctx">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Renommer
+        </button>
+        <button class="conv-ctx-item danger delete-ctx">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Supprimer
+        </button>
+      `;
+      item.querySelector(".conv-item-actions").appendChild(menu);
+      menu.querySelector(".rename-ctx").addEventListener("click", (ev) => { ev.stopPropagation(); menu.remove(); startRenameConv(conv, item); });
+      menu.querySelector(".delete-ctx").addEventListener("click", async (ev) => { ev.stopPropagation(); menu.remove(); await deleteConversation(conv.id); });
+      // Fermer au clic extérieur
+      const closeMenu = (ev) => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("click", closeMenu); } };
+      setTimeout(() => document.addEventListener("click", closeMenu), 10);
     });
     convList.appendChild(item);
   });
@@ -3741,6 +3935,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     userId = user.uid;
     overlay.style.display = "none";
+    await loadPersonalizationFromDB();
   }
 });
 
@@ -3773,10 +3968,270 @@ $("tb-search").addEventListener("click", () => {
   }, 300);
 });
 
+// =============================================
+// PERSONNALISATION
+// =============================================
+let personalization = {
+  tone: 'professional',
+  extraInstructions: '',
+  chips: [],
+  userName: '',
+  userRole: '',
+  responseLength: 'medium',
+  useEmoji: false,
+  useBullets: true,
+};
+
+function loadPersonalization() {
+  try {
+    const saved = localStorage.getItem('wm_personalization');
+    if (saved) Object.assign(personalization, JSON.parse(saved));
+  } catch {}
+}
+
+async function savePersonalization() {
+  localStorage.setItem('wm_personalization', JSON.stringify(personalization));
+  if (userId && currentUser) {
+    try {
+      await set(ref(db, `wikimind5/users/${userId}/settings/personalization`), personalization);
+    } catch {}
+  }
+}
+
+loadPersonalization();
+
+// Charger depuis Firebase si connecté
+async function loadPersonalizationFromDB() {
+  if (!userId || !currentUser) return;
+  try {
+    const snap = await get(ref(db, `wikimind5/users/${userId}/settings/personalization`));
+    if (snap.exists()) Object.assign(personalization, snap.val());
+  } catch {}
+}
+
+const TONE_OPTIONS = [
+  { value: 'professional', label: 'Professionnel', desc: 'Idéal pour le travail, les communications formelles, les emails, etc.' },
+  { value: 'casual', label: 'Décontracté', desc: 'Réponses décontractées et conversationnelles.' },
+  { value: 'concise', label: 'Concis', desc: 'Répond de façon courte et directe, sans détails inutiles.' },
+  { value: 'detailed', label: 'Détaillé', desc: 'Répond de façon approfondie avec des explications complètes.' },
+  { value: 'educational', label: 'Pédagogique', desc: 'Explique avec des exemples et analogies.' },
+];
+
+const CHIP_OPTIONS = ['Poli', 'Décontracté', 'Pragmatique', 'Empathique', 'Objectif', 'Humoristique', 'Motivant'];
+
+const PERS_SECTIONS = {
+  tonality: {
+    title: 'Tonalité & Style',
+    render: () => `
+      <div class="pers-field">
+        <label class="pers-label">Tonalité principale</label>
+        <select class="pers-select" id="pers-tone">
+          ${TONE_OPTIONS.map(t => `<option value="${t.value}" ${personalization.tone === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
+        </select>
+        <div id="pers-tone-desc" style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin-top:7px;">${TONE_OPTIONS.find(t=>t.value===personalization.tone)?.desc||''}</div>
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Instructions supplémentaires</label>
+        <textarea class="pers-textarea" id="pers-extra" placeholder="Ex: Encouragez une réflexion plus profonde avec des questions ouvertes et des résumés.">${personalization.extraInstructions}</textarea>
+      </div>
+      <div class="pers-field">
+        <label class="pers-label" style="margin-bottom:10px">Traits de personnalité</label>
+        <div class="pers-chips">
+          ${CHIP_OPTIONS.map(c => `<button class="pers-chip ${personalization.chips.includes(c) ? 'active' : ''}" data-chip="${c}">+ ${c}</button>`).join('')}
+        </div>
+      </div>
+    `
+  },
+  identity: {
+    title: 'Identité utilisateur',
+    render: () => `
+      <div class="pers-field">
+        <label class="pers-label">Votre prénom</label>
+        <textarea class="pers-textarea" id="pers-username" placeholder="Ex: Thomas" style="min-height:44px;resize:none">${personalization.userName}</textarea>
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Votre rôle / profession</label>
+        <textarea class="pers-textarea" id="pers-userrole" placeholder="Ex: développeur, étudiant en médecine, chef de projet..." style="min-height:44px;resize:none">${personalization.userRole}</textarea>
+      </div>
+    `
+  },
+  format: {
+    title: 'Format des réponses',
+    render: () => `
+      <div class="pers-field">
+        <label class="pers-label">Longueur des réponses</label>
+        <select class="pers-select" id="pers-length">
+          <option value="short" ${personalization.responseLength==='short'?'selected':''}>Courtes — directes et succinctes</option>
+          <option value="medium" ${personalization.responseLength==='medium'?'selected':''}>Moyennes — équilibrées</option>
+          <option value="long" ${personalization.responseLength==='long'?'selected':''}>Longues — détaillées et complètes</option>
+        </select>
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Style de mise en forme</label>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:rgba(255,255,255,0.6)">
+            <input type="checkbox" id="pers-bullets" ${personalization.useBullets?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:#fff">
+            Utiliser des listes à puces
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:rgba(255,255,255,0.6)">
+            <input type="checkbox" id="pers-emoji" ${personalization.useEmoji?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:#fff">
+            Utiliser des emojis
+          </label>
+        </div>
+      </div>
+    `
+  }
+};
+
+function buildSystemPromptFromPersonalization() {
+  const tone = TONE_OPTIONS.find(t => t.value === personalization.tone);
+  const toneStr = tone ? `Adopte un style ${tone.label.toLowerCase()}.` : '';
+  const chipsStr = personalization.chips.length ? `Traits de ton: ${personalization.chips.join(', ')}.` : '';
+  const extraStr = personalization.extraInstructions ? personalization.extraInstructions.trim() : '';
+  const nameStr = personalization.userName ? `L'utilisateur s'appelle ${personalization.userName}.` : '';
+  const roleStr = personalization.userRole ? `Il est ${personalization.userRole}.` : '';
+  const lengthStr = personalization.responseLength === 'short' ? 'Réponds de façon courte et directe.' : personalization.responseLength === 'long' ? 'Réponds de façon détaillée et complète.' : '';
+  const emojiStr = personalization.useEmoji ? 'Tu peux utiliser des emojis pour illustrer tes propos.' : 'Évite les emojis.';
+  const bulletStr = personalization.useBullets ? '' : 'Évite les listes à puces, préfère des phrases continues.';
+  return [toneStr, chipsStr, nameStr, roleStr, lengthStr, emojiStr, bulletStr, extraStr].filter(Boolean).join(' ');
+}
+
+let _persSection = 'tonality';
+
+function openPersonalizeModal() {
+  loadPersonalizationFromDB();
+  _persSection = 'tonality';
+  renderPersSection();
+  $("personalize-overlay").classList.add("open");
+}
+
+function closePersModal() {
+  $("personalize-overlay").classList.remove("open");
+}
+
+function renderPersSection() {
+  const sec = PERS_SECTIONS[_persSection];
+  $("pers-section-title").textContent = sec.title;
+  $("pers-body").innerHTML = sec.render();
+
+  // Bind events
+  const toneEl = $("pers-tone");
+  if (toneEl) {
+    toneEl.addEventListener("change", () => {
+      personalization.tone = toneEl.value;
+      const desc = TONE_OPTIONS.find(t => t.value === toneEl.value)?.desc || '';
+      $("pers-tone-desc").textContent = desc;
+      updatePersPreview();
+    });
+  }
+  const extraEl = $("pers-extra");
+  if (extraEl) extraEl.addEventListener("input", () => { personalization.extraInstructions = extraEl.value; updatePersPreview(); });
+
+  document.querySelectorAll(".pers-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const c = chip.dataset.chip;
+      if (personalization.chips.includes(c)) {
+        personalization.chips = personalization.chips.filter(x => x !== c);
+        chip.classList.remove("active");
+      } else {
+        personalization.chips.push(c);
+        chip.classList.add("active");
+      }
+      updatePersPreview();
+    });
+  });
+
+  const userNameEl = $("pers-username");
+  if (userNameEl) userNameEl.addEventListener("input", () => { personalization.userName = userNameEl.value; });
+  const userRoleEl = $("pers-userrole");
+  if (userRoleEl) userRoleEl.addEventListener("input", () => { personalization.userRole = userRoleEl.value; });
+  const lengthEl = $("pers-length");
+  if (lengthEl) lengthEl.addEventListener("change", () => { personalization.responseLength = lengthEl.value; });
+  const bulletsEl = $("pers-bullets");
+  if (bulletsEl) bulletsEl.addEventListener("change", () => { personalization.useBullets = bulletsEl.checked; });
+  const emojiEl = $("pers-emoji");
+  if (emojiEl) emojiEl.addEventListener("change", () => { personalization.useEmoji = emojiEl.checked; });
+
+  document.querySelectorAll(".pers-nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.section === _persSection);
+  });
+  updatePersPreview();
+}
+
+function updatePersPreview() {
+  const tone = TONE_OPTIONS.find(t => t.value === personalization.tone);
+  const chips = personalization.chips.slice(0,3).join(', ');
+  const len = personalization.responseLength;
+  const previewTexts = {
+    professional: "Améliorer sa productivité repose sur une combinaison de méthodes structurées, d'outils adaptés et d'habitudes personnalisées. Voici une approche systématique...",
+    casual: "Pour booster ta productivité, quelques trucs qui marchent vraiment bien : commence par la technique Pomodoro...",
+    concise: "Clés principales : Pomodoro, liste de priorités, élimination des distractions, pauses régulières.",
+    detailed: "La productivité est un domaine multidimensionnel. Pour l'améliorer durablement, il faut agir sur trois axes principaux : la gestion du temps, l'environnement de travail, et les habitudes mentales...",
+    educational: "Commençons par définir ce qu'est la productivité. C'est la capacité à accomplir plus en moins de temps. Prenons un exemple concret...",
+  };
+  const previewText = previewTexts[personalization.tone] || previewTexts.professional;
+  $("pers-preview-ai").innerHTML = `<strong>Wikimind AI</strong><br>${previewText.slice(0, 200)}${len === 'short' ? '...' : len === 'long' ? ' [réponse plus détaillée]' : '...'}${chips ? `<br><em style="font-size:0.72rem;opacity:0.5">${chips}</em>` : ''}`;
+}
+
+document.querySelectorAll(".pers-nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => { _persSection = btn.dataset.section; renderPersSection(); });
+});
+
+$("pers-close-btn").addEventListener("click", closePersModal);
+$("pers-cancel-btn").addEventListener("click", closePersModal);
+$("personalize-overlay").addEventListener("click", (e) => { if (e.target === $("personalize-overlay")) closePersModal(); });
+
+$("pers-save-btn").addEventListener("click", async () => {
+  await savePersonalization();
+  closePersModal();
+  toast("Personnalisation enregistrée ✓");
+});
+
 // Init
 userId = getOrCreateUserId();
 runPlaceholder();
 </script>
+<!-- MODALE PERSONNALISATION -->
+<div id="personalize-overlay">
+  <div id="personalize-modal">
+    <div class="pers-left">
+      <div class="pers-left-title">Instructions</div>
+      <button class="pers-nav-btn active" data-section="tonality">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        Tonalité
+      </button>
+      <button class="pers-nav-btn" data-section="identity">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Identité
+      </button>
+      <button class="pers-nav-btn" data-section="format">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+        Format
+      </button>
+    </div>
+    <div class="pers-right">
+      <div class="pers-right-head">
+        <h2 id="pers-section-title">Tonalité & Style</h2>
+        <button class="pers-close" id="pers-close-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="pers-body" id="pers-body"></div>
+      <div class="pers-footer">
+        <button class="pers-btn-cancel" id="pers-cancel-btn">Annuler</button>
+        <button class="pers-btn-save" id="pers-save-btn">Enregistrer</button>
+      </div>
+    </div>
+    <div class="pers-preview">
+      <div class="pers-preview-head">Aperçu</div>
+      <div class="pers-preview-body" id="pers-preview-body">
+        <div class="pers-preview-msg user-msg">Quels sont les meilleurs moyens d'améliorer ma productivité ?</div>
+        <div class="pers-preview-msg" id="pers-preview-ai">L'aperçu s'affiche ici selon vos réglages.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODALE PERMISSIONS CONNECTEUR -->
 <div id="perms-modal-overlay">
   <div id="perms-modal">
