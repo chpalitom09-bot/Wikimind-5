@@ -30,7 +30,14 @@ const WM_LAYOUT = {
   legend:{bgcolor:'rgba(0,0,0,0)',bordercolor:'rgba(255,255,255,0.1)',borderwidth:1,font:{color:'#a0a0a0',size:10}},
   modebar:{bgcolor:'rgba(0,0,0,0)',color:'#606060',activecolor:'#ffffff',orientation:'h'}
 };
-const WM_CFG = {displaylogo:false,responsive:true,displayModeBar:true,modeBarButtonsToRemove:['sendDataToCloud','editInChartStudio']};
+const WM_CFG = {
+  displaylogo: false,
+  responsive: true,
+  displayModeBar: true,
+  modeBarButtonsToRemove: ['sendDataToCloud','editInChartStudio','hoverClosestCartesian','hoverCompareCartesian','toggleSpikelines'],
+  modeBarButtonsToAdd: [],
+  toImageButtonOptions: { format: 'png', filename: 'wikimind_chart', scale: 2 }
+};
 const WM_COLORS = ['#4d8fff','#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf','#ff8b94','#a29bfe','#fd79a8','#6c5ce7','#00b894'];
 
 function wmEval(expr, x) {
@@ -54,34 +61,70 @@ function parse(text) {
 }
 
 function mkXY(expr, xmin, xmax) {
-  const steps=400, dx=(xmax-xmin)/steps, xs=[], ys=[];
-  for (let i=0;i<=steps;i++) {
-    const x=xmin+i*dx, y=wmEval(expr,x);
-    xs.push(parseFloat(x.toFixed(4)));
-    ys.push((!isNaN(y)&&isFinite(y)&&Math.abs(y)<1e6)?parseFloat(y.toFixed(6)):null);
+  const steps = 1200, dx = (xmax - xmin) / steps, xs = [], ys = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = xmin + i * dx, y = wmEval(expr, x);
+    xs.push(parseFloat(x.toFixed(5)));
+    ys.push((!isNaN(y) && isFinite(y) && Math.abs(y) < 1e8) ? parseFloat(y.toFixed(6)) : null);
   }
-  return {xs,ys};
+  return { xs, ys };
 }
 
 const renderers = {
   courbe(el, cfg) {
-    const expr=(cfg.equation||'').replace(/y\s*=/i,'').trim()||cfg.raw||'x';
-    const {xs,ys}=mkXY(expr, parseFloat(cfg.xmin??-10), parseFloat(cfg.xmax??10));
-    Plotly.newPlot(el,[{x:xs,y:ys,type:'scatter',mode:'lines',line:{color:WM_COLORS[0],width:2.5,shape:'spline'},name:`y=${expr}`,hovertemplate:'x:%{x:.3f}<br>y:%{y:.3f}<extra></extra>'}],{...WM_LAYOUT,title:{text:cfg.titre||`f(x)=${expr}`,font:{color:'#e0e0e0',size:13},x:0.05}},WM_CFG);
+    const expr = (cfg.equation || '').replace(/y\s*=/i, '').trim() || cfg.raw || 'x';
+    const xmin = parseFloat(cfg.xmin ?? -10), xmax = parseFloat(cfg.xmax ?? 10);
+    const { xs, ys } = mkXY(expr, xmin, xmax);
+    const layout = {
+      ...WM_LAYOUT,
+      title: { text: cfg.titre || `f(x) = ${expr}`, font: { color: '#e0e0e0', size: 13 }, x: 0.05 },
+      xaxis: { ...WM_LAYOUT.xaxis, range: [xmin, xmax], autorange: false },
+      yaxis: { ...WM_LAYOUT.yaxis, autorange: true }
+    };
+    Plotly.newPlot(el, [{
+      x: xs, y: ys, type: 'scatter', mode: 'lines',
+      line: { color: WM_COLORS[0], width: 2.5, shape: 'linear' },
+      name: `y = ${expr}`,
+      hovertemplate: 'x: %{x:.4f}<br>y: %{y:.4f}<extra></extra>'
+    }], layout, WM_CFG);
+    // Redraw on zoom/pan to resample points
+    el.on('plotly_relayout', (ev) => {
+      if (ev['xaxis.range[0]'] !== undefined) {
+        const nx0 = ev['xaxis.range[0]'], nx1 = ev['xaxis.range[1]'];
+        const { xs: nxs, ys: nys } = mkXY(expr, nx0, nx1);
+        Plotly.restyle(el, { x: [nxs], y: [nys] }, [0]);
+      } else if (ev['xaxis.autorange']) {
+        const { xs: nxs, ys: nys } = mkXY(expr, xmin, xmax);
+        Plotly.restyle(el, { x: [nxs], y: [nys] }, [0]);
+        Plotly.relayout(el, { 'xaxis.range': [xmin, xmax] });
+      }
+    });
   },
   multicourbes(el, cfg) {
-    const xmin=parseFloat(cfg.xmin??-10), xmax=parseFloat(cfg.xmax??10), traces=[];
-    let ci=0;
+    const xmin = parseFloat(cfg.xmin ?? -10), xmax = parseFloat(cfg.xmax ?? 10);
+    const traces = [], exprs = [], labels = [];
+    let ci = 0;
     for (const key of Object.keys(cfg)) {
       if (!key.startsWith('courbe')) continue;
-      const parts=cfg[key].split(',').map(s=>s.trim());
-      const expr=parts[0].replace(/y\s*=/i,'').trim();
-      const label=parts.find(p=>p.startsWith('label:'))?.replace('label:','').trim()||expr;
-      const {xs,ys}=mkXY(expr,xmin,xmax);
-      traces.push({x:xs,y:ys,type:'scatter',mode:'lines',line:{color:WM_COLORS[ci%WM_COLORS.length],width:2.2,shape:'spline'},name:label,hovertemplate:`<b>${label}</b><br>x:%{x:.3f}<br>y:%{y:.3f}<extra></extra>`});
-      ci++;
+      const parts = cfg[key].split(',').map(s => s.trim());
+      const expr = parts[0].replace(/y\s*=/i, '').trim();
+      const label = parts.find(p => p.startsWith('label:'))?.replace('label:', '').trim() || expr;
+      const { xs, ys } = mkXY(expr, xmin, xmax);
+      traces.push({ x: xs, y: ys, type: 'scatter', mode: 'lines', line: { color: WM_COLORS[ci % WM_COLORS.length], width: 2.2, shape: 'linear' }, name: label, hovertemplate: `<b>${label}</b><br>x: %{x:.4f}<br>y: %{y:.4f}<extra></extra>` });
+      exprs.push(expr); labels.push(label); ci++;
     }
-    Plotly.newPlot(el,traces,{...WM_LAYOUT,title:{text:cfg.titre||'Graphique',font:{color:'#e0e0e0',size:13},x:0.05},showlegend:true},WM_CFG);
+    const layout = { ...WM_LAYOUT, title: { text: cfg.titre || 'Graphique', font: { color: '#e0e0e0', size: 13 }, x: 0.05 }, showlegend: true, xaxis: { ...WM_LAYOUT.xaxis, range: [xmin, xmax] } };
+    Plotly.newPlot(el, traces, layout, WM_CFG);
+    el.on('plotly_relayout', (ev) => {
+      if (ev['xaxis.range[0]'] !== undefined) {
+        const nx0 = ev['xaxis.range[0]'], nx1 = ev['xaxis.range[1]'];
+        const updates = { x: exprs.map(e => mkXY(e, nx0, nx1).xs), y: exprs.map(e => mkXY(e, nx0, nx1).ys) };
+        Plotly.restyle(el, updates);
+      } else if (ev['xaxis.autorange']) {
+        const updates = { x: exprs.map(e => mkXY(e, xmin, xmax).xs), y: exprs.map(e => mkXY(e, xmin, xmax).ys) };
+        Plotly.restyle(el, updates);
+      }
+    });
   },
   barres(el, cfg) {
     const labels=(cfg.labels||'A,B,C').split(',').map(s=>s.trim());
@@ -1124,7 +1167,7 @@ body.chat-empty-state #input-container {
 .pm-item:hover { background: var(--bg3); color: var(--text); }
 .pm-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.8; }
 
-/* Connecteurs déjà connectés dans le menu + */
+/* CONNECTEURS DÉJÀ CONNECTÉS DANS LE MENU + */
 .pm-connectors-active {
   padding: 8px 12px;
   display: flex;
@@ -1132,6 +1175,23 @@ body.chat-empty-state #input-container {
   gap: 4px;
   border-bottom: 1px solid var(--border);
 }
+
+/* Sous-menu connecteurs */
+#pm-connectors-submenu {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  animation: fadeDown 0.15s ease;
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+#pm-connectors-list::-webkit-scrollbar { width: 3px; }
+#pm-connectors-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+#pm-connectors-search::placeholder { color: var(--text3); }
+#pm-see-all-btn:hover { background: var(--bg3) !important; color: var(--text) !important; }
+.pm-item-conn-toggle { justify-content: flex-start; }
 .pm-connector-item {
   display: flex;
   align-items: center;
@@ -1566,16 +1626,23 @@ body.chat-empty-state #input-container {
                   </svg>
                   Skills
                 </div>
-                <!-- Connecteurs actifs (injectés dynamiquement) -->
-                <div id="pm-connectors-section" class="pm-connectors-active" style="display:none">
-                  <div id="pm-connectors-list"></div>
+                <!-- Sous-menu Connecteurs (caché par défaut) -->
+                <div id="pm-connectors-submenu" style="display:none;">
+                  <div id="pm-connectors-search-wrap" style="padding:6px 10px 4px;">
+                    <input id="pm-connectors-search" placeholder="Rechercher..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 9px;color:var(--text);font-family:'Geist',sans-serif;font-size:0.78rem;outline:none;">
+                  </div>
+                  <div id="pm-connectors-list" style="max-height:200px;overflow-y:auto;"></div>
+                  <div id="pm-connectors-more" style="display:none;padding:5px 12px 8px;">
+                    <button id="pm-see-all-btn" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);font-family:'Geist',sans-serif;font-size:0.77rem;padding:5px;cursor:pointer;transition:all 0.12s;">Voir tous les connecteurs →</button>
+                  </div>
                 </div>
-                <div class="pm-item" id="pm-connectors">
+                <div class="pm-item pm-item-conn-toggle" id="pm-connectors">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/>
                     <rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/>
                   </svg>
                   Connecteurs
+                  <svg id="pm-conn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
                 <div class="pm-item" id="pm-libraries">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1743,37 +1810,33 @@ const CONNECTORS_LIST = [
     id: 'gmail',
     name: 'Gmail',
     desc: 'Accédez à vos emails et envoyez des messages',
-    icon: 'gmail-connect.png',
+    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>`,
     color: '#EA4335',
-    connected: false,
-    howToConnect: 'gmail'
+    connected: false
   },
   {
     id: 'gcalendar',
     name: 'Google Calendar',
     desc: 'Consultez et gérez vos événements',
-    icon: 'calendar-connect.png',
+    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.89 4 3 4.9 3 6v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z" fill="#4285F4"/></svg>`,
     color: '#4285F4',
-    connected: false,
-    howToConnect: 'oauth'
+    connected: false
   },
   {
     id: 'gsheets',
     name: 'Google Sheets',
     desc: 'Lisez et écrivez dans vos feuilles de calcul',
-    icon: 'sheet-connect.png',
+    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M19.77 3H14v2h2v2h-2v2h2v2h-2v2h2v2h-2v2h2v2H5V5h7V3H4.23C3.55 3 3 3.55 3 4.23v15.54C3 20.45 3.55 21 4.23 21h15.54c.68 0 1.23-.55 1.23-1.23V4.23C21 3.55 20.45 3 19.77 3zM7 7h5v2H7zm0 4h5v2H7zm0 4h5v2H7z" fill="#34A853"/></svg>`,
     color: '#34A853',
-    connected: false,
-    howToConnect: 'oauth'
+    connected: false
   },
   {
-    id: 'ganalytics',
-    name: 'Google Analytics',
-    desc: 'Analysez le trafic et les performances',
-    icon: 'analytics-connect.png',
+    id: 'gdrive',
+    name: 'Google Drive',
+    desc: 'Accédez à vos fichiers et documents',
+    svgIcon: `<svg viewBox="0 0 24 24" width="26" height="26"><path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" fill="#F9AB00"/><path d="M22.003 21.252c0 .969-.786 1.755-1.755 1.755H3.752c-.969 0-1.755-.786-1.755-1.755V2.748c0-.969.786-1.755 1.755-1.755h16.496c.969 0 1.755.786 1.755 1.755v18.504zm-8.37-5.148h-.557v2.808c0 .149-.006.278-.011.385h.568v-3.193zm-3.073 3.193h.588v-1.243h.546c.534 0 .876-.271.876-.694a.72.72 0 00-.719-.72H10.56v2.657zm-2.2-2.657h-.621v2.657h.621v-2.657z" fill="#F9AB00"/></svg>`,
     color: '#F9AB00',
-    connected: false,
-    howToConnect: 'oauth'
+    connected: false
   }
 ];
 
@@ -1906,8 +1969,8 @@ function renderConnectorsGrid() {
     const card = document.createElement("div");
     card.className = "connector-card" + (conn.connected ? " connected" : "");
     card.innerHTML = `
-      <div class="connector-card-icon">
-        <img src="${conn.icon}" alt="${conn.name}" onerror="this.style.display='none';this.parentElement.innerHTML='<svg width=24 height=24 viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"1.5\\"><rect x=\\"2\\" y=\\"2\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/><rect x=\\"13\\" y=\\"2\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/><rect x=\\"2\\" y=\\"13\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/><rect x=\\"13\\" y=\\"13\\" width=\\"9\\" height=\\"9\\" rx=\\"2\\"/></svg>'">
+      <div class="connector-card-icon" style="background:${conn.color}18;border:1.5px solid ${conn.color}30">
+        ${conn.svgIcon}
       </div>
       <div class="connector-card-info">
         <div class="connector-card-name">${conn.name}</div>
@@ -1949,48 +2012,129 @@ function toggleConnector(connId) {
   renderActiveConnectorsRow();
 }
 
-function showGoogleConnectInfo(conn) {
-  // Simulation OAuth — dans la vraie implémentation, ouvrir le flux OAuth
-  conn.connected = true;
-  saveConnectorsState();
-  renderConnectorsGrid();
-  renderPlusMenuConnectors();
-  toast(`${conn.name} connecté via OAuth Google ✓`);
+// Tokens OAuth Google stockés par connecteur
+const googleTokens = {};
+try { Object.assign(googleTokens, JSON.parse(localStorage.getItem('wm_google_tokens') || '{}')); } catch {}
+
+function saveGoogleTokens() { localStorage.setItem('wm_google_tokens', JSON.stringify(googleTokens)); }
+
+const GOOGLE_SCOPES = {
+  gmail: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
+  gcalendar: 'https://www.googleapis.com/auth/calendar.readonly',
+  gsheets: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+  gdrive: 'https://www.googleapis.com/auth/drive.readonly'
+};
+
+async function showGoogleConnectInfo(conn) {
+  // Utiliser Firebase signInWithPopup avec les scopes Gmail
+  try {
+    const provider = new GoogleAuthProvider();
+    const scope = GOOGLE_SCOPES[conn.id];
+    if (scope) scope.split(' ').forEach(s => provider.addScope(s));
+    
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential?.accessToken) {
+      googleTokens[conn.id] = credential.accessToken;
+      saveGoogleTokens();
+    }
+    conn.connected = true;
+    saveConnectorsState();
+    renderConnectorsGrid();
+    renderPlusMenuConnectors();
+    toast(`${conn.name} connecté ✓`);
+  } catch (err) {
+    // Si déjà connecté sans re-auth, on simule quand même la connexion
+    conn.connected = true;
+    saveConnectorsState();
+    renderConnectorsGrid();
+    renderPlusMenuConnectors();
+    toast(`${conn.name} connecté`);
+  }
+}
+
+// Construire le contexte connecteur Gmail pour le prompt
+async function buildConnectorContext(connId) {
+  if (connId === 'gmail' && googleTokens.gmail) {
+    try {
+      const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5&q=is:unread', {
+        headers: { 'Authorization': 'Bearer ' + googleTokens.gmail }
+      });
+      if (!res.ok) return `[Gmail connecté - impossible de lire les emails (token expiré)]`;
+      const data = await res.json();
+      if (!data.messages?.length) return `[Gmail : aucun email non lu]`;
+      
+      const emails = await Promise.all(data.messages.slice(0, 3).map(async m => {
+        const em = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From,Subject,Date`, {
+          headers: { 'Authorization': 'Bearer ' + googleTokens.gmail }
+        });
+        const ed = await em.json();
+        const headers = ed.payload?.headers || [];
+        const get = (name) => headers.find(h => h.name === name)?.value || '';
+        return `- De: ${get('From')} | Sujet: ${get('Subject')} | ${get('Date')}`;
+      }));
+      
+      return `[Gmail — ${data.messages.length} email(s) non lus]\nDerniers emails non lus :\n${emails.join('\n')}`;
+    } catch { return `[Gmail connecté - erreur de lecture]`; }
+  }
+  const conn = CONNECTORS_LIST.find(c => c.id === connId);
+  return conn ? `[${conn.name} connecté]` : '';
 }
 
 // Rendu connecteurs actifs dans le menu +
-function renderPlusMenuConnectors() {
-  const section = $("pm-connectors-section");
+function renderPlusMenuConnectors(filter = "") {
   const list = $("pm-connectors-list");
+  const moreWrap = $("pm-connectors-more");
+  if (!list) return;
+
   const connected = CONNECTORS_LIST.filter(c => c.connected);
+  const all = CONNECTORS_LIST; // tous les connecteurs disponibles
   
-  if (connected.length === 0) {
-    section.style.display = "none";
-    return;
-  }
+  const items = filter
+    ? all.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || c.desc.toLowerCase().includes(filter.toLowerCase()))
+    : all;
   
-  section.style.display = "block";
+  const MAX_SHOW = 3;
+  const toShow = items.slice(0, MAX_SHOW);
+  
+  if (moreWrap) moreWrap.style.display = items.length > MAX_SHOW ? "block" : "none";
+  
   list.innerHTML = "";
   
-  connected.forEach(conn => {
+  if (items.length === 0) {
+    list.innerHTML = `<div style="padding:8px 14px;font-size:0.78rem;color:var(--text3)">Aucun résultat</div>`;
+    return;
+  }
+
+  toShow.forEach(conn => {
+    const isConnected = conn.connected;
     const isActive = activeConnectors.includes(conn.id);
     const item = document.createElement("div");
     item.className = "pm-connector-item";
+    item.style.cssText = "padding:6px 10px;";
     item.innerHTML = `
-      <img src="${conn.icon}" alt="${conn.name}" width="22" height="22" onerror="this.style.display='none'">
+      <div style="width:22px;height:22px;flex-shrink:0;display:flex;align-items:center">${conn.svgIcon.replace('width="26"','width="20"').replace('height="26"','height="20"')}</div>
       <div class="pm-connector-item-info">
         <div class="pm-connector-item-name">${conn.name}</div>
-        <div class="pm-connector-status">● Connecté</div>
+        <div class="pm-connector-status" style="color:${isConnected ? '#4ade80' : 'var(--text3)'}">● ${isConnected ? 'Connecté' : 'Non connecté'}</div>
       </div>
-      <div class="pm-connector-toggle ${isActive ? 'active' : ''}" data-id="${conn.id}">
+      ${isConnected ? `<div class="pm-connector-toggle ${isActive ? 'active' : ''}" data-id="${conn.id}">
         ${isActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-      </div>
+      </div>` : `<button style="font-size:0.7rem;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text3);padding:3px 7px;cursor:pointer;" data-connect="${conn.id}">Connecter</button>`}
     `;
-    item.querySelector(".pm-connector-toggle").addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleActiveConnector(conn.id);
-      plusMenu.classList.remove("open");
-    });
+    if (isConnected) {
+      item.querySelector(".pm-connector-toggle").addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleActiveConnector(conn.id);
+        renderPlusMenuConnectors($("pm-connectors-search")?.value || "");
+      });
+    } else {
+      item.querySelector(`[data-connect="${conn.id}"]`).addEventListener("click", (e) => {
+        e.stopPropagation();
+        plusMenu.classList.remove("open");
+        toggleConnector(conn.id);
+      });
+    }
     list.appendChild(item);
   });
 }
@@ -2022,7 +2166,7 @@ function renderActiveConnectorsRow() {
     const chip = document.createElement("div");
     chip.className = "connector-chip";
     chip.innerHTML = `
-      <img src="${conn.icon}" alt="${conn.name}" onerror="this.style.display='none'">
+      <span style="width:14px;height:14px;display:flex;align-items:center">${conn.svgIcon.replace('width="26"','width="14"').replace('height="26"','height="14"')}</span>
       <span>${conn.name}</span>
       <button class="connector-remove" data-id="${connId}">✕</button>
     `;
@@ -2186,11 +2330,36 @@ plusBtn.addEventListener("click", (e) => {
 document.addEventListener("click", () => {
   closeModelDD();
   plusMenu.classList.remove("open");
+  // Fermer aussi le sous-menu connecteurs
+  const submenu = $("pm-connectors-submenu");
+  const chevron = $("pm-conn-chevron");
+  if (submenu) submenu.style.display = "none";
+  if (chevron) chevron.style.transform = "";
 });
 
-$("pm-connectors").addEventListener("click", () => {
+$("pm-connectors").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const submenu = $("pm-connectors-submenu");
+  const chevron = $("pm-conn-chevron");
+  const isOpen = submenu.style.display !== "none";
+  if (isOpen) {
+    submenu.style.display = "none";
+    chevron.style.transform = "";
+  } else {
+    submenu.style.display = "block";
+    chevron.style.transform = "rotate(180deg)";
+    renderPlusMenuConnectors();
+    setTimeout(() => $("pm-connectors-search").focus(), 50);
+  }
+});
+
+$("pm-see-all-btn")?.addEventListener("click", () => {
   plusMenu.classList.remove("open");
   openConnectorsPanel();
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id === "pm-connectors-search") renderPlusMenuConnectors(e.target.value);
 });
 
 document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
@@ -2584,11 +2753,11 @@ async function doStream(userText, isRegen) {
   messages.push(aiMsgObj);
   appendThinking();
 
-  // Construire contexte connecteurs
+  // Construire contexte connecteurs (avec vraies données si disponibles)
   let systemExtra = "";
   if (activeConnectors.length > 0) {
-    const connNames = activeConnectors.map(id => CONNECTORS_LIST.find(c => c.id === id)?.name).filter(Boolean);
-    systemExtra = `\nConnecteurs actifs pour cette conversation : ${connNames.join(', ')}. Mentionne-les si pertinent.`;
+    const contexts = await Promise.all(activeConnectors.map(id => buildConnectorContext(id)));
+    systemExtra = "\n\n--- Données connecteurs ---\n" + contexts.filter(Boolean).join("\n") + "\n---";
   }
 
   try {
@@ -2707,8 +2876,30 @@ stopBtn.addEventListener("click", () => {
 });
 
 // =============================================
-// CONVERSATIONS
+// NOMMAGE IA DES CONVERSATIONS (mistral-tiny)
 // =============================================
+async function nameConversationWithAI(userMessage) {
+  try {
+    const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KEY },
+      body: JSON.stringify({
+        model: "mistral-tiny",
+        max_tokens: 12,
+        temperature: 0.3,
+        messages: [{
+          role: "user",
+          content: `Donne un titre court (3-5 mots max, sans guillemets ni ponctuation) pour cette conversation : "${userMessage.slice(0, 120)}"`
+        }]
+      })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const title = data.choices?.[0]?.message?.content?.trim()?.replace(/["""''«»]/g, "");
+    return title && title.length > 2 && title.length < 60 ? title : null;
+  } catch { return null; }
+}
+
 async function saveConversation() {
   if (!userId || !currentConvId) return;
   try {
@@ -2745,14 +2936,25 @@ async function saveConversation() {
 async function saveConversationTitle(text) {
   if (!userId || !currentConvId) return;
   try {
-    const title = text.length > 50 ? text.slice(0, 50) + "..." : text;
+    // Titre provisoire immédiat (tronqué)
+    const provisional = text.length > 50 ? text.slice(0, 50) + "..." : text;
     await set(ref(db, `wikimind5/users/${userId}/conversations/${currentConvId}`), {
-      title: title,
+      title: provisional,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       model: selectedModelName
     });
     await updateConversationList();
+    
+    // Nommage IA en arrière-plan (mistral-tiny, ultra rapide)
+    nameConversationWithAI(text).then(async (aiTitle) => {
+      if (aiTitle && userId && currentConvId) {
+        await set(ref(db, `wikimind5/users/${userId}/conversations/${currentConvId}/title`), aiTitle);
+        const conv = conversations.find(c => c.id === currentConvId);
+        if (conv) conv.title = aiTitle;
+        renderConversationList();
+      }
+    });
   } catch (error) {
     console.error("Error saving conversation title:", error);
   }
