@@ -1,6 +1,10 @@
 {
   "version": "5.1",
   "defaultModel": "wm-small-5.1",
+  "apiKeys": {
+    "mistral": "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj",
+    "groq": "NOUVELLE_CLE_GROQ_ICI"
+  },
   "models": [
     {
       "id": "wm-small-5.1",
@@ -45,12 +49,54 @@
       "contextWindow": 131072
     },
     {
+      "id": "wm-flash-groq-llama-instant",
+      "displayName": "Flash 1.0",
+      "apiModel": "llama-3.1-8b-instant",
+      "tier": "flash",
+      "category": "more",
+      "description": "Ultra-rapide, réponses instantanées",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-flash-1.1",
+      "displayName": "Flash 1.1",
+      "apiModel": "llama-3.2-3b-preview",
+      "tier": "flash",
+      "category": "more",
+      "description": "Compact, idéal pour les tâches simples",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-flash-1.2",
+      "displayName": "Flash 1.2",
+      "apiModel": "gemma2-9b-it",
+      "tier": "flash",
+      "category": "more",
+      "description": "Google Gemma 2 9B, fluide et efficace",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 8192
+    },
+    {
       "id": "wm-small-4.7",
       "displayName": "Small 4.7",
       "apiModel": "ministral-3b-latest",
       "tier": "small",
       "category": "more",
-      "description": "Ultra-léger, réponses instantanées",
+      "description": "Ultra-léger Mistral, réponses instantanées",
       "provider": "mistral",
       "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
       "supportsVision": false,
@@ -64,7 +110,7 @@
       "apiModel": "open-mistral-7b",
       "tier": "small",
       "category": "more",
-      "description": "Modèle open-source 7B",
+      "description": "Open-source 7B de Mistral",
       "provider": "mistral",
       "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
       "supportsVision": false,
@@ -101,12 +147,26 @@
       "contextWindow": 131072
     },
     {
+      "id": "wm-small-5.2",
+      "displayName": "Small 5.2",
+      "apiModel": "llama-3.1-70b-versatile",
+      "tier": "small",
+      "category": "more",
+      "description": "Llama 3.1 70B via Groq, très polyvalent",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 32768,
+      "contextWindow": 131072
+    },
+    {
       "id": "wm-medium-4.9",
       "displayName": "Medium 4.9",
       "apiModel": "open-mixtral-8x7b",
       "tier": "medium",
       "category": "more",
-      "description": "MoE 8×7B open-source",
+      "description": "MoE 8×7B open-source Mistral",
       "provider": "mistral",
       "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
       "supportsVision": false,
@@ -124,6 +184,20 @@
       "provider": "mistral",
       "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
       "supportsVision": true,
+      "supportsStreaming": true,
+      "maxTokens": 32768,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-medium-5.3",
+      "displayName": "Medium 5.3",
+      "apiModel": "llama-3.3-70b-versatile",
+      "tier": "medium",
+      "category": "more",
+      "description": "Llama 3.3 70B via Groq, excellent rapport qualité/vitesse",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
       "supportsStreaming": true,
       "maxTokens": 32768,
       "contextWindow": 131072
@@ -168,6 +242,34 @@
       "supportsVision": true,
       "supportsStreaming": true,
       "maxTokens": 32768,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-large-5.4",
+      "displayName": "Large 5.4",
+      "apiModel": "deepseek-r1-distill-llama-70b",
+      "tier": "large",
+      "category": "more",
+      "description": "DeepSeek R1 raisonneur, via Groq",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 32768,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-large-5.5",
+      "displayName": "Large 5.5",
+      "apiModel": "meta-llama/llama-4-maverick-17b-128e-instruct",
+      "tier": "large",
+      "category": "more",
+      "description": "Llama 4 Maverick, vision + texte",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": true,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
       "contextWindow": 131072
     }
   ]
