@@ -1096,7 +1096,7 @@ body.chat-empty-state #input-container {
 
 /* ========== MODEL SELECTOR ========== */
 #bubble-model-wrap {
-  position: relative;
+  position: static;
 }
 #bubble-model-btn {
   display: flex;
@@ -1137,18 +1137,27 @@ body.chat-empty-state #input-container {
   transform: translateY(-50%) rotate(180deg);
 }
 
+/* Overlay backdrop so dropdown is always above WIKIMIND title */
+#model-dropdown-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+#model-dropdown-overlay.open {
+  display: block;
+}
+
 #bubble-model-dropdown {
-  position: absolute;
+  position: fixed;
   background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: 14px;
-  overflow: hidden;
-  z-index: 9999;
-  min-width: 250px;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.7);
+  overflow: visible;
+  z-index: 10001;
+  min-width: 260px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.85);
   display: none;
-  bottom: calc(100% + 8px);
-  left: 0;
 }
 #bubble-model-dropdown.open {
   display: block;
@@ -1176,6 +1185,58 @@ body.chat-empty-state #input-container {
 .model-opt-desc { font-size: 0.75rem; color: var(--text2); margin-top: 1px; }
 .model-opt-check { color: var(--text2); opacity: 0; flex-shrink: 0; }
 .model-opt.selected .model-opt-check { opacity: 1; color: #fff; }
+
+/* More models row */
+.model-opt-more {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text2);
+  border-top: 1px solid var(--border);
+  transition: background 0.1s;
+  position: relative;
+}
+.model-opt-more:hover { background: var(--bg3); color: var(--text); }
+.model-opt-more svg { flex-shrink: 0; }
+.model-opt-more-arrow { margin-left: auto; opacity: 0.5; }
+
+/* Sub-panel for "Plus de modèles" */
+#model-more-panel {
+  position: fixed;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  overflow: hidden;
+  z-index: 10002;
+  min-width: 260px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.85);
+  display: none;
+  max-height: 380px;
+  overflow-y: auto;
+}
+#model-more-panel.open {
+  display: block;
+  animation: slideUpModel 0.18s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+#model-more-panel::-webkit-scrollbar { width: 4px; }
+#model-more-panel::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+.model-more-header {
+  padding: 10px 16px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg2);
+}
 
 /* ========== PLUS MENU ========== */
 #plus-menu {
@@ -1850,30 +1911,13 @@ body.chat-empty-state #input-container {
                 <button id="bubble-model-btn" data-tier="small">
                   <span id="bubble-model-label">Small 5.1</span>
                 </button>
-                <div id="bubble-model-dropdown">
-                  <div class="model-opt selected" data-model="mistral-small-latest" data-name="Small 5.1" data-tier="small">
-                    <div class="model-opt-info">
-                      <div class="model-opt-name">Small 5.1</div>
-                      <div class="model-opt-desc">Rapide, idéal pour le quotidien</div>
-                    </div>
-                    <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                  <div class="model-opt" data-model="mistral-medium-latest" data-name="Medium 5.1" data-tier="medium">
-                    <div class="model-opt-info">
-                      <div class="model-opt-name">Medium 5.1</div>
-                      <div class="model-opt-desc">Équilibre performance / vitesse</div>
-                    </div>
-                    <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                  <div class="model-opt" data-model="mistral-large-latest" data-name="Large 5.1" data-tier="large">
-                    <div class="model-opt-info">
-                      <div class="model-opt-name">Large 5.1</div>
-                      <div class="model-opt-desc">Puissant, tâches complexes</div>
-                    </div>
-                    <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                </div>
               </div>
+              <!-- Overlay backdrop (fixed, above WIKIMIND title) -->
+              <div id="model-dropdown-overlay"></div>
+              <!-- Main dropdown (rendered by JS) -->
+              <div id="bubble-model-dropdown"></div>
+              <!-- Sub-panel "Plus de modèles" -->
+              <div id="model-more-panel"></div>
               <!-- MENU PLUS -->
               <div id="plus-menu">
                 <div class="pm-item" id="pm-upload">
@@ -2938,32 +2982,282 @@ function updateSendBtn() {
 }
 
 // =============================================
+// WIKIMIND MODELS JSON
+// =============================================
+const WIKIMIND_MODELS = [
+  // ── PRINCIPAUX ──────────────────────────────────────────────────────────────
+  {
+    id: "wm-small-5.1",
+    displayName: "Small 5.1",
+    apiModel: "mistral-small-latest",
+    tier: "small",
+    category: "main",
+    description: "Rapide, idéal pour le quotidien",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-medium-5.1",
+    displayName: "Medium 5.1",
+    apiModel: "mistral-medium-latest",
+    tier: "medium",
+    category: "main",
+    description: "Équilibre performance / vitesse",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-large-5.1",
+    displayName: "Large 5.1",
+    apiModel: "mistral-large-latest",
+    tier: "large",
+    category: "main",
+    description: "Puissant, tâches complexes",
+    provider: "mistral",
+    supportsVision: false
+  },
+  // ── PLUS DE MODÈLES ──────────────────────────────────────────────────────────
+  {
+    id: "wm-small-4.7",
+    displayName: "Small 4.7",
+    apiModel: "ministral-3b-latest",
+    tier: "small",
+    category: "more",
+    description: "Ultra-léger, réponses instantanées",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-small-4.8",
+    displayName: "Small 4.8",
+    apiModel: "open-mistral-7b",
+    tier: "small",
+    category: "more",
+    description: "Modèle open-source 7B",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-small-5.0",
+    displayName: "Small 5.0",
+    apiModel: "ministral-8b-latest",
+    tier: "small",
+    category: "more",
+    description: "Compact mais efficace, open-source",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-small-5.1b",
+    displayName: "Small 5.1b",
+    apiModel: "open-mistral-nemo",
+    tier: "small",
+    category: "more",
+    description: "Multilingue, fenêtre 128k",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-medium-4.9",
+    displayName: "Medium 4.9",
+    apiModel: "open-mixtral-8x7b",
+    tier: "medium",
+    category: "more",
+    description: "MoE 8×7B open-source",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-medium-5.2",
+    displayName: "Medium 5.2",
+    apiModel: "pixtral-12b-2409",
+    tier: "medium",
+    category: "more",
+    description: "Vision multimodale 12B",
+    provider: "mistral",
+    supportsVision: true
+  },
+  {
+    id: "wm-large-5.0",
+    displayName: "Large 5.0",
+    apiModel: "open-mixtral-8x22b",
+    tier: "large",
+    category: "more",
+    description: "MoE 8×22B open-source, très capable",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-large-5.2",
+    displayName: "Large 5.2",
+    apiModel: "codestral-latest",
+    tier: "large",
+    category: "more",
+    description: "Spécialisé code, 80+ langages",
+    provider: "mistral",
+    supportsVision: false
+  },
+  {
+    id: "wm-large-5.3",
+    displayName: "Large 5.3",
+    apiModel: "pixtral-large-latest",
+    tier: "large",
+    category: "more",
+    description: "Vision large, performances maximales",
+    provider: "mistral",
+    supportsVision: true
+  }
+];
+
+// =============================================
 // MODEL SELECTOR
 // =============================================
-bubbleModelBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const isOpen = bubbleModelDropdown.classList.contains("open");
-  if (isOpen) { closeModelDD(); return; }
-  bubbleModelBtn.classList.add("open");
-  bubbleModelDropdown.classList.add("open");
-});
+const modelOverlay = document.getElementById("model-dropdown-overlay");
+const modelMorePanel = document.getElementById("model-more-panel");
+
+// Build main dropdown HTML from JSON
+function buildMainDropdown() {
+  const mainModels = WIKIMIND_MODELS.filter(m => m.category === "main");
+  let html = "";
+  mainModels.forEach(m => {
+    const isSelected = m.apiModel === selectedModel;
+    html += `
+      <div class="model-opt${isSelected ? " selected" : ""}" data-model-id="${m.id}">
+        <div class="model-opt-info">
+          <div class="model-opt-name">${m.displayName}</div>
+          <div class="model-opt-desc">${m.description}</div>
+        </div>
+        <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>`;
+  });
+  // "Plus de modèles" row
+  html += `
+    <div class="model-opt-more" id="model-more-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Plus de modèles
+      <svg class="model-opt-more-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  bubbleModelDropdown.innerHTML = html;
+  // Bind main model clicks
+  bubbleModelDropdown.querySelectorAll(".model-opt").forEach(opt => {
+    opt.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const modelId = opt.dataset.modelId;
+      const modelObj = WIKIMIND_MODELS.find(m => m.id === modelId);
+      if (!modelObj) return;
+      applyModel(modelObj);
+      closeModelDD();
+    });
+  });
+  // Bind "Plus de modèles"
+  const moreBtn = document.getElementById("model-more-btn");
+  if (moreBtn) {
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMorePanel(moreBtn);
+    });
+  }
+}
+
+// Build "Plus de modèles" sub-panel
+function buildMorePanel() {
+  const moreModels = WIKIMIND_MODELS.filter(m => m.category === "more");
+  const groups = { small: [], medium: [], large: [] };
+  moreModels.forEach(m => groups[m.tier].push(m));
+  const labels = { small: "Small", medium: "Medium", large: "Large" };
+  let html = `<div class="model-more-header">Plus de modèles</div>`;
+  ["small", "medium", "large"].forEach(tier => {
+    if (!groups[tier].length) return;
+    html += `<div style="padding:6px 16px 2px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">${labels[tier]}</div>`;
+    groups[tier].forEach(m => {
+      const isSelected = m.apiModel === selectedModel;
+      const visionBadge = m.supportsVision ? `<span style="font-size:0.6rem;background:rgba(74,222,128,0.15);color:#4ade80;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:600;">Vision</span>` : "";
+      html += `
+        <div class="model-opt${isSelected ? " selected" : ""}" data-model-id="${m.id}" style="padding:10px 16px;">
+          <div class="model-opt-info">
+            <div class="model-opt-name">${m.displayName}${visionBadge}</div>
+            <div class="model-opt-desc">${m.description}</div>
+          </div>
+          <svg class="model-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>`;
+    });
+  });
+  modelMorePanel.innerHTML = html;
+  modelMorePanel.querySelectorAll(".model-opt").forEach(opt => {
+    opt.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const modelId = opt.dataset.modelId;
+      const modelObj = WIKIMIND_MODELS.find(m => m.id === modelId);
+      if (!modelObj) return;
+      applyModel(modelObj);
+      closeModelDD();
+    });
+  });
+}
+
+function applyModel(modelObj) {
+  selectedModel = modelObj.apiModel;
+  selectedModelName = modelObj.displayName;
+  bubbleModelLabel.textContent = modelObj.displayName;
+  bubbleModelBtn.dataset.tier = modelObj.tier;
+  // Refresh selected state in both panels
+  document.querySelectorAll("#bubble-model-dropdown .model-opt, #model-more-panel .model-opt").forEach(o => o.classList.remove("selected"));
+  document.querySelectorAll(`[data-model-id="${modelObj.id}"]`).forEach(o => o.classList.add("selected"));
+}
+
+function positionDropdown() {
+  const btnRect = bubbleModelBtn.getBoundingClientRect();
+  bubbleModelDropdown.style.left = btnRect.left + "px";
+  bubbleModelDropdown.style.bottom = (window.innerHeight - btnRect.top + 8) + "px";
+  bubbleModelDropdown.style.top = "auto";
+}
+
+function positionMorePanel() {
+  const ddRect = bubbleModelDropdown.getBoundingClientRect();
+  modelMorePanel.style.left = (ddRect.right + 6) + "px";
+  modelMorePanel.style.bottom = (window.innerHeight - ddRect.bottom) + "px";
+  modelMorePanel.style.top = "auto";
+  // Check if overflows right
+  const panelW = 260;
+  if (ddRect.right + 6 + panelW > window.innerWidth - 8) {
+    modelMorePanel.style.left = (ddRect.left - panelW - 6) + "px";
+  }
+}
+
+function toggleMorePanel(moreBtn) {
+  if (modelMorePanel.classList.contains("open")) {
+    modelMorePanel.classList.remove("open");
+    return;
+  }
+  buildMorePanel();
+  modelMorePanel.classList.add("open");
+  positionMorePanel();
+}
 
 function closeModelDD() {
   bubbleModelBtn.classList.remove("open");
   bubbleModelDropdown.classList.remove("open");
+  modelMorePanel.classList.remove("open");
+  modelOverlay.classList.remove("open");
 }
 
-document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(opt => {
-  opt.addEventListener("click", () => {
-    selectedModel = opt.dataset.model;
-    selectedModelName = opt.dataset.name;
-    bubbleModelLabel.textContent = selectedModelName;
-    bubbleModelBtn.dataset.tier = opt.dataset.tier;
-    document.querySelectorAll("#bubble-model-dropdown .model-opt").forEach(o => o.classList.remove("selected"));
-    opt.classList.add("selected");
-    closeModelDD();
-  });
+bubbleModelBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isOpen = bubbleModelDropdown.classList.contains("open");
+  if (isOpen) { closeModelDD(); return; }
+  buildMainDropdown();
+  positionDropdown();
+  bubbleModelBtn.classList.add("open");
+  bubbleModelDropdown.classList.add("open");
+  modelOverlay.classList.add("open");
 });
+
+// Close on overlay click
+modelOverlay.addEventListener("click", () => { closeModelDD(); });
+
+// Prevent dropdown/panel clicks from bubbling to overlay
+bubbleModelDropdown.addEventListener("click", (e) => e.stopPropagation());
+modelMorePanel.addEventListener("click", (e) => e.stopPropagation());
 
 // =============================================
 // PLUS MENU
