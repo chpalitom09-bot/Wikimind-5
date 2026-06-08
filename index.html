@@ -6,6 +6,7 @@
 <title>Wikimind</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="settings5.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
@@ -1414,56 +1415,6 @@ body.chat-empty-state #input-container {
 }
 .perms-btn-save:hover { opacity: 0.88; }
 
-/* ========== SETTINGS MODAL ========== */
-#settings-overlay {
-  position: fixed; inset: 0; z-index: 600;
-  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.2s;
-}
-#settings-overlay.open { opacity: 1; pointer-events: all; }
-#settings-modal {
-  background: #111; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 20px; width: 480px; max-width: 95vw;
-  max-height: 88vh; overflow-y: auto; overflow-x: hidden;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.9);
-  animation: settingsIn 0.2s cubic-bezier(0.34,1.2,0.64,1);
-}
-@keyframes settingsIn { from { opacity:0; transform:scale(0.96) translateY(12px); } to { opacity:1; transform:none; } }
-#settings-modal::-webkit-scrollbar { width: 4px; }
-#settings-modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-.stg-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-.stg-title { font-size: 1rem; font-weight: 700; color: #fff; }
-.stg-close { width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(255,255,255,0.07); cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); transition: background 0.15s, color 0.15s; }
-.stg-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
-.stg-section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); padding: 16px 20px 6px; }
-.stg-group { margin: 0 12px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; }
-.stg-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.12s; }
-.stg-row:last-child { border-bottom: none; }
-.stg-row:hover { background: rgba(255,255,255,0.04); }
-.stg-row.no-hover { cursor: default; }
-.stg-row.no-hover:hover { background: none; }
-.stg-row-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.stg-row-icon svg { width: 17px; height: 17px; }
-.stg-row-body { flex: 1; min-width: 0; }
-.stg-row-label { font-size: 0.88rem; font-weight: 500; color: rgba(255,255,255,0.88); }
-.stg-row-sub { font-size: 0.74rem; color: rgba(255,255,255,0.35); margin-top: 1px; }
-.stg-row-right { font-size: 0.78rem; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.stg-row-right svg { width: 12px; height: 12px; opacity: 0.4; }
-.stg-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
-.stg-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.stg-toggle-track { position: absolute; inset: 0; border-radius: 13px; background: rgba(255,255,255,0.12); cursor: pointer; transition: background 0.2s; }
-.stg-toggle input:checked + .stg-toggle-track { background: #ff6b35; }
-.stg-toggle-track::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-.stg-toggle input:checked + .stg-toggle-track::after { transform: translateX(18px); }
-.stg-theme-pills { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.stg-theme-pill { padding: 5px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s; }
-.stg-theme-pill:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); }
-.stg-theme-pill.active { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); color: #fff; }
-.stg-account-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #ff6b35, #ff4757); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-.stg-row.danger .stg-row-label { color: #ff4757; }
-.stg-row.danger:hover { background: rgba(255,71,87,0.06); }
-
 /* ========== PERSONNALISATION MODAL ========== */
 #personalize-overlay {
   position: fixed; inset: 0; z-index: 500;
@@ -2177,6 +2128,13 @@ const KEY = "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj";
 // Groq key — assembled at runtime to avoid static scanning
 const _gk = ["gsk_wHXg87k3ELkt4D3b","DP73WGdyb3FYGPxjni","cCl9eWCGO6aRhA8xs"].join("");
 
+// Expose Firebase handles for settings5.js (non-module script)
+window.auth = auth;
+window.db   = db;
+window._firebaseRef = ref;
+window._firebaseGet = get;
+window._firebaseSignOut = signOut;
+
 // =============================================
 // STATE
 // =============================================
@@ -2319,6 +2277,7 @@ loadConnectorsState();
 // =============================================
 const $ = (id) => document.getElementById(id);
 const overlay = $("auth-overlay");
+window.overlay = overlay;
 const sidebar = $("sidebar");
 const sidebarOverlay = $("sidebar-overlay");
 const convList = $("conv-list");
@@ -2342,6 +2301,7 @@ const toast = (msg) => {
   t.classList.add("on");
   setTimeout(() => t.classList.remove("on"), 2600);
 };
+window.toast = toast;
 
 const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const initials = (n) => n ? n.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -3305,37 +3265,38 @@ function positionPopupAboveBtn(popup, btn) {
 }
 
 function openMorePanel() {
-  // Construire le contenu du sous-panel
-  const moreModels = WIKIMIND_MODELS.filter(m => m.category === "more");
-  const groups = { flash:[], small:[], medium:[], large:[] };
-  moreModels.forEach(m => { if (groups[m.tier]) groups[m.tier].push(m); });
-  const groupOrder = ["flash","small","medium","large"];
-  let html = `<div class="model-more-header" style="display:flex;align-items:center;gap:8px;padding:10px 16px 8px;">
-    <button id="model-back-btn" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;color:var(--text2);">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Plus de modèles</span>
-  </div>`;
-  groupOrder.forEach(tier => {
-    if (!groups[tier].length) return;
-    html += `<div style="padding:6px 16px 2px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">${TIER_LABELS[tier]||tier}</div>`;
-    groups[tier].forEach(m => {
-      const sel = m.apiModel === selectedModel;
-      html += `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}" style="padding:10px 16px;">
-        <div class="model-opt-info">
-          <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
-            ${m.displayName}${providerBadge(m.provider)}${m.supportsVision?visionBadge():""}
-          </div>
-          <div class="model-opt-desc">${m.description}</div>
-        </div>${checkSVG()}</div>`;
+  if (modelMorePanel.classList.contains("open")) {
+    modelMorePanel.classList.remove("open");
+    modelMorePanel.style.display = "";
+    return;
+  }
+  buildMorePanel();
+  // Positionner à droite (ou gauche si pas de place) du dropdown principal
+  // Le dropdown est déjà visible à ce stade — on peut lire ses coordonnées
+  modelMorePanel.style.visibility = "hidden";
+  modelMorePanel.style.display    = "block";
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const ddRect = bubbleModelDropdown.getBoundingClientRect();
+      const pw = modelMorePanel.offsetWidth  || 260;
+      const ph = modelMorePanel.offsetHeight || 300;
+      // Essayer à droite, sinon à gauche
+      let left = ddRect.right + 6;
+      if (left + pw > window.innerWidth - 8) left = ddRect.left - pw - 6;
+      if (left < 8) left = 8;
+      // Aligner en bas avec le bas du dropdown, sans déborder en haut
+      let bottom = window.innerHeight - ddRect.bottom;
+      if (bottom < 8) bottom = 8;
+      // Vérifier que le panel ne dépasse pas en haut
+      if (window.innerHeight - bottom - ph < 8) bottom = window.innerHeight - ph - 8;
+      if (bottom < 8) bottom = 8;
+      modelMorePanel.style.left       = left + "px";
+      modelMorePanel.style.bottom     = bottom + "px";
+      modelMorePanel.style.top        = "auto";
+      modelMorePanel.style.visibility = "";
+      modelMorePanel.classList.add("open");
     });
   });
-  // Afficher dans le dropdown principal (remplace son contenu)
-  bubbleModelDropdown.innerHTML = html;
-  bubbleModelDropdown.querySelectorAll(".model-opt").forEach(opt => {
-    opt.addEventListener("click", e => { e.stopPropagation(); applyModelById(opt.dataset.modelId); closeAllPopups(); });
-  });
-  document.getElementById("model-back-btn")?.addEventListener("click", e => { e.stopPropagation(); buildMainDropdown(); });
 }
 
 // ── Open / close ─────────────────────────────────────────────────────────────
@@ -4470,7 +4431,7 @@ $("pp-signout").addEventListener("click", async () => {
 });
 $("pp-settings").addEventListener("click", () => {
   profilePopup.classList.remove("open");
-  openSettingsModal();
+  if (typeof window.openSettingsModal === 'function') window.openSettingsModal();
 });
 $("pp-language").addEventListener("click", () => {
   profilePopup.classList.remove("open");
@@ -4487,11 +4448,15 @@ $("pp-upgrade").addEventListener("click", () => {
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
+  window.currentUser = user;
   updateAuthUI();
   if (user) {
     userId = user.uid;
+    window.userId = user.uid;
     overlay.style.display = "none";
     await loadPersonalizationFromDB();
+  } else {
+    window.userId = null;
   }
 });
 
@@ -4514,7 +4479,7 @@ sendBtn.addEventListener("click", () => {
 $("new-chat-btn").addEventListener("click", newConversation);
 
 // Topbar buttons
-$("tb-settings").addEventListener("click", openSettingsModal);
+$("tb-settings").addEventListener("click", () => { if (typeof window.openSettingsModal === 'function') window.openSettingsModal(); });
 $("tb-search").addEventListener("click", () => {
   openSidebar();
   setTimeout(() => {
@@ -4749,6 +4714,7 @@ function openPersonalizeModal() {
   renderPersSection();
   $("personalize-overlay").classList.add("open");
 }
+window.openPersonalizeModal = openPersonalizeModal;
 
 function closePersModal() {
   $("personalize-overlay").classList.remove("open");
@@ -4906,123 +4872,7 @@ $("pers-save-btn").addEventListener("click", async () => {
 });
 
 // =============================================
-// SETTINGS MODAL
-// =============================================
-const WM_SETTINGS_KEY = 'wm_app_settings';
-let appSettings = { theme: 'system', animations: true, sounds: false, autosave: true, streaming: true, memoryEnabled: true };
-try { Object.assign(appSettings, JSON.parse(localStorage.getItem(WM_SETTINGS_KEY) || '{}')); } catch {}
-
-function saveAppSettings() { localStorage.setItem(WM_SETTINGS_KEY, JSON.stringify(appSettings)); }
-
-function applyTheme(theme) {
-  const html = document.documentElement;
-  html.removeAttribute('data-theme');
-  if (theme === 'light') html.setAttribute('data-theme', 'light');
-  else if (theme === 'system') {
-    if (window.matchMedia('(prefers-color-scheme: light)').matches) html.setAttribute('data-theme', 'light');
-  }
-  document.querySelectorAll('.stg-theme-pill').forEach(p => p.classList.toggle('active', p.dataset.theme === theme));
-}
-
-function openSettingsModal() {
-  // Sync UI with current settings
-  const emailEl = $('stg-account-email');
-  const planEl = $('stg-account-plan');
-  const avatarEl = $('stg-avatar-initials');
-  if (currentUser) {
-    const email = currentUser.email || currentUser.displayName || 'Connecté';
-    emailEl.textContent = email;
-    avatarEl.textContent = email[0].toUpperCase();
-    // Try to get plan
-    if (userId) {
-      get(ref(db, `wikimind5/users/${userId}/plan`)).then(snap => {
-        const planNames = { 1:'Free', 2:'AI Plus', 3:'AI Pro', 4:'AI Premium', 5:'AI Premium+' };
-        const p = snap.exists() ? snap.val() : 1;
-        planEl.textContent = 'Forfait ' + (planNames[p] || 'Free');
-      }).catch(() => {});
-      // Tokens
-      get(ref(db, `wikimind5/users/${userId}/tokens`)).then(snap => {
-        const t = snap.exists() ? snap.val() : 0;
-        const tokEl = $('stg-tokens-count');
-        if (tokEl) tokEl.textContent = `${t.toLocaleString('fr-FR')} Mind Tokens disponibles`;
-      }).catch(() => { const el=$('stg-tokens-count'); if(el) el.textContent=''; });
-    }
-  } else {
-    emailEl.textContent = 'Non connecté';
-    planEl.textContent = 'Forfait Free';
-    avatarEl.textContent = '?';
-    const tokEl = $('stg-tokens-count');
-    if (tokEl) tokEl.textContent = 'Connectez-vous pour voir vos tokens';
-  }
-
-  // Theme pills
-  applyTheme(appSettings.theme);
-
-  // Toggles
-  const toggles = {
-    'stg-animations-toggle': 'animations',
-    'stg-sounds-toggle': 'sounds',
-    'stg-autosave-toggle': 'autosave',
-    'stg-streaming-toggle': 'streaming',
-    'stg-memory-toggle': 'memoryEnabled',
-  };
-  Object.entries(toggles).forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el) el.checked = !!appSettings[key];
-  });
-
-  $('settings-overlay').classList.add('open');
-}
-
-function closeSettingsModal() {
-  $('settings-overlay').classList.remove('open');
-}
-
-// Theme pills
-document.getElementById('stg-theme-pills')?.addEventListener('click', e => {
-  const pill = e.target.closest('.stg-theme-pill');
-  if (!pill) return;
-  appSettings.theme = pill.dataset.theme;
-  applyTheme(appSettings.theme);
-  saveAppSettings();
-});
-
-// Toggles
-['stg-animations-toggle','stg-sounds-toggle','stg-autosave-toggle','stg-streaming-toggle','stg-memory-toggle'].forEach(id => {
-  const keys = { 'stg-animations-toggle':'animations','stg-sounds-toggle':'sounds','stg-autosave-toggle':'autosave','stg-streaming-toggle':'streaming','stg-memory-toggle':'memoryEnabled' };
-  document.getElementById(id)?.addEventListener('change', e => {
-    appSettings[keys[id]] = e.target.checked;
-    saveAppSettings();
-    if (id === 'stg-streaming-toggle') {
-      // Expose to main streaming logic
-      window._wmStreamingDisabled = !e.target.checked;
-    }
-  });
-});
-
-document.getElementById('stg-close-btn')?.addEventListener('click', closeSettingsModal);
-document.getElementById('stg-signout-btn')?.addEventListener('click', async () => {
-  closeSettingsModal();
-  try { await signOut(auth); toast("Déconnecté."); } catch { overlay.style.display = "flex"; }
-});
-document.getElementById('stg-personalize-btn')?.addEventListener('click', () => {
-  closeSettingsModal();
-  openPersonalizeModal();
-});
-document.getElementById('stg-help-btn')?.addEventListener('click', () => {
-  closeSettingsModal();
-  toast("Centre d'aide — Bientôt disponible");
-});
-document.getElementById('stg-tokens-row')?.addEventListener('click', () => {
-  closeSettingsModal();
-  toast("Mind Tokens — Consulte ton profil pour plus de détails");
-});
-document.getElementById('settings-overlay')?.addEventListener('click', e => {
-  if (e.target === document.getElementById('settings-overlay')) closeSettingsModal();
-});
-
-// Apply initial theme on load
-applyTheme(appSettings.theme);
+// Apply initial theme on load (handled by settings5.js)
 
 // =============================================
 runPlaceholder();
@@ -5282,4 +5132,6 @@ runPlaceholder();
   </div>
 </div>
 </body>
+<!-- Settings module — chargé après le script principal (type=module) -->
+<script src="settings5.js" defer></script>
 </html>
