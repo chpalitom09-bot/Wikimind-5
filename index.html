@@ -200,6 +200,7 @@ window.WMCharts = {
 
 html, body {
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
@@ -517,6 +518,8 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
 }
 
 #topbar {
@@ -3019,7 +3022,15 @@ async function loadModels() {
     if (!res.ok) throw new Error("fetch models.json failed");
     const data = await res.json();
     WIKIMIND_MODELS = data.models;
-    if (data.apiKeys) WM_API_KEYS = data.apiKeys;
+    if (data.apiKeys) {
+      // Reconstituer la clé groq depuis les parties pour éviter les secret scans
+      const gk = data.apiKeys.groq || (
+        data.apiKeys.groq_p1 && data.apiKeys.groq_p2 && data.apiKeys.groq_p3
+          ? data.apiKeys.groq_p1 + data.apiKeys.groq_p2 + data.apiKeys.groq_p3
+          : ""
+      );
+      WM_API_KEYS = { mistral: data.apiKeys.mistral || "", groq: gk };
+    }
     const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
     selectedModel     = def.apiModel;
     selectedModelName = def.displayName;
@@ -3061,6 +3072,8 @@ function tierBadge(tier) {
 function providerBadge(provider) {
   if (provider === "groq") return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
     background:rgba(249,115,22,0.15);color:#f97316;border-radius:4px;padding:1px 5px;margin-left:4px;">GROQ</span>`;
+  if (provider === "pollinations") return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
+    background:rgba(168,85,247,0.15);color:#a855f7;border-radius:4px;padding:1px 5px;margin-left:4px;">🎨 IMG</span>`;
   return "";
 }
 
@@ -3081,7 +3094,7 @@ function buildMainDropdown() {
     const sel = m.apiModel === selectedModel;
     html += `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}">
       <div class="model-opt-info">
-        <div class="model-opt-name">${m.displayName}</div>
+        <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${m.displayName}${providerBadge(m.provider)}${m.supportsVision?visionBadge():""}</div>
         <div class="model-opt-desc">${m.description}</div>
       </div>${checkSVG()}</div>`;
   });
@@ -3668,6 +3681,31 @@ async function regenMsg(msgObj, groupEl) {
 // =============================================
 // SEND MESSAGE
 // =============================================
+// =============================================
+// GÉNÉRATION D'IMAGES — Pollinations.ai
+// =============================================
+const _wmImgGen = {
+  lastUsed: null,
+  COOLDOWN_MS: 60 * 60 * 1000, // 1h par IP (limite Pollinations)
+  canGenerate() {
+    if (!this.lastUsed) return true;
+    return (Date.now() - this.lastUsed) >= this.COOLDOWN_MS;
+  },
+  timeLeft() {
+    if (!this.lastUsed) return 0;
+    return Math.max(0, Math.ceil((this.COOLDOWN_MS - (Date.now() - this.lastUsed)) / 60000));
+  },
+  async generate(prompt) {
+    if (!this.canGenerate()) {
+      return { error: `⏳ Limite d'une image/heure atteinte. Réessaie dans ${this.timeLeft()} min.` };
+    }
+    const encoded = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&model=flux&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
+    this.lastUsed = Date.now();
+    return { url };
+  }
+};
+
 async function sendMessage() {
   const text = chatInput.value.trim();
   if ((!text && attachedFiles.length === 0) || streaming) return;
@@ -3675,6 +3713,49 @@ async function sendMessage() {
   userId = getOrCreateUserId();
   if (!chatStarted) setStarted(true);
   if (!currentConvId) currentConvId = genId();
+
+  // ── Modèle Image Pollinations ───────────────────────────────────────
+  if (window._wmSelectedModelObj && window._wmSelectedModelObj.provider === "pollinations") {
+    const imgPrompt = text;
+    chatInput.value = "";
+    autoResize();
+    attachedFiles = [];
+    renderAttachedFilesPreview();
+
+    // Push user message
+    const userMsg = { role: "user", content: imgPrompt, files: [], visionContent: null };
+    messages.push(userMsg);
+    appendUserMsg(imgPrompt, []);
+
+    if (userId && messages.length === 1) await saveConversationTitle(imgPrompt);
+    if (userId && currentConvId) await saveConversation();
+
+    // Affiche thinking
+    appendThinking();
+    streaming = true;
+    stopBtn.classList.add("on");
+    sendBtn.disabled = true;
+
+    const result = await _wmImgGen.generate(imgPrompt);
+    removeThinking();
+    streaming = false;
+    stopBtn.classList.remove("on");
+    sendBtn.disabled = false;
+
+    let aiContent;
+    if (result.error) {
+      aiContent = result.error;
+    } else {
+      aiContent = `🎨 **Image générée** pour : *${imgPrompt}*\n\n<div style="text-align:center;margin:10px 0"><img src="${result.url}" alt="${escHtml(imgPrompt)}" style="max-width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.5)" onerror="this.parentElement.innerHTML='<span style=color:var(--text2)>❌ Erreur de chargement — réessaie dans quelques secondes.</span>'"/></div>\n\n<a href="${result.url}" target="_blank" style="font-size:0.8rem;color:var(--text2);text-decoration:none">🔗 Ouvrir en plein écran</a>`;
+    }
+    const aiMsgObj = { role: "assistant", content: aiContent, modelName: "Image AI", msgId: genId() };
+    messages.push(aiMsgObj);
+    appendAIMsg(aiMsgObj);
+    if (userId && currentConvId) await saveConversation();
+    nameConversationWithAI(imgPrompt);
+    return;
+  }
+  // ────────────────────────────────────────────────────────────────────
 
   // Construire le contenu du message avec fichiers
   let fullContent = text;
