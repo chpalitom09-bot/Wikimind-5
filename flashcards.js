@@ -7,21 +7,37 @@ class FlashcardsManager {
     this.flipStates = new Map();
     this.editorState = { isOpen: false, cardId: null, question: '', answer: '' };
 
-    // Firebase references
-    this.db = firebase.database();
+ // Firebase references
+    this.db = window.db;
+    this.auth = window.auth;
     this.userId = null;
     this.flashcardsRef = null;
+    this.useLocalStorage = false;
+
+    // Fallback si Firebase n'est pas disponible
+    if (!this.db || !this.auth) {
+      this.useLocalStorage = true;
+      console.warn("Firebase non disponible, utilisation du localStorage");
+    }
 
     // Initialize when user is authenticated
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        this.userId = user.uid;
-        this.flashcardsRef = this.db.ref(`wikimind5/users/${this.userId}/flashcards`);
-      } else {
-        this.userId = null;
-        this.flashcardsRef = null;
+    if (this.auth) {
+      this.auth.onAuthStateChanged((user) => {
+        if (user) {
+          this.userId = user.uid;
+          this.flashcardsRef = this.db ? this.db.ref(`wikimind5/users/${this.userId}/flashcards`) : null;
+        } else {
+          this.userId = null;
+          this.flashcardsRef = null;
+        }
+      });
+    } else {
+      // Mode invité : utiliser l'ID localStorage
+      this.userId = localStorage.getItem("wikimind_guest_id");
+      if (this.userId) {
+        this.flashcardsRef = this.db ? this.db.ref(`wikimind5/users/${this.userId}/flashcards`) : null;
       }
-    });
+    }
 
     this.initDOM();
     this.bindEvents();
@@ -177,6 +193,13 @@ class FlashcardsManager {
 
   // ========== FLASHCARDS MANAGEMENT ==========
   async loadFlashcards() {
+    if (this.useLocalStorage) {
+      // Mode localStorage
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '{}');
+      this.renderFlashcards(decks);
+      return;
+    }
+
     if (!this.flashcardsRef) return;
 
     try {
@@ -320,7 +343,7 @@ class FlashcardsManager {
     this.renderEditor();
   }
 
-  saveDeck() {
+saveDeck() {
     const nameInput = document.getElementById('deck-name-input');
     const questionInputs = document.querySelectorAll('.card-question');
     const answerInputs = document.querySelectorAll('.card-answer');
@@ -333,11 +356,25 @@ class FlashcardsManager {
 
     const deckData = { name, cards, updatedAt: Date.now() };
 
-    if (this.editorState.deckId) {
-      this.flashcardsRef.child(this.editorState.deckId).set(deckData);
+    if (this.useLocalStorage || !this.flashcardsRef) {
+      // Mode localStorage
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
+      if (this.editorState.deckId && this.editorState.deckId < decks.length) {
+        decks[this.editorState.deckId] = deckData;
+      } else {
+        decks.push(deckData);
+        this.editorState.deckId = decks.length - 1;
+      }
+      localStorage.setItem('wm_flashcards_decks', JSON.stringify(decks));
     } else {
-      const newDeckId = this.flashcardsRef.push().key;
-      this.flashcardsRef.child(newDeckId).set(deckData);
+      // Mode Firebase
+      if (this.editorState.deckId) {
+        this.flashcardsRef.child(this.editorState.deckId).set(deckData);
+      } else {
+        const newDeckId = this.flashcardsRef.push().key;
+        this.flashcardsRef.child(newDeckId).set(deckData);
+        this.editorState.deckId = newDeckId;
+      }
     }
 
     this.editorState.isOpen = false;
@@ -357,7 +394,18 @@ class FlashcardsManager {
   }
 
   async deleteDeck(deckId) {
-    if (!this.flashcardsRef || !confirm('Voulez-vous vraiment supprimer ce deck ?')) return;
+    if (!confirm('Voulez-vous vraiment supprimer ce deck ?')) return;
+
+    if (this.useLocalStorage) {
+      // Mode localStorage
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
+      decks.splice(deckId, 1);
+      localStorage.setItem('wm_flashcards_decks', JSON.stringify(decks));
+      this.loadFlashcards();
+      return;
+    }
+
+    if (!this.flashcardsRef) return;
     try {
       await this.flashcardsRef.child(deckId).remove();
       this.loadFlashcards();
@@ -388,8 +436,6 @@ class FlashcardsManager {
   }
 
   saveGeneratedDeck(name, cards) {
-    if (!this.flashcardsRef) return;
-
     const deckData = {
       name,
       cards,
@@ -397,6 +443,17 @@ class FlashcardsManager {
       updatedAt: Date.now()
     };
 
+    if (this.useLocalStorage || !this.flashcardsRef) {
+      // Mode localStorage
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
+      decks.push(deckData);
+      localStorage.setItem('wm_flashcards_decks', JSON.stringify(decks));
+      this.currentDeck = decks.length - 1;
+      this.renderFlashcardAttachment(this.currentDeck, name, cards.length);
+      return;
+    }
+
+    // Mode Firebase
     const deckId = this.flashcardsRef.push().key;
     this.flashcardsRef.child(deckId).set(deckData).then(() => {
       this.currentDeck = deckId;
