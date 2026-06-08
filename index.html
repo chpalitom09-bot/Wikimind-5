@@ -3833,6 +3833,7 @@ async function sendMessage() {
   if ((!text && attachedFiles.length === 0) || streaming) return;
 
   userId = getOrCreateUserId();
+  window._fcUserId = userId;
   if (!chatStarted) setStarted(true);
   if (!currentConvId) currentConvId = genId();
 
@@ -4408,6 +4409,7 @@ async function newConversation() {
 function updateAuthUI() {
   if (currentUser) {
     userId = currentUser.uid;
+    window._fcUserId = userId;
     $("s-name").textContent = currentUser.displayName || currentUser.email?.split("@")[0] || "Utilisateur";
     $("s-avatar").textContent = initials(currentUser.displayName || currentUser.email || "U");
     $("s-plan").textContent = "Forfait Free";
@@ -4415,6 +4417,7 @@ function updateAuthUI() {
     if (sidebar.classList.contains("open")) loadConversations();
   } else {
     userId = getOrCreateUserId();
+    window._fcUserId = userId;
     $("s-name").textContent = "Mode invité";
     $("s-avatar").textContent = "?";
     $("s-plan").textContent = "Forfait Free";
@@ -4494,6 +4497,7 @@ $("btn-facebook").addEventListener("click", async () => {
 $("guest-btn").addEventListener("click", () => {
   overlay.style.display = "none";
   userId = getOrCreateUserId();
+  window._fcUserId = userId;
   toast("Mode invité activé.");
 });
 
@@ -4541,6 +4545,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     userId = user.uid;
     window.userId = user.uid;
+    window._fcUserId = userId;
     overlay.style.display = "none";
     await loadPersonalizationFromDB();
   } else {
