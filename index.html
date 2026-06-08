@@ -3294,6 +3294,7 @@ function openMorePanel() {
       modelMorePanel.style.bottom     = bottom + "px";
       modelMorePanel.style.top        = "auto";
       modelMorePanel.style.visibility = "";
+      modelMorePanel.style.display    = ""; // C'est ici qu'il manquait la réinitialisation
       modelMorePanel.classList.add("open");
     });
   });
@@ -3311,6 +3312,7 @@ function closeAllPopups() {
   bubbleModelBtn.classList.remove("open");
   bubbleModelDropdown.classList.remove("open");
   modelMorePanel.classList.remove("open");
+  modelMorePanel.style.display = ""; // Force le nettoyage du display
   modelOverlay.classList.remove("open");
   plusMenu.classList.remove("open");
   document.getElementById("pm-conn-right-panel")?.remove();
