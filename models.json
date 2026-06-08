@@ -289,20 +289,5 @@
       "maxTokens": 8192,
       "contextWindow": 131072
     },
-    {
-      "id": "wm-image-pollinations",
-      "displayName": "Image AI",
-      "apiModel": "flux",
-      "tier": "large",
-      "category": "main",
-      "description": "Génération d'images via Pollinations.ai",
-      "provider": "pollinations",
-      "apiEndpoint": "https://image.pollinations.ai/prompt/",
-      "supportsVision": false,
-      "supportsStreaming": false,
-      "maxTokens": 1024,
-      "contextWindow": 1024,
-      "isImageModel": true
-    }
   ]
 }
