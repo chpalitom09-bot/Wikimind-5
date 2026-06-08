@@ -1414,6 +1414,56 @@ body.chat-empty-state #input-container {
 }
 .perms-btn-save:hover { opacity: 0.88; }
 
+/* ========== SETTINGS MODAL ========== */
+#settings-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+#settings-overlay.open { opacity: 1; pointer-events: all; }
+#settings-modal {
+  background: #111; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; width: 480px; max-width: 95vw;
+  max-height: 88vh; overflow-y: auto; overflow-x: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.9);
+  animation: settingsIn 0.2s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes settingsIn { from { opacity:0; transform:scale(0.96) translateY(12px); } to { opacity:1; transform:none; } }
+#settings-modal::-webkit-scrollbar { width: 4px; }
+#settings-modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.stg-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.stg-title { font-size: 1rem; font-weight: 700; color: #fff; }
+.stg-close { width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(255,255,255,0.07); cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); transition: background 0.15s, color 0.15s; }
+.stg-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.stg-section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); padding: 16px 20px 6px; }
+.stg-group { margin: 0 12px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; }
+.stg-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.12s; }
+.stg-row:last-child { border-bottom: none; }
+.stg-row:hover { background: rgba(255,255,255,0.04); }
+.stg-row.no-hover { cursor: default; }
+.stg-row.no-hover:hover { background: none; }
+.stg-row-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stg-row-icon svg { width: 17px; height: 17px; }
+.stg-row-body { flex: 1; min-width: 0; }
+.stg-row-label { font-size: 0.88rem; font-weight: 500; color: rgba(255,255,255,0.88); }
+.stg-row-sub { font-size: 0.74rem; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.stg-row-right { font-size: 0.78rem; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.stg-row-right svg { width: 12px; height: 12px; opacity: 0.4; }
+.stg-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.stg-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.stg-toggle-track { position: absolute; inset: 0; border-radius: 13px; background: rgba(255,255,255,0.12); cursor: pointer; transition: background 0.2s; }
+.stg-toggle input:checked + .stg-toggle-track { background: #ff6b35; }
+.stg-toggle-track::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.stg-toggle input:checked + .stg-toggle-track::after { transform: translateX(18px); }
+.stg-theme-pills { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.stg-theme-pill { padding: 5px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s; }
+.stg-theme-pill:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); }
+.stg-theme-pill.active { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); color: #fff; }
+.stg-account-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #ff6b35, #ff4757); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+.stg-row.danger .stg-row-label { color: #ff4757; }
+.stg-row.danger:hover { background: rgba(255,71,87,0.06); }
+
 /* ========== PERSONNALISATION MODAL ========== */
 #personalize-overlay {
   position: fixed; inset: 0; z-index: 500;
@@ -3255,27 +3305,37 @@ function positionPopupAboveBtn(popup, btn) {
 }
 
 function openMorePanel() {
-  if (modelMorePanel.classList.contains("open")) {
-    modelMorePanel.classList.remove("open");
-    return;
-  }
-  buildMorePanel();
-  // Positionner à droite du dropdown principal
-  const ddRect = bubbleModelDropdown.getBoundingClientRect();
-  modelMorePanel.style.visibility = "hidden";
-  modelMorePanel.style.display    = "block";
-  requestAnimationFrame(() => {
-    const pw = modelMorePanel.offsetWidth || 260;
-    let left = ddRect.right + 6;
-    if (left + pw > window.innerWidth - 8) left = ddRect.left - pw - 6;
-    if (left < 8) left = 8;
-    modelMorePanel.style.left    = left + "px";
-    modelMorePanel.style.bottom  = (window.innerHeight - ddRect.bottom) + "px";
-    modelMorePanel.style.top     = "auto";
-    modelMorePanel.style.display = "";
-    modelMorePanel.style.visibility = "";
-    modelMorePanel.classList.add("open");
+  // Construire le contenu du sous-panel
+  const moreModels = WIKIMIND_MODELS.filter(m => m.category === "more");
+  const groups = { flash:[], small:[], medium:[], large:[] };
+  moreModels.forEach(m => { if (groups[m.tier]) groups[m.tier].push(m); });
+  const groupOrder = ["flash","small","medium","large"];
+  let html = `<div class="model-more-header" style="display:flex;align-items:center;gap:8px;padding:10px 16px 8px;">
+    <button id="model-back-btn" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;color:var(--text2);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">Plus de modèles</span>
+  </div>`;
+  groupOrder.forEach(tier => {
+    if (!groups[tier].length) return;
+    html += `<div style="padding:6px 16px 2px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">${TIER_LABELS[tier]||tier}</div>`;
+    groups[tier].forEach(m => {
+      const sel = m.apiModel === selectedModel;
+      html += `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}" style="padding:10px 16px;">
+        <div class="model-opt-info">
+          <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
+            ${m.displayName}${providerBadge(m.provider)}${m.supportsVision?visionBadge():""}
+          </div>
+          <div class="model-opt-desc">${m.description}</div>
+        </div>${checkSVG()}</div>`;
+    });
   });
+  // Afficher dans le dropdown principal (remplace son contenu)
+  bubbleModelDropdown.innerHTML = html;
+  bubbleModelDropdown.querySelectorAll(".model-opt").forEach(opt => {
+    opt.addEventListener("click", e => { e.stopPropagation(); applyModelById(opt.dataset.modelId); closeAllPopups(); });
+  });
+  document.getElementById("model-back-btn")?.addEventListener("click", e => { e.stopPropagation(); buildMainDropdown(); });
 }
 
 // ── Open / close ─────────────────────────────────────────────────────────────
@@ -4410,7 +4470,7 @@ $("pp-signout").addEventListener("click", async () => {
 });
 $("pp-settings").addEventListener("click", () => {
   profilePopup.classList.remove("open");
-  toast("Paramètres — Bientôt disponible");
+  openSettingsModal();
 });
 $("pp-language").addEventListener("click", () => {
   profilePopup.classList.remove("open");
@@ -4454,7 +4514,7 @@ sendBtn.addEventListener("click", () => {
 $("new-chat-btn").addEventListener("click", newConversation);
 
 // Topbar buttons
-$("tb-settings").addEventListener("click", () => toast("Paramètres — Bientôt disponible"));
+$("tb-settings").addEventListener("click", openSettingsModal);
 $("tb-search").addEventListener("click", () => {
   openSidebar();
   setTimeout(() => {
@@ -4845,8 +4905,126 @@ $("pers-save-btn").addEventListener("click", async () => {
   toast("Personnalisation enregistrée ✓");
 });
 
-// Init
-userId = getOrCreateUserId();
+// =============================================
+// SETTINGS MODAL
+// =============================================
+const WM_SETTINGS_KEY = 'wm_app_settings';
+let appSettings = { theme: 'system', animations: true, sounds: false, autosave: true, streaming: true, memoryEnabled: true };
+try { Object.assign(appSettings, JSON.parse(localStorage.getItem(WM_SETTINGS_KEY) || '{}')); } catch {}
+
+function saveAppSettings() { localStorage.setItem(WM_SETTINGS_KEY, JSON.stringify(appSettings)); }
+
+function applyTheme(theme) {
+  const html = document.documentElement;
+  html.removeAttribute('data-theme');
+  if (theme === 'light') html.setAttribute('data-theme', 'light');
+  else if (theme === 'system') {
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) html.setAttribute('data-theme', 'light');
+  }
+  document.querySelectorAll('.stg-theme-pill').forEach(p => p.classList.toggle('active', p.dataset.theme === theme));
+}
+
+function openSettingsModal() {
+  // Sync UI with current settings
+  const emailEl = $('stg-account-email');
+  const planEl = $('stg-account-plan');
+  const avatarEl = $('stg-avatar-initials');
+  if (currentUser) {
+    const email = currentUser.email || currentUser.displayName || 'Connecté';
+    emailEl.textContent = email;
+    avatarEl.textContent = email[0].toUpperCase();
+    // Try to get plan
+    if (userId) {
+      get(ref(db, `wikimind5/users/${userId}/plan`)).then(snap => {
+        const planNames = { 1:'Free', 2:'AI Plus', 3:'AI Pro', 4:'AI Premium', 5:'AI Premium+' };
+        const p = snap.exists() ? snap.val() : 1;
+        planEl.textContent = 'Forfait ' + (planNames[p] || 'Free');
+      }).catch(() => {});
+      // Tokens
+      get(ref(db, `wikimind5/users/${userId}/tokens`)).then(snap => {
+        const t = snap.exists() ? snap.val() : 0;
+        const tokEl = $('stg-tokens-count');
+        if (tokEl) tokEl.textContent = `${t.toLocaleString('fr-FR')} Mind Tokens disponibles`;
+      }).catch(() => { const el=$('stg-tokens-count'); if(el) el.textContent=''; });
+    }
+  } else {
+    emailEl.textContent = 'Non connecté';
+    planEl.textContent = 'Forfait Free';
+    avatarEl.textContent = '?';
+    const tokEl = $('stg-tokens-count');
+    if (tokEl) tokEl.textContent = 'Connectez-vous pour voir vos tokens';
+  }
+
+  // Theme pills
+  applyTheme(appSettings.theme);
+
+  // Toggles
+  const toggles = {
+    'stg-animations-toggle': 'animations',
+    'stg-sounds-toggle': 'sounds',
+    'stg-autosave-toggle': 'autosave',
+    'stg-streaming-toggle': 'streaming',
+    'stg-memory-toggle': 'memoryEnabled',
+  };
+  Object.entries(toggles).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!appSettings[key];
+  });
+
+  $('settings-overlay').classList.add('open');
+}
+
+function closeSettingsModal() {
+  $('settings-overlay').classList.remove('open');
+}
+
+// Theme pills
+document.getElementById('stg-theme-pills')?.addEventListener('click', e => {
+  const pill = e.target.closest('.stg-theme-pill');
+  if (!pill) return;
+  appSettings.theme = pill.dataset.theme;
+  applyTheme(appSettings.theme);
+  saveAppSettings();
+});
+
+// Toggles
+['stg-animations-toggle','stg-sounds-toggle','stg-autosave-toggle','stg-streaming-toggle','stg-memory-toggle'].forEach(id => {
+  const keys = { 'stg-animations-toggle':'animations','stg-sounds-toggle':'sounds','stg-autosave-toggle':'autosave','stg-streaming-toggle':'streaming','stg-memory-toggle':'memoryEnabled' };
+  document.getElementById(id)?.addEventListener('change', e => {
+    appSettings[keys[id]] = e.target.checked;
+    saveAppSettings();
+    if (id === 'stg-streaming-toggle') {
+      // Expose to main streaming logic
+      window._wmStreamingDisabled = !e.target.checked;
+    }
+  });
+});
+
+document.getElementById('stg-close-btn')?.addEventListener('click', closeSettingsModal);
+document.getElementById('stg-signout-btn')?.addEventListener('click', async () => {
+  closeSettingsModal();
+  try { await signOut(auth); toast("Déconnecté."); } catch { overlay.style.display = "flex"; }
+});
+document.getElementById('stg-personalize-btn')?.addEventListener('click', () => {
+  closeSettingsModal();
+  openPersonalizeModal();
+});
+document.getElementById('stg-help-btn')?.addEventListener('click', () => {
+  closeSettingsModal();
+  toast("Centre d'aide — Bientôt disponible");
+});
+document.getElementById('stg-tokens-row')?.addEventListener('click', () => {
+  closeSettingsModal();
+  toast("Mind Tokens — Consulte ton profil pour plus de détails");
+});
+document.getElementById('settings-overlay')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('settings-overlay')) closeSettingsModal();
+});
+
+// Apply initial theme on load
+applyTheme(appSettings.theme);
+
+// =============================================
 runPlaceholder();
 </script>
 <!-- MODALE PERSONNALISATION -->
@@ -4911,6 +5089,147 @@ runPlaceholder();
     <div class="perms-modal-footer">
       <button class="perms-btn-reconnect" id="perms-btn-reconnect">Re-connecter</button>
       <button class="perms-btn-save" id="perms-btn-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div id="settings-overlay">
+  <div id="settings-modal">
+    <div class="stg-header">
+      <div class="stg-title">Paramètres</div>
+      <button class="stg-close" id="stg-close-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- COMPTE -->
+    <div class="stg-section-label">Compte</div>
+    <div class="stg-group">
+      <div class="stg-row no-hover" id="stg-account-row">
+        <div class="stg-account-avatar" id="stg-avatar-initials">?</div>
+        <div class="stg-row-body">
+          <div class="stg-row-label" id="stg-account-email">Non connecté</div>
+          <div class="stg-row-sub" id="stg-account-plan">Forfait Free</div>
+        </div>
+      </div>
+      <div class="stg-row" id="stg-personalize-btn">
+        <div class="stg-row-icon" style="background:rgba(99,179,237,0.15);color:#63b3ed;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Personnalisation IA</div><div class="stg-row-sub">Tonalité, mémoire, identité, format</div></div>
+        <div class="stg-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="stg-row" id="stg-tokens-row">
+        <div class="stg-row-icon" style="background:rgba(251,191,36,0.15);color:#fbbf24;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Mind Tokens</div><div class="stg-row-sub" id="stg-tokens-count">Chargement…</div></div>
+        <div class="stg-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+
+    <!-- APPLICATION -->
+    <div class="stg-section-label">Application</div>
+    <div class="stg-group">
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(167,139,250,0.15);color:#a78bfa;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <div class="stg-row-body">
+          <div class="stg-row-label">Palette de couleur</div>
+          <div class="stg-theme-pills" id="stg-theme-pills">
+            <button class="stg-theme-pill" data-theme="system">Système</button>
+            <button class="stg-theme-pill" data-theme="dark">Sombre</button>
+            <button class="stg-theme-pill" data-theme="light">Clair</button>
+          </div>
+        </div>
+      </div>
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(74,222,128,0.15);color:#4ade80;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Animations</div><div class="stg-row-sub">Transitions & effets visuels</div></div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="stg-animations-toggle" checked>
+          <div class="stg-toggle-track"></div>
+        </label>
+      </div>
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(251,113,133,0.15);color:#fb7185;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Sons</div><div class="stg-row-sub">Retour sonore sur les actions</div></div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="stg-sounds-toggle">
+          <div class="stg-toggle-track"></div>
+        </label>
+      </div>
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(56,189,248,0.15);color:#38bdf8;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Sauvegarde auto</div><div class="stg-row-sub">Enregistrer les conversations automatiquement</div></div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="stg-autosave-toggle" checked>
+          <div class="stg-toggle-track"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- IA -->
+    <div class="stg-section-label">Intelligence Artificielle</div>
+    <div class="stg-group">
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(251,191,36,0.15);color:#fbbf24;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Streaming des réponses</div><div class="stg-row-sub">Affiche les réponses en temps réel</div></div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="stg-streaming-toggle" checked>
+          <div class="stg-toggle-track"></div>
+        </label>
+      </div>
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(99,179,237,0.15);color:#63b3ed;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Mémoire IA activée</div><div class="stg-row-sub">Injecter le contexte mémorisé dans les conversations</div></div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="stg-memory-toggle" checked>
+          <div class="stg-toggle-track"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- À PROPOS -->
+    <div class="stg-section-label">À propos</div>
+    <div class="stg-group">
+      <div class="stg-row" id="stg-help-btn">
+        <div class="stg-row-icon" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Centre d'aide</div></div>
+        <div class="stg-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="stg-row no-hover">
+        <div class="stg-row-icon" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Wikimind</div></div>
+        <div class="stg-row-right" id="stg-version-label">v3.5</div>
+      </div>
+    </div>
+
+    <!-- DANGER -->
+    <div class="stg-section-label" style="padding-bottom:4px;"></div>
+    <div class="stg-group" style="margin-bottom:20px;">
+      <div class="stg-row danger" id="stg-signout-btn">
+        <div class="stg-row-icon" style="background:rgba(255,71,87,0.12);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Se déconnecter</div></div>
+      </div>
     </div>
   </div>
 </div>
