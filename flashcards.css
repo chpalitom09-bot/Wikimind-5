@@ -72,6 +72,145 @@
 #flashcards-body::-webkit-scrollbar { width: 4px; }
 #flashcards-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
+/* ========== TOOLS PANEL (Panneau Outils) ========== */
+#tools-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border2);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#tools-panel.open { transform: translateX(0); }
+
+#tools-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 28px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#tools-panel-back {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+#tools-panel-back:hover { background: var(--bg3); color: var(--text); }
+#tools-panel-head h1 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  flex: 1;
+}
+#tools-panel-head p {
+  font-size: 0.82rem;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+#tools-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}
+#tools-panel-body::-webkit-scrollbar { width: 4px; }
+#tools-panel-body::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+.tools-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.tool-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.tool-card:hover {
+  border-color: var(--border2);
+  background: var(--bg4);
+}
+.tool-card.active {
+  border-color: #4d8fff;
+  background: rgba(77, 143, 255, 0.08);
+}
+.tool-card-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--bg4);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.tool-card-icon img {
+  width: 28px; height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.tool-card-info { flex: 1; min-width: 0; }
+.tool-card-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.tool-card-desc {
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tool-card-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.tool-card-status.connected { color: #4ade80; }
+.tool-card-status.disconnected { color: var(--text3); }
+.tool-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.tool-card-status.connected .tool-status-dot { background: #4ade80; }
+.tool-card-status.disconnected .tool-status-dot { background: var(--text3); }
+
+/* ========== FLASHCARDS IN PANEL ========== */
 .flashcard-list {
   display: flex;
   flex-direction: column;
@@ -137,7 +276,11 @@
   border-color: rgba(255, 255, 255, 0.25);
 }
 .flashcard-action-btn svg { width: 13px; height: 13px; }
-.flashcard-action-btn.delete:hover { background: rgba(248, 113, 113, 0.15); border-color: #f87171; color: #f87171; }
+.flashcard-action-btn.delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: #f87171;
+  color: #f87171;
+}
 
 .flashcard-empty {
   text-align: center;
@@ -162,7 +305,10 @@
   cursor: pointer;
   transition: all 0.12s;
 }
-.flashcard-attachment:hover { background: var(--bg4); border-color: var(--border2); }
+.flashcard-attachment:hover {
+  background: var(--bg4);
+  border-color: var(--border2);
+}
 .flashcard-attachment-icon {
   width: 32px;
   height: 32px;
@@ -173,10 +319,25 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.flashcard-attachment-icon img { width: 18px; height: 18px; object-fit: contain; }
+.flashcard-attachment-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
 .flashcard-attachment-info { min-width: 0; }
-.flashcard-attachment-name { font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-.flashcard-attachment-count { font-size: 0.7rem; color: var(--text3); margin-top: 1px; }
+.flashcard-attachment-name {
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.flashcard-attachment-count {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 1px;
+}
 
 /* Flashcard Thinking Animation */
 .flashcard-thinking {
@@ -200,15 +361,27 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.flashcard-thinking-icon img { width: 16px; height: 16px; }
-.flashcard-thinking-dots { display: flex; gap: 4px; }
+.flashcard-thinking-icon img {
+  width: 16px;
+  height: 16px;
+}
+.flashcard-thinking-dots {
+  display: flex;
+  gap: 4px;
+}
 .flashcard-thinking-dots span {
-  width: 5px; height: 5px; border-radius: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   background: var(--text3);
   animation: flashcardDot 1.2s ease-in-out infinite;
 }
-.flashcard-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-.flashcard-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+.flashcard-thinking-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.flashcard-thinking-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 @keyframes flashcardDot {
   0%, 100% { opacity: 0.2; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1); }
@@ -255,8 +428,12 @@
   outline: none;
   transition: border-color 0.15s;
 }
-.flashcard-editor-input:focus { border-color: var(--border2); }
-.flashcard-editor-input::placeholder { color: var(--text3); }
+.flashcard-editor-input:focus {
+  border-color: var(--border2);
+}
+.flashcard-editor-input::placeholder {
+  color: var(--text3);
+}
 .flashcard-editor-actions {
   display: flex;
   gap: 8px;
@@ -277,10 +454,16 @@
   background: #3b82f6;
   color: #fff;
 }
-.flashcard-editor-btn.primary:hover { background: #2563eb; }
+.flashcard-editor-btn.primary:hover {
+  background: #2563eb;
+}
 .flashcard-editor-btn.secondary {
   background: var(--bg4);
   color: var(--text2);
   border: 1px solid var(--border);
 }
-.flashcard-editor-btn.secondary:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+.flashcard-editor-btn.secondary:hover {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--border2);
+}
