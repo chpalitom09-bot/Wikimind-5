@@ -5,9 +5,9 @@ class FlashcardsManager {
     this.isGenerating = false;
     this.currentDeck = null;
     this.flipStates = new Map();
-    this.editorState = { isOpen: false, cardId: null, question: '', answer: '' };
+    this.editorState = { isOpen: false, deckId: null, question: '', answer: '' };
 
- // Firebase references
+    // Firebase references
     this.db = window.db;
     this.auth = window.auth;
     this.userId = null;
@@ -41,10 +41,11 @@ class FlashcardsManager {
 
     this.initDOM();
     this.bindEvents();
+    this.injectPlusMenuItem();
   }
 
   initDOM() {
-    // Create overlay
+    // Create overlay for flashcards panel
     const overlay = document.createElement('div');
     overlay.id = 'flashcards-overlay';
     overlay.innerHTML = `
@@ -52,7 +53,7 @@ class FlashcardsManager {
         <div id="flashcards-header">
           <div id="flashcards-title">
             <img src="flashcards.png" alt="Flashcards" style="width: 20px; height: 20px;" />
-            <span>Flashcards</span>
+            <span>Mes Flashcards</span>
           </div>
           <button id="flashcards-close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -64,47 +65,85 @@ class FlashcardsManager {
       </div>
     `;
     document.body.appendChild(overlay);
-
-    // Add to plus menu
-    this.injectPlusMenuItem();
   }
 
   injectPlusMenuItem() {
     const plusMenu = document.getElementById('plus-menu');
     if (!plusMenu) return;
 
-    // Add "Outils" section if not exists
-    let outilsSection = plusMenu.querySelector('.pm-section-outils');
-    if (!outilsSection) {
-      outilsSection = document.createElement('div');
-      outilsSection.className = 'pm-section-outils';
-      outilsSection.innerHTML = `
-        <div class="pm-section-label" style="padding: 8px 16px 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase;">Outils</div>
+    // Add "Outils" item if not exists
+    let outilsItem = plusMenu.querySelector('.pm-item#pm-tools');
+    if (!outilsItem) {
+      outilsItem = document.createElement('div');
+      outilsItem.className = 'pm-item';
+      outilsItem.id = 'pm-tools';
+      outilsItem.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <span>Outils</span>
       `;
-      plusMenu.insertBefore(outilsSection, plusMenu.firstChild);
+      outilsItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openToolsPanel();
+      });
+      // Insert before Agents or at the end
+      const agentsItem = plusMenu.querySelector('#pm-agents');
+      plusMenu.insertBefore(outilsItem, agentsItem || plusMenu.lastChild);
     }
+  }
 
-    // Add Flashcards item
-    const flashcardsItem = document.createElement('div');
-    flashcardsItem.className = 'pm-item';
-    flashcardsItem.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="14" height="14" rx="2" ry="2"/>
-        <path d="M3 17l5-5 5 5M17 3l5 5-5 5"/>
-      </svg>
-      <span>Générateur de Flashcards</span>
+  openToolsPanel() {
+    this.renderToolsGrid();
+    document.getElementById('tools-panel').classList.add('open');
+    document.getElementById('plus-menu').classList.remove('open');
+  }
+
+  closeToolsPanel() {
+    document.getElementById('tools-panel').classList.remove('open');
+  }
+
+  renderToolsGrid() {
+    const grid = document.getElementById('tools-grid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <div class="tool-card ${this.isActive ? 'active' : ''}" data-tool="flashcards">
+        <div class="tool-card-icon">
+          <img src="flashcards.png" alt="Flashcards" width="28" height="28">
+        </div>
+        <div class="tool-card-info">
+          <div class="tool-card-name">Générateur de Flashcards</div>
+          <div class="tool-card-desc">Créez des cartes mémoire pour réviser</div>
+        </div>
+        <div class="tool-card-status ${this.isActive ? 'connected' : 'disconnected'}">
+          <div class="tool-status-dot"></div>
+          ${this.isActive ? 'Actif' : 'Disponible'}
+        </div>
+      </div>
     `;
-    flashcardsItem.addEventListener('click', () => this.toggleFlashcards());
-    outilsSection.appendChild(flashcardsItem);
+
+    // Bind click event
+    grid.querySelector('.tool-card').addEventListener('click', () => {
+      this.toggleFlashcards();
+      this.closeToolsPanel();
+    });
   }
 
   bindEvents() {
-    // Close panel
+    // Close flashcards panel
     document.getElementById('flashcards-close')?.addEventListener('click', () => this.closePanel());
-
-    // Close on overlay click
     document.getElementById('flashcards-overlay')?.addEventListener('click', (e) => {
       if (e.target.id === 'flashcards-overlay') this.closePanel();
+    });
+
+    // Close tools panel
+    document.getElementById('tools-panel-back')?.addEventListener('click', () => this.closeToolsPanel());
+    document.getElementById('tools-panel')?.addEventListener('click', (e) => {
+      if (e.target.id === 'tools-panel') this.closeToolsPanel();
     });
 
     // Detect flashcard requests in user messages
@@ -119,7 +158,11 @@ class FlashcardsManager {
             const bubble = node.querySelector('.bubble.user');
             if (bubble) {
               const text = bubble.textContent.toLowerCase();
-              if (text.includes('flashcard') || text.includes('fiche de révision') || text.includes('cartes mémoire')) {
+              const flashcardKeywords = [
+                'flashcard', 'flash cards', 'fiche de révision', 'cartes mémoire',
+                'carte recto verso', 'quiz mémoire', 'apprendre par cœur'
+              ];
+              if (flashcardKeywords.some(keyword => text.includes(keyword))) {
                 this.activateFlashcardsMode();
               }
             }
@@ -136,14 +179,33 @@ class FlashcardsManager {
 
   // ========== CORE METHODS ==========
   toggleFlashcards() {
+    this.isActive = !this.isActive;
     const panel = document.getElementById('flashcards-panel');
     const overlay = document.getElementById('flashcards-overlay');
-    if (panel.classList.contains('open')) {
-      this.closePanel();
-    } else {
+
+    if (this.isActive) {
+      // Activer l'outil
       panel.classList.add('open');
       overlay.classList.add('open');
       this.loadFlashcards();
+
+      // Mettre à jour l'interface
+      const toolCard = document.querySelector('.tool-card[data-tool="flashcards"]');
+      if (toolCard) {
+        toolCard.classList.add('active');
+        toolCard.querySelector('.tool-card-status').innerHTML = '<div class="tool-status-dot" style="background:#4ade80;"></div> Actif';
+      }
+    } else {
+      // Désactiver l'outil
+      panel.classList.remove('open');
+      overlay.classList.remove('open');
+
+      // Mettre à jour l'interface
+      const toolCard = document.querySelector('.tool-card[data-tool="flashcards"]');
+      if (toolCard) {
+        toolCard.classList.remove('active');
+        toolCard.querySelector('.tool-card-status').innerHTML = '<div class="tool-status-dot"></div> Disponible';
+      }
     }
   }
 
@@ -157,11 +219,25 @@ class FlashcardsManager {
     if (this.isActive) return;
     this.isActive = true;
     this.showThinkingAnimation();
+
+    // Mettre à jour l'interface
+    const toolCard = document.querySelector('.tool-card[data-tool="flashcards"]');
+    if (toolCard) {
+      toolCard.classList.add('active');
+      toolCard.querySelector('.tool-card-status').innerHTML = '<div class="tool-status-dot" style="background:#4ade80;"></div> Actif';
+    }
   }
 
   deactivateFlashcardsMode() {
     this.isActive = false;
     this.isGenerating = false;
+
+    // Mettre à jour l'interface
+    const toolCard = document.querySelector('.tool-card[data-tool="flashcards"]');
+    if (toolCard) {
+      toolCard.classList.remove('active');
+      toolCard.querySelector('.tool-card-status').innerHTML = '<div class="tool-status-dot"></div> Disponible';
+    }
   }
 
   showThinkingAnimation() {
@@ -183,19 +259,20 @@ class FlashcardsManager {
 
     // Simulate progress
     setTimeout(() => {
-      thinkingEl.querySelector('span').textContent = 'Création des Flashcards';
+      const span = thinkingEl.querySelector('span');
+      if (span) span.textContent = 'Création des Flashcards';
     }, 1500);
 
     setTimeout(() => {
-      thinkingEl.querySelector('span').textContent = 'Finalisation des Flashcards';
+      const span = thinkingEl.querySelector('span');
+      if (span) span.textContent = 'Finalisation des Flashcards';
     }, 3000);
   }
 
   // ========== FLASHCARDS MANAGEMENT ==========
   async loadFlashcards() {
     if (this.useLocalStorage) {
-      // Mode localStorage
-      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '{}');
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
       this.renderFlashcards(decks);
       return;
     }
@@ -215,13 +292,17 @@ class FlashcardsManager {
     const body = document.getElementById('flashcards-body');
     if (!body) return;
 
-    if (Object.keys(decks).length === 0) {
+    // Convertir en array si c'est un objet Firebase
+    const decksArray = Array.isArray(decks) ? decks : Object.entries(decks).map(([id, deck]) => ({ id, ...deck }));
+
+    if (decksArray.length === 0) {
       body.innerHTML = '<div class="flashcard-empty">Aucune flashcard pour le moment. Générez-en une pour commencer !</div>';
       return;
     }
 
     let html = '<div class="flashcard-list">';
-    for (const [deckId, deck] of Object.entries(decks)) {
+    decksArray.forEach((deck) => {
+      const deckId = deck.id || Object.keys(decks).find(key => decks[key] === deck);
       html += `
         <div class="flashcard-item" data-deck-id="${deckId}" data-flipped="false">
           <div class="flashcard-front">
@@ -244,17 +325,15 @@ class FlashcardsManager {
           </div>
         </div>
       `;
-    }
+    });
     html += '</div>';
     body.innerHTML = html;
 
-    // Bind events
     this.bindFlashcardEvents();
   }
 
   bindFlashcardEvents() {
     document.querySelectorAll('.flashcard-item').forEach(item => {
-      // Flip card
       item.addEventListener('click', (e) => {
         if (e.target.closest('.flashcard-actions')) return;
         const isFlipped = item.dataset.flipped === 'true';
@@ -262,21 +341,18 @@ class FlashcardsManager {
         item.classList.toggle('flip', !isFlipped);
       });
 
-      // Edit
       item.querySelector('.edit')?.addEventListener('click', (e) => {
         e.stopPropagation();
         const deckId = item.dataset.deckId;
         this.openEditor(deckId);
       });
 
-      // AI Edit
       item.querySelector('.ai-edit')?.addEventListener('click', (e) => {
         e.stopPropagation();
         const deckId = item.dataset.deckId;
         this.editWithAI(deckId);
       });
 
-      // Delete
       item.querySelector('.delete')?.addEventListener('click', (e) => {
         e.stopPropagation();
         const deckId = item.dataset.deckId;
@@ -286,6 +362,21 @@ class FlashcardsManager {
   }
 
   openEditor(deckId) {
+    if (this.useLocalStorage) {
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
+      const deck = decks[deckId];
+      if (deck) {
+        this.editorState = {
+          isOpen: true,
+          deckId: deckId,
+          name: deck.name || '',
+          cards: deck.cards || []
+        };
+        this.renderEditor();
+      }
+      return;
+    }
+
     if (!this.flashcardsRef) return;
 
     this.flashcardsRef.child(deckId).once('value', (snapshot) => {
@@ -309,8 +400,8 @@ class FlashcardsManager {
       cardsHTML += `
         <div class="flashcard-editor-field">
           <label class="flashcard-editor-label">Carte ${index + 1}</label>
-          <input type="text" class="flashcard-editor-input card-question" placeholder="Question ou terme" value="${card.question || ''}" data-index="${index}">
-          <input type="text" class="flashcard-editor-input card-answer" placeholder="Réponse ou définition" value="${card.answer || ''}" data-index="${index}" style="margin-top: 6px;">
+          <input type="text" class="flashcard-editor-input card-question" placeholder="Question ou terme" value="${this.escapeHtml(card.question || '')}" data-index="${index}">
+          <input type="text" class="flashcard-editor-input card-answer" placeholder="Réponse ou définition" value="${this.escapeHtml(card.answer || '')}" data-index="${index}" style="margin-top: 6px;">
         </div>
       `;
     });
@@ -323,7 +414,7 @@ class FlashcardsManager {
         </div>
         <div class="flashcard-editor-field">
           <label class="flashcard-editor-label">Nom du deck</label>
-          <input type="text" class="flashcard-editor-input" id="deck-name-input" placeholder="Nom du deck" value="${this.editorState.name || ''}">
+          <input type="text" class="flashcard-editor-input" id="deck-name-input" placeholder="Nom du deck" value="${this.escapeHtml(this.editorState.name || '')}">
         </div>
         <div id="cards-container">${cardsHTML}</div>
         <div class="flashcard-editor-actions">
@@ -333,9 +424,14 @@ class FlashcardsManager {
       </div>
     `;
 
-    // Bind events
     document.getElementById('add-card-btn')?.addEventListener('click', () => this.addCard());
     document.getElementById('save-deck-btn')?.addEventListener('click', () => this.saveDeck());
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   addCard() {
@@ -343,7 +439,7 @@ class FlashcardsManager {
     this.renderEditor();
   }
 
-saveDeck() {
+  saveDeck() {
     const nameInput = document.getElementById('deck-name-input');
     const questionInputs = document.querySelectorAll('.card-question');
     const answerInputs = document.querySelectorAll('.card-answer');
@@ -356,25 +452,28 @@ saveDeck() {
 
     const deckData = { name, cards, updatedAt: Date.now() };
 
-    if (this.useLocalStorage || !this.flashcardsRef) {
-      // Mode localStorage
+    if (this.useLocalStorage) {
       const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
-      if (this.editorState.deckId && this.editorState.deckId < decks.length) {
+      if (this.editorState.deckId !== null && this.editorState.deckId < decks.length) {
         decks[this.editorState.deckId] = deckData;
       } else {
         decks.push(deckData);
         this.editorState.deckId = decks.length - 1;
       }
       localStorage.setItem('wm_flashcards_decks', JSON.stringify(decks));
+      this.editorState.isOpen = false;
+      this.loadFlashcards();
+      return;
+    }
+
+    if (!this.flashcardsRef) return;
+
+    if (this.editorState.deckId) {
+      this.flashcardsRef.child(this.editorState.deckId).set(deckData);
     } else {
-      // Mode Firebase
-      if (this.editorState.deckId) {
-        this.flashcardsRef.child(this.editorState.deckId).set(deckData);
-      } else {
-        const newDeckId = this.flashcardsRef.push().key;
-        this.flashcardsRef.child(newDeckId).set(deckData);
-        this.editorState.deckId = newDeckId;
-      }
+      const newDeckId = this.flashcardsRef.push().key;
+      this.flashcardsRef.child(newDeckId).set(deckData);
+      this.editorState.deckId = newDeckId;
     }
 
     this.editorState.isOpen = false;
@@ -382,14 +481,12 @@ saveDeck() {
   }
 
   editWithAI(deckId) {
-    // Send message to AI to improve flashcards
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
       chatInput.value = `Améliore ce deck de flashcards : [Deck ID: ${deckId}]`;
       const event = new Event('input', { bubbles: true });
       chatInput.dispatchEvent(event);
-      // Trigger send (you may need to adjust this based on your send logic)
-      document.querySelector('[data-action="send"]')?.click();
+      document.querySelector('#send-btn')?.click();
     }
   }
 
@@ -397,7 +494,6 @@ saveDeck() {
     if (!confirm('Voulez-vous vraiment supprimer ce deck ?')) return;
 
     if (this.useLocalStorage) {
-      // Mode localStorage
       const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
       decks.splice(deckId, 1);
       localStorage.setItem('wm_flashcards_decks', JSON.stringify(decks));
@@ -416,8 +512,7 @@ saveDeck() {
 
   // ========== FLASHCARDS GENERATION ==========
   generateFlashcardsFromResponse(responseText) {
-    // Parse AI response to extract flashcards
-    const flashcardPattern = /(?:Flashcard|Carte) \d+:?\s*["']?(.*?)["']?\s*[-–:]\s*["']?(.*?)["']?/gi;
+    const flashcardPattern = /(?:Flashcard|Carte|Question) \d+:?\s*["'‘“](.*?)["'’”]\s*[-–:]\s*["'‘“](.*?)["'’”]/gi;
     const cards = [];
     let match;
 
@@ -429,7 +524,7 @@ saveDeck() {
     }
 
     if (cards.length > 0) {
-      this.saveGeneratedDeck('Deck généré', cards);
+      this.saveGeneratedDeck('Deck généré par Wikimind', cards);
       return true;
     }
     return false;
@@ -443,8 +538,7 @@ saveDeck() {
       updatedAt: Date.now()
     };
 
-    if (this.useLocalStorage || !this.flashcardsRef) {
-      // Mode localStorage
+    if (this.useLocalStorage) {
       const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
       decks.push(deckData);
       localStorage.setItem('wm_flashcards_decks', JSON.stringify(decks));
@@ -453,7 +547,8 @@ saveDeck() {
       return;
     }
 
-    // Mode Firebase
+    if (!this.flashcardsRef) return;
+
     const deckId = this.flashcardsRef.push().key;
     this.flashcardsRef.child(deckId).set(deckData).then(() => {
       this.currentDeck = deckId;
@@ -462,7 +557,6 @@ saveDeck() {
   }
 
   renderFlashcardAttachment(deckId, name, count) {
-    // Create attachment preview in chat
     const lastAIMsg = document.querySelector('.msg-group.ai:last-of-type');
     if (!lastAIMsg) return;
 
@@ -474,7 +568,7 @@ saveDeck() {
         <img src="flashcards.png" alt="Flashcards" />
       </div>
       <div class="flashcard-attachment-info">
-        <div class="flashcard-attachment-name">${name}</div>
+        <div class="flashcard-attachment-name">${this.escapeHtml(name)}</div>
         <div class="flashcard-attachment-count">${count} cartes</div>
       </div>
     `;
@@ -484,7 +578,6 @@ saveDeck() {
       this.toggleFlashcards();
     });
 
-    // Insert before the message content or at the end
     const bubble = lastAIMsg.querySelector('.bubble.ai');
     if (bubble) {
       bubble.prepend(attachment);
@@ -493,6 +586,15 @@ saveDeck() {
 
   // ========== UTILITY ==========
   showFlashcardAttachment(deckId) {
+    if (this.useLocalStorage) {
+      const decks = JSON.parse(localStorage.getItem('wm_flashcards_decks') || '[]');
+      const deck = decks[deckId];
+      if (deck) {
+        this.renderFlashcardAttachment(deckId, deck.name || 'Deck sans nom', deck.cards?.length || 0);
+      }
+      return;
+    }
+
     if (!this.flashcardsRef) return;
 
     this.flashcardsRef.child(deckId).once('value', (snapshot) => {
