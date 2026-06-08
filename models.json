@@ -288,6 +288,6 @@
       "supportsStreaming": true,
       "maxTokens": 8192,
       "contextWindow": 131072
-    },
+    }
   ]
 }
