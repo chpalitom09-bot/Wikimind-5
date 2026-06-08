@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <link rel="stylesheet" href="settings5.css">
+<link rel="stylesheet" href="flashcards.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
@@ -2156,6 +2157,13 @@ let attachedFiles = []; // [{ name, content, type, size }]
 // Connecteurs
 let activeConnectors = []; // connecteurs activés pour cette conv
 
+// Flashcards
+let fcModeActive = false; // outil flashcards activé
+window._fcModeActive = false;
+window._wmApiKey = KEY; // exposer la clé pour flashcards.js
+window._firebaseSet = set;
+window._firebasePush = push;
+
 // =============================================
 // CONNECTEURS DATA
 // =============================================
@@ -3452,6 +3460,14 @@ document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
     else if (id === "pm-libraries") toast("Bibliothèques — Bientôt disponible");
     else if (id === "pm-workflows") toast("Workflows — Bientôt disponible");
     else if (id === "pm-agents") toast("Agents — Bientôt disponible");
+    else if (id === "pm-flashcards") {
+      fcModeActive = !fcModeActive;
+      window._fcModeActive = fcModeActive;
+      const badge = document.getElementById("pm-fc-badge");
+      if (badge) badge.style.display = fcModeActive ? "inline-block" : "none";
+      window.renderFcChip?.(fcModeActive);
+      toast(fcModeActive ? "Flashcards activé ✦" : "Flashcards désactivé");
+    }
     if (!['pm-upload','pm-connectors'].includes(id)) plusMenu.classList.remove("open");
   });
 });
@@ -3626,6 +3642,34 @@ function appendUserMsg(text, files = []) {
     ${text ? `<div class="bubble user">${renderContent(text)}</div>` : ""}
     <div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div>
   </div>`;
+  messagesEl.appendChild(g);
+  scrollBottom();
+}
+
+// ── FILE CARD FLASHCARDS dans le chat ──
+function appendFcFileCard(title, count, deckId) {
+  const g = document.createElement("div");
+  g.className = "msg-group ai";
+  const now = new Date().toLocaleString("fr", { day:"numeric", month:"long", hour:"2-digit", minute:"2-digit" });
+  g.innerHTML = `<div class="msg-inner">
+    <div class="wm-fc-file-card" id="fc-file-card-${deckId}">
+      <div class="wm-fc-file-icon">
+        <img src="flashcards.png" alt="FC" onerror="this.style.display='none'">
+      </div>
+      <div class="wm-fc-file-info">
+        <div class="wm-fc-file-name">${escHtml(title)}</div>
+        <div class="wm-fc-file-meta">${count} carte${count>1?'s':''} · ${now}</div>
+      </div>
+      <button class="wm-fc-file-open" data-deckid="${deckId}">Ouvrir</button>
+    </div>
+  </div>`;
+  g.querySelector('.wm-fc-file-card').addEventListener('click', () => {
+    window.FlashcardsEngine?.openPanel();
+  });
+  g.querySelector('.wm-fc-file-open').addEventListener('click', e => {
+    e.stopPropagation();
+    window.FlashcardsEngine?.openPanel();
+  });
   messagesEl.appendChild(g);
   scrollBottom();
 }
@@ -3851,6 +3895,48 @@ async function sendMessage() {
 
   if (userId && messages.length === 1) await saveConversationTitle(text || filesForDisplay[0]?.name || "Nouveau");
   if (userId && currentConvId) await saveConversation();
+
+  // ── Détection mode flashcards ──
+  const fcKeywords = /flashcard|flash.card|carte.?s?.?(mémo|révision|réviser|mémoire)|fiche.?s?.?révision|anki/i;
+  const wantsFc = fcModeActive || fcKeywords.test(text);
+
+  if (wantsFc) {
+    // Activer le mode si détecté automatiquement
+    if (!fcModeActive) {
+      fcModeActive = true;
+      window._fcModeActive = true;
+      const badge = document.getElementById("pm-fc-badge");
+      if (badge) badge.style.display = "inline-block";
+      window.renderFcChip?.(true);
+    }
+    try {
+      const result = await window.FlashcardsEngine?.generate(
+        text, KEY, selectedModel, userId,
+        db, ref, push, set
+      );
+      if (result) {
+        // Ajouter la réponse IA récap dans le chat
+        const fcMsgObj = {
+          role: "ai",
+          content: `Voici tes flashcards sur **${result.title}** — ${result.cards.length} carte${result.cards.length > 1 ? 's' : ''} créée${result.cards.length > 1 ? 's' : ''} ✦`,
+          msgId: genId(), ts: Date.now(),
+          model: selectedModel, modelName: selectedModelName,
+          responseTime: 0, liked: 0
+        };
+        messages.push(fcMsgObj);
+        // Afficher bulle récap + file card
+        appendAIMsg(fcMsgObj);
+        appendFcFileCard(result.title, result.cards.length, result.deckId);
+        // Ouvrir le panel
+        window.FlashcardsEngine?.openPanel(result.title, result.cards, result.deckId);
+        if (userId && currentConvId) await saveConversation();
+      }
+    } catch (error) {
+      console.error("FC generation error:", error);
+      toast("Erreur lors de la génération des flashcards.");
+    }
+    return; // pas de doStream normal
+  }
 
   try {
     await doStream(fullContent, false, visionContent);
@@ -5119,6 +5205,13 @@ runPlaceholder();
     </svg>
     Bibliothèques
   </div>
+  <!-- OUTILS SEPARATOR -->
+  <div style="padding:3px 12px 2px;font-size:0.62rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);margin-top:3px">Outils</div>
+  <div class="pm-item" id="pm-flashcards">
+    <img src="flashcards.png" alt="FC" width="18" height="18" style="object-fit:contain;border-radius:4px;flex-shrink:0">
+    Flashcards
+    <span id="pm-fc-badge" style="display:none;margin-left:auto;width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0"></span>
+  </div>
   <div class="pm-item" id="pm-workflows">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -5136,4 +5229,5 @@ runPlaceholder();
 </body>
 <!-- Settings module — chargé après le script principal (type=module) -->
 <script src="settings5.js" defer></script>
+<script src="flashcards.js" defer></script>
 </html>
