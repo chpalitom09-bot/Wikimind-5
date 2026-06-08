@@ -1,504 +1,585 @@
-// ==================== CONFIGURATION ====================
-const FLASHCARDS_PNG = "flashcards.png"; // Doit être dans le même dossier que index.html
-const FIREBASE_PATH = "wikimind5/users";
-const LOCALSTORAGE_KEY = "wm_flashcards_decks";
+/* =============================================
+   FLASHCARDS.JS — Wikimind AI v5
+   Génération IA • Recto/Verso • Firebase • Édition
+   ============================================= */
 
-// ==================== ÉTAT GLOBAL ====================
-let FlashcardsManager = {
-  activeTool: null,
-  currentDeckId: null,
-  isPanelOpen: false,
-  isLoading: false,
-  decks: [],
-  currentConversationId: null,
-  messageObservers: [],
+(function() {
+'use strict';
 
-  // Initialisation
-  init() {
-    this.injectToolsMenuItem();
-    this.injectToolsPanel();
-    this.setupEventListeners();
-    this.loadDecks();
-    this.setupMessageObserver();
-  },
+// ── STATE ──
+let fcCards = [];          // { id, front, back }
+let fcDeckId = null;       // ID Firebase du deck courant
+let fcDeckTitle = "";
+let fcCurrentIdx = 0;
+let fcPanelOpen = false;
+let fcMode = "list";       // "list" | "review"
+let fcFlipped = false;
 
-  // ==================== INJECTION HTML ====================
-  injectToolsMenuItem() {
-    const plusMenu = document.getElementById("plus-menu");
-    if (!plusMenu) return;
+// ── REFS DOM (créées dynamiquement) ──
+let fcPanel, fcCardsArea, fcCountEl, fcNavIndicator, fcNavPrev, fcNavNext;
+let fcProgressBar, fcProgressWrap;
 
-    const outilsItem = document.createElement("div");
-    outilsItem.className = "menu-item outils";
-    outilsItem.innerHTML = `
-      <span class="menu-icon">🧰</span>
-      <span class="menu-label">Outils</span>
-    `;
-    outilsItem.addEventListener("click", () => this.toggleToolsPanel());
-    plusMenu.appendChild(outilsItem);
-  },
+// ── INIT ──
+function init() {
+  injectHTML();
+  bindEvents();
+  window.FlashcardsEngine = { generate, openPanel, loadDeck };
+}
 
-  injectToolsPanel() {
-    // Le panneau est déjà dans index.html
-    this.renderToolsList();
-  },
-
-  // ==================== GESTION DU PANNEAU OUTILS ====================
-  toggleToolsPanel() {
-    const panel = document.getElementById("tools-panel");
-    if (!panel) return;
-
-    panel.classList.toggle("open");
-    this.isPanelOpen = panel.classList.contains("open");
-  },
-
-  renderToolsList() {
-    const toolsList = document.getElementById("tools-list");
-    if (!toolsList) return;
-
-    const tools = [
-      {
-        id: "flashcards",
-        name: "Générateur de Flashcards",
-        description: "Créez des cartes mémoire pour réviser",
-        icon: FLASHCARDS_PNG,
-        active: this.activeTool === "flashcards"
-      }
-      // Ajoutez d'autres outils ici plus tard
-    ];
-
-    toolsList.innerHTML = tools.map(tool => `
-      <div class="tool-item ${tool.active ? 'active' : ''}" data-tool-id="${tool.id}">
-        <div class="tool-icon">
-          ${tool.icon ? `<img src="${tool.icon}" alt="${tool.name}" style="width:20px;height:20px;">` : "📚"}
-        </div>
-        <div class="tool-info">
-          <div class="tool-name">${tool.name}</div>
-          <div class="tool-description">${tool.description}</div>
-        </div>
-        ${tool.active ? '<div class="activation-indicator"></div>' : ''}
+// ── INJECT HTML ──
+function injectHTML() {
+  // Panel principal
+  const panel = document.createElement('div');
+  panel.id = 'fc-panel';
+  panel.innerHTML = `
+    <div id="fc-panel-head">
+      <div id="fc-panel-head-icon">
+        <img src="flashcards.png" alt="Flashcards" onerror="this.style.display='none'">
       </div>
-    `).join("");
+      <div style="flex:1;min-width:0">
+        <div id="fc-panel-title">Flashcards</div>
+        <div id="fc-panel-subtitle">0 carte</div>
+      </div>
+      <button id="fc-close-btn" title="Fermer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="fc-toolbar">
+      <span id="fc-count">0 carte</span>
+      <button class="fc-tool-btn" id="fc-mode-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Réviser
+      </button>
+      <button class="fc-tool-btn" id="fc-add-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Ajouter
+      </button>
+      <button class="fc-tool-btn primary" id="fc-ai-regen-btn" title="Régénérer avec l'IA">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        IA
+      </button>
+    </div>
+    <div id="fc-progress-bar-wrap" style="display:none">
+      <div id="fc-progress-bar" style="width:0%"></div>
+    </div>
+    <div id="fc-nav" style="display:none">
+      <button class="fc-nav-btn" id="fc-prev-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span id="fc-nav-indicator">1 / 1</span>
+      <button class="fc-nav-btn" id="fc-next-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div id="fc-cards-area">
+      <div id="fc-empty">
+        <img src="flashcards.png" alt="">
+        <p>Aucune flashcard.<br>Demandez à l'IA d'en créer !</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
 
-    // Ajouter les écouteurs
-    toolsList.querySelectorAll(".tool-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const toolId = item.dataset.toolId;
-        this.toggleTool(toolId);
-      });
+  // Modal édition IA
+  const aiModal = document.createElement('div');
+  aiModal.id = 'fc-ai-edit-overlay';
+  aiModal.innerHTML = `
+    <div id="fc-ai-edit-box">
+      <h3>✦ Modifier avec l'IA</h3>
+      <textarea id="fc-ai-edit-instruction" placeholder="Ex: Reformule plus simplement, ajoute des exemples, traduis en anglais..." rows="3"></textarea>
+      <div id="fc-ai-edit-btns">
+        <button class="fc-edit-cancel" id="fc-ai-edit-cancel">Annuler</button>
+        <button class="fc-edit-save" id="fc-ai-edit-confirm">Appliquer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(aiModal);
+
+  // Cacher l'overlay si clic extérieur
+  aiModal.addEventListener('click', e => { if (e.target === aiModal) closeAiModal(); });
+
+  // Refs
+  fcPanel = panel;
+  fcCardsArea = document.getElementById('fc-cards-area');
+  fcCountEl = document.getElementById('fc-count');
+  fcNavIndicator = document.getElementById('fc-nav-indicator');
+  fcNavPrev = document.getElementById('fc-prev-btn');
+  fcNavNext = document.getElementById('fc-next-btn');
+  fcProgressBar = document.getElementById('fc-progress-bar');
+  fcProgressWrap = document.getElementById('fc-progress-bar-wrap');
+}
+
+// ── BIND EVENTS ──
+function bindEvents() {
+  document.getElementById('fc-close-btn').addEventListener('click', closePanel);
+  document.getElementById('fc-mode-btn').addEventListener('click', toggleMode);
+  document.getElementById('fc-add-btn').addEventListener('click', addCardManually);
+  document.getElementById('fc-ai-regen-btn').addEventListener('click', regenWithAI);
+  document.getElementById('fc-prev-btn').addEventListener('click', () => navigate(-1));
+  document.getElementById('fc-next-btn').addEventListener('click', () => navigate(1));
+  document.getElementById('fc-ai-edit-cancel').addEventListener('click', closeAiModal);
+  document.getElementById('fc-ai-edit-confirm').addEventListener('click', applyAiEdit);
+}
+
+// ── PANEL OPEN/CLOSE ──
+function openPanel(title, cards, deckId) {
+  if (title) fcDeckTitle = title;
+  if (cards) fcCards = cards;
+  if (deckId) fcDeckId = deckId;
+  fcMode = "list";
+  fcCurrentIdx = 0;
+  fcPanelOpen = true;
+  document.body.classList.add('fc-panel-open');
+  fcPanel.classList.add('open');
+  renderCards();
+  updateHeader();
+}
+
+function closePanel() {
+  fcPanelOpen = false;
+  document.body.classList.remove('fc-panel-open');
+  fcPanel.classList.remove('open');
+}
+
+// ── GENERATE (appelé depuis index.html) ──
+async function generate(topic, apiKey, model, userId, db, ref, push, set) {
+  const steps = [
+    "Ouverture de Flashcards 5.1...",
+    "Création des Flashcards...",
+    "Finalisation des Flashcards..."
+  ];
+
+  // Afficher l'animation thinking dans le chat
+  showFcThinking(steps);
+
+  try {
+    const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify({
+        model: model || "mistral-small-latest",
+        max_tokens: 1800,
+        temperature: 0.4,
+        messages: [{
+          role: "user",
+          content: `Crée 8 à 12 flashcards sur le sujet suivant : "${topic}".
+Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans balises markdown.
+Format EXACT :
+{"title":"Titre du deck","cards":[{"front":"Question ou terme","back":"Réponse ou définition"},...]}`
+        }]
+      })
     });
-  },
 
-  // ==================== GESTION DES OUTILS ====================
-  toggleTool(toolId) {
-    if (this.activeTool === toolId) {
-      this.activeTool = null;
-    } else {
-      this.activeTool = toolId;
-    }
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || '';
 
-    this.renderToolsList();
-    this.toggleToolsPanel();
+    // Parser le JSON
+    const clean = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/,'').trim();
+    const parsed = JSON.parse(clean);
 
-    if (this.activeTool === "flashcards") {
-      this.activateFlashcardsTool();
-    } else {
-      this.deactivateFlashcardsTool();
-    }
-  },
+    fcCards = (parsed.cards || []).map((c, i) => ({ id: 'fc_' + Date.now() + '_' + i, front: c.front, back: c.back }));
+    fcDeckTitle = parsed.title || topic;
+    fcCurrentIdx = 0;
+    fcMode = "list";
 
-  activateFlashcardsTool() {
-    // Afficher le message de chargement
-    this.showLoading("Ouverture de Flashcards 5.1");
-
-    // Simuler le chargement (à remplacer par la vraie logique)
-    setTimeout(() => {
-      this.showLoading("Création des Flashcards");
-    }, 1000);
-
-    setTimeout(() => {
-      this.showLoading("Finalisation des Flashcards");
-      this.hideLoading();
-    }, 2000);
-
-    // Notifier l'IA que l'outil est activé
-    this.notifyAIToolActivated();
-  },
-
-  deactivateFlashcardsTool() {
-    this.activeTool = null;
-    this.notifyAIToolDeactivated();
-  },
-
-  notifyAIToolActivated() {
-    // Envoyer un événement pour que l'IA sache que Flashcards est activé
-    const event = new CustomEvent("wikimind:toolActivated", {
-      detail: { toolId: "flashcards" }
-    });
-    window.dispatchEvent(event);
-  },
-
-  notifyAIToolDeactivated() {
-    const event = new CustomEvent("wikimind:toolDeactivated", {
-      detail: { toolId: "flashcards" }
-    });
-    window.dispatchEvent(event);
-  },
-
-  // ==================== CHARGEMENT ET SAUVEGARDE ====================
-  async loadDecks() {
-    try {
-      if (window.auth && window.auth.currentUser) {
-        const uid = window.auth.currentUser.uid;
-        const ref = window.db.ref(`${FIREBASE_PATH}/${uid}/flashcards`);
-        ref.on("value", (snapshot) => {
-          this.decks = [];
-          snapshot.forEach((childSnapshot) => {
-            const deck = childSnapshot.val();
-            if (deck) {
-              this.decks.push({
-                id: childSnapshot.key,
-                ...deck
-              });
-            }
-          });
+    // Sauvegarder dans Firebase WorkFlows
+    if (userId && db && ref && push && set) {
+      try {
+        const deckRef = push(ref(db, `wikimind5/users/${userId}/workflows/flashcards`));
+        fcDeckId = deckRef.key;
+        await set(deckRef, {
+          title: fcDeckTitle,
+          cards: fcCards,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          topic: topic
         });
-      } else {
-        // Fallback localStorage
-        const saved = localStorage.getItem(LOCALSTORAGE_KEY);
-        this.decks = saved ? JSON.parse(saved) : [];
-      }
-    } catch (error) {
-      console.error("Erreur de chargement des decks:", error);
-      // Fallback localStorage
-      const saved = localStorage.getItem(LOCALSTORAGE_KEY);
-      this.decks = saved ? JSON.parse(saved) : [];
-    }
-  },
-
-  async saveDeck(deck) {
-    try {
-      if (window.auth && window.auth.currentUser) {
-        const uid = window.auth.currentUser.uid;
-        const ref = window.db.ref(`${FIREBASE_PATH}/${uid}/flashcards/${deck.id}`);
-        await ref.set(deck);
-      } else {
-        // Fallback localStorage
-        const existing = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY) || "[]");
-        const index = existing.findIndex(d => d.id === deck.id);
-        if (index >= 0) {
-          existing[index] = deck;
-        } else {
-          existing.push(deck);
-        }
-        localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(existing));
-      }
-    } catch (error) {
-      console.error("Erreur de sauvegarde du deck:", error);
-    }
-  },
-
-  // ==================== GÉNÉRATION DES FLASHCARDS ====================
-  showLoading(message) {
-    this.isLoading = true;
-    const loadingElement = document.createElement("div");
-    loadingElement.className = "flashcards-loading";
-    loadingElement.innerHTML = `
-      <img src="${FLASHCARDS_PNG}" alt="Chargement...">
-      <span class="progress-text">${message}</span>
-    `;
-
-    // Ajouter au conteneur des messages (à adapter selon votre structure)
-    const messagesContainer = document.querySelector(".messages-container") ||
-                              document.querySelector("#chat-container") ||
-                              document.body;
-    messagesContainer.appendChild(loadingElement);
-
-    // Faire défiler vers le bas
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  },
-
-  hideLoading() {
-    this.isLoading = false;
-    const loadingElements = document.querySelectorAll(".flashcards-loading");
-    loadingElements.forEach(el => el.remove());
-  },
-
-  // Appelée quand l'IA génère des flashcards
-  createFlashcardsFromAI(flashcardsData) {
-    if (!this.activeTool === "flashcards") return;
-
-    const deckId = `deck_${Date.now()}`;
-    const deck = {
-      id: deckId,
-      name: flashcardsData.title || "Nouveau Deck",
-      description: flashcardsData.description || "",
-      cards: flashcardsData.cards || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    this.decks.push(deck);
-    this.saveDeck(deck);
-
-    // Afficher l'attachement
-    this.displayFlashcardsAttachment(deck);
-
-    return deckId;
-  },
-
-  displayFlashcardsAttachment(deck) {
-    const attachment = document.createElement("div");
-    attachment.className = "flashcards-attachment";
-    attachment.dataset.deckId = deck.id;
-    attachment.innerHTML = `
-      <div class="attachment-icon">
-        <img src="${FLASHCARDS_PNG}" alt="Flashcards">
-      </div>
-      <div class="attachment-info">
-        <div class="attachment-title">${deck.name}</div>
-        <div class="attachment-meta">${deck.cards.length} cartes</div>
-      </div>
-    `;
-
-    attachment.addEventListener("click", () => this.openFlashcardsPanel(deck.id));
-
-    // Ajouter au conteneur des messages
-    const messagesContainer = document.querySelector(".messages-container") ||
-                              document.querySelector("#chat-container") ||
-                              document.body;
-    messagesContainer.appendChild(attachment);
-
-    // Faire défiler vers le bas
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  },
-
-  // ==================== PANNEAU D'ÉDITION ====================
-  openFlashcardsPanel(deckId) {
-    this.currentDeckId = deckId;
-    const deck = this.decks.find(d => d.id === deckId);
-    if (!deck) return;
-
-    const panel = document.getElementById("flashcards-panel");
-    if (!panel) return;
-
-    panel.classList.add("open");
-    this.renderDeckContent(deck);
-  },
-
-  closeFlashcardsPanel() {
-    const panel = document.getElementById("flashcards-panel");
-    if (panel) {
-      panel.classList.remove("open");
-    }
-    this.currentDeckId = null;
-  },
-
-  renderDeckContent(deck) {
-    const panel = document.getElementById("flashcards-panel");
-    if (!panel) return;
-
-    const header = panel.querySelector(".panel-header .panel-title");
-    if (header) header.textContent = deck.name;
-
-    const content = panel.querySelector(".panel-content");
-    if (!content) return;
-
-    content.innerHTML = `
-      <div class="deck-list">
-        ${deck.cards.map((card, index) => `
-          <div class="deck-item" data-card-index="${index}">
-            <div class="deck-name">Carte ${index + 1}</div>
-            <div class="deck-count">${card.front.substring(0, 50)}...</div>
-          </div>
-        `).join("")}
-      </div>
-
-      <div class="card-editor">
-        <div class="editor-header">
-          <div class="editor-title">Éditeur de carte</div>
-          <div class="editor-actions">
-            <button id="edit-card-btn">✏️ Modifier</button>
-            <button id="ai-edit-btn">🤖 Éditer avec IA</button>
-            <button id="delete-card-btn">🗑️ Supprimer</button>
-          </div>
-        </div>
-        <div class="card-preview">
-          ${deck.cards.length > 0 ? this.renderCard(deck.cards[0]) : "<p>Aucune carte sélectionnée</p>"}
-        </div>
-      </div>
-    `;
-
-    // Ajouter les écouteurs
-    content.querySelectorAll(".deck-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const cardIndex = parseInt(item.dataset.cardIndex);
-        this.showCard(deck, cardIndex);
-      });
-    });
-
-    document.getElementById("edit-card-btn")?.addEventListener("click", () => {
-      const cardIndex = 0; // À adapter
-      this.editCardManually(deck, cardIndex);
-    });
-
-    document.getElementById("ai-edit-btn")?.addEventListener("click", () => {
-      const cardIndex = 0; // À adapter
-      this.editCardWithAI(deck, cardIndex);
-    });
-
-    document.getElementById("delete-card-btn")?.addEventListener("click", () => {
-      const cardIndex = 0; // À adapter
-      this.deleteCard(deck, cardIndex);
-    });
-  },
-
-  renderCard(card) {
-    return `
-      <div class="flashcard front">
-        <div class="flashcard-content">${card.front}</div>
-      </div>
-      <div class="flashcard back" style="display:none;">
-        <div class="flashcard-content">${card.back}</div>
-      </div>
-    `;
-  },
-
-  showCard(deck, cardIndex) {
-    const card = deck.cards[cardIndex];
-    const preview = document.querySelector(".card-preview");
-    if (!preview) return;
-
-    preview.innerHTML = this.renderCard(card);
-
-    // Ajouter l'écouteur pour le flip
-    const flashcard = preview.querySelector(".flashcard");
-    if (flashcard) {
-      flashcard.addEventListener("click", () => {
-        const back = preview.querySelector(".back");
-        if (back.style.display === "none") {
-          back.style.display = "block";
-          flashcard.querySelector(".front").style.display = "none";
-        } else {
-          back.style.display = "none";
-          flashcard.querySelector(".front").style.display = "block";
-        }
-      });
-    }
-  },
-
-  editCardManually(deck, cardIndex) {
-    const card = deck.cards[cardIndex];
-    const newFront = prompt("Nouveau recto:", card.front);
-    if (newFront === null) return;
-
-    const newBack = prompt("Nouveau verso:", card.back);
-    if (newBack === null) return;
-
-    card.front = newFront;
-    card.back = newBack;
-    deck.updatedAt = new Date().toISOString();
-    this.saveDeck(deck);
-    this.renderDeckContent(deck);
-  },
-
-  editCardWithAI(deck, cardIndex) {
-    // À implémenter: appeler l'IA pour éditer la carte
-    alert("Édition avec IA à implémenter");
-  },
-
-  deleteCard(deck, cardIndex) {
-    if (!confirm("Voulez-vous vraiment supprimer cette carte?")) return;
-
-    deck.cards.splice(cardIndex, 1);
-    deck.updatedAt = new Date().toISOString();
-    this.saveDeck(deck);
-    this.renderDeckContent(deck);
-  },
-
-  // ==================== OBSERVATEUR DE MESSAGES ====================
-  setupMessageObserver() {
-    // Observer les nouveaux messages pour détecter les mots-clés
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const text = node.textContent?.toLowerCase() || "";
-            if (text.includes("flashcard") || text.includes("fiche de révision") || text.includes("cartes mémoire")) {
-              if (this.activeTool === "flashcards") {
-                // Extraire les flashcards du message
-                const flashcardsData = this.extractFlashcardsFromMessage(node);
-                if (flashcardsData) {
-                  this.createFlashcardsFromAI(flashcardsData);
-                }
-              }
-            }
-          }
-        });
-      });
-    });
-
-    const messagesContainer = document.querySelector(".messages-container") ||
-                              document.querySelector("#chat-container") ||
-                              document.body;
-    observer.observe(messagesContainer, { childList: true, subtree: true });
-    this.messageObservers.push(observer);
-  },
-
-  extractFlashcardsFromMessage(node) {
-    // Logique pour extraire les flashcards d'un message AI
-    // Exemple: chercher des sections comme "Flashcard 1: ...", "Question: ...", "Réponse: ..."
-    const text = node.textContent;
-    const cards = [];
-
-    // Regex pour détecter les flashcards (à adapter selon le format de l'IA)
-    const flashcardRegex = /(?:Flashcard|Carte) \d+: ([^\n]+)\nQuestion: ([^\n]+)\nRéponse: ([^\n]+)/gi;
-    let match;
-
-    while ((match = flashcardRegex.exec(text)) !== null) {
-      cards.push({
-        front: match[2].trim(),
-        back: match[3].trim()
-      });
+      } catch (fbErr) { console.warn('FC Firebase save error:', fbErr); }
     }
 
-    if (cards.length > 0) {
-      return {
-        title: "Flashcards générées",
-        description: `Généré à partir de la conversation - ${cards.length} cartes`,
-        cards: cards
-      };
-    }
+    hideFcThinking();
+    return { title: fcDeckTitle, cards: fcCards, deckId: fcDeckId };
 
-    return null;
-  },
-
-  // ==================== NETTOYAGE ====================
-  cleanup() {
-    this.messageObservers.forEach(observer => observer.disconnect());
-    this.messageObservers = [];
+  } catch (err) {
+    hideFcThinking();
+    console.error('FC generate error:', err);
+    throw err;
   }
+}
+
+// ── LOAD DECK EXISTANT ──
+async function loadDeck(deckId, userId, db, ref, get) {
+  try {
+    const snap = await get(ref(db, `wikimind5/users/${userId}/workflows/flashcards/${deckId}`));
+    if (snap.exists()) {
+      const data = snap.val();
+      fcCards = data.cards || [];
+      fcDeckTitle = data.title || 'Flashcards';
+      fcDeckId = deckId;
+      openPanel();
+    }
+  } catch (e) { console.error('FC loadDeck error:', e); }
+}
+
+// ── SAVE TO FIREBASE ──
+async function saveToFirebase() {
+  if (!fcDeckId) return;
+  try {
+    const { userId, db, ref, set } = getFirebaseHandles();
+    if (!userId || !db) return;
+    await set(ref(db, `wikimind5/users/${userId}/workflows/flashcards/${fcDeckId}`), {
+      title: fcDeckTitle,
+      cards: fcCards,
+      updatedAt: Date.now()
+    });
+  } catch (e) { console.warn('FC save error:', e); }
+}
+
+function getFirebaseHandles() {
+  return {
+    userId: window._fcUserId || null,
+    db: window.db || null,
+    ref: window._firebaseRef || null,
+    set: window._firebaseSet || null
+  };
+}
+
+// ── RENDER ──
+function renderCards() {
+  if (!fcCardsArea) return;
+
+  // Mode révision
+  if (fcMode === 'review' && fcCards.length > 0) {
+    document.getElementById('fc-nav').style.display = 'flex';
+    fcProgressWrap.style.display = 'block';
+    fcFlipped = false;
+    fcCardsArea.innerHTML = '';
+    fcCardsArea.className = 'fc-cards-area single-mode';
+
+    const card = fcCards[fcCurrentIdx];
+    const flip = document.createElement('div');
+    flip.className = 'fc-flip-container';
+    flip.id = 'fc-flip-card';
+    flip.innerHTML = `
+      <div class="fc-flip-inner">
+        <div class="fc-flip-front">
+          <span class="fc-flip-badge">Question</span>
+          <div class="fc-flip-text">${escHtml(card.front)}</div>
+          <span class="fc-flip-hint">Cliquez pour retourner</span>
+        </div>
+        <div class="fc-flip-back">
+          <span class="fc-flip-badge">Réponse</span>
+          <div class="fc-flip-text">${escHtml(card.back)}</div>
+          <span class="fc-flip-hint">Cliquez pour retourner</span>
+        </div>
+      </div>`;
+    flip.addEventListener('click', () => {
+      fcFlipped = !fcFlipped;
+      flip.classList.toggle('flipped', fcFlipped);
+    });
+    fcCardsArea.appendChild(flip);
+    updateNav();
+    updateProgress();
+    return;
+  }
+
+  // Mode liste
+  document.getElementById('fc-nav').style.display = 'none';
+  fcProgressWrap.style.display = 'none';
+  fcCardsArea.className = 'fc-cards-area';
+  fcCardsArea.innerHTML = '';
+
+  if (fcCards.length === 0) {
+    fcCardsArea.innerHTML = `<div id="fc-empty"><img src="flashcards.png" alt=""><p>Aucune flashcard.<br>Demandez à l'IA d'en créer !</p></div>`;
+    return;
+  }
+
+  fcCards.forEach((card, idx) => {
+    const el = document.createElement('div');
+    el.className = 'fc-card';
+    el.dataset.idx = idx;
+    el.innerHTML = `
+      <div class="fc-card-actions">
+        <button class="fc-card-act-btn" title="Modifier" data-action="edit" data-idx="${idx}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="fc-card-act-btn" title="Modifier par IA" data-action="ai-edit" data-idx="${idx}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        </button>
+        <button class="fc-card-act-btn danger" title="Supprimer" data-action="delete" data-idx="${idx}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+        </button>
+      </div>
+      <div class="fc-card-label">Recto</div>
+      <div class="fc-card-text">${escHtml(card.front)}</div>
+      <div class="fc-card-label" style="margin-top:12px">Verso</div>
+      <div class="fc-card-text" style="color:var(--text2)">${escHtml(card.back)}</div>
+    `;
+
+    // Actions
+    el.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const i = parseInt(btn.dataset.idx);
+        if (action === 'edit') startInlineEdit(el, i);
+        else if (action === 'ai-edit') openAiModal(i);
+        else if (action === 'delete') deleteCard(i);
+      });
+    });
+
+    fcCardsArea.appendChild(el);
+  });
+  updateHeader();
+}
+
+function updateHeader() {
+  const n = fcCards.length;
+  if (document.getElementById('fc-panel-subtitle'))
+    document.getElementById('fc-panel-subtitle').textContent = n + ' carte' + (n > 1 ? 's' : '');
+  if (fcCountEl) fcCountEl.textContent = n + ' carte' + (n > 1 ? 's' : '');
+}
+
+function updateNav() {
+  if (!fcNavIndicator) return;
+  fcNavIndicator.textContent = (fcCurrentIdx + 1) + ' / ' + fcCards.length;
+  fcNavPrev.disabled = fcCurrentIdx === 0;
+  fcNavNext.disabled = fcCurrentIdx >= fcCards.length - 1;
+}
+
+function updateProgress() {
+  const pct = fcCards.length > 1 ? ((fcCurrentIdx) / (fcCards.length - 1)) * 100 : 100;
+  if (fcProgressBar) fcProgressBar.style.width = pct + '%';
+}
+
+function navigate(dir) {
+  fcCurrentIdx = Math.max(0, Math.min(fcCards.length - 1, fcCurrentIdx + dir));
+  fcFlipped = false;
+  renderCards();
+}
+
+function toggleMode() {
+  const btn = document.getElementById('fc-mode-btn');
+  if (fcMode === 'list') {
+    fcMode = 'review';
+    fcCurrentIdx = 0;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Liste`;
+  } else {
+    fcMode = 'list';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Réviser`;
+  }
+  renderCards();
+}
+
+// ── EDIT INLINE ──
+function startInlineEdit(cardEl, idx) {
+  const card = fcCards[idx];
+  cardEl.classList.add('editing');
+  cardEl.innerHTML = `
+    <div class="fc-card-label">Recto</div>
+    <textarea class="fc-edit-field" id="fc-edit-front">${escHtml(card.front)}</textarea>
+    <div class="fc-card-label">Verso</div>
+    <textarea class="fc-edit-field" id="fc-edit-back">${escHtml(card.back)}</textarea>
+    <div class="fc-edit-actions">
+      <button class="fc-edit-cancel" id="fc-inline-cancel">Annuler</button>
+      <button class="fc-edit-save" id="fc-inline-save">Enregistrer</button>
+    </div>`;
+  document.getElementById('fc-inline-cancel').addEventListener('click', renderCards);
+  document.getElementById('fc-inline-save').addEventListener('click', () => {
+    const newFront = document.getElementById('fc-edit-front').value.trim();
+    const newBack = document.getElementById('fc-edit-back').value.trim();
+    if (!newFront || !newBack) return;
+    fcCards[idx] = { ...fcCards[idx], front: newFront, back: newBack };
+    saveToFirebase();
+    renderCards();
+    if (window.toast) window.toast('Carte modifiée ✓');
+  });
+  document.getElementById('fc-edit-front').focus();
+}
+
+// ── ADD CARD MANUALLY ──
+function addCardManually() {
+  fcCards.push({ id: 'fc_' + Date.now(), front: '', back: '' });
+  const newIdx = fcCards.length - 1;
+  renderCards();
+  // Lancer l'édition de la nouvelle carte
+  const cardEl = fcCardsArea.querySelectorAll('.fc-card')[newIdx];
+  if (cardEl) {
+    cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => startInlineEdit(cardEl, newIdx), 100);
+  }
+}
+
+// ── DELETE CARD ──
+function deleteCard(idx) {
+  if (!confirm('Supprimer cette carte ?')) return;
+  fcCards.splice(idx, 1);
+  saveToFirebase();
+  renderCards();
+  if (window.toast) window.toast('Carte supprimée');
+}
+
+// ── AI EDIT MODAL ──
+let _aiEditIdx = null;
+function openAiModal(idx) {
+  _aiEditIdx = idx;
+  const overlay = document.getElementById('fc-ai-edit-overlay');
+  document.getElementById('fc-ai-edit-instruction').value = '';
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('fc-ai-edit-instruction').focus(), 80);
+}
+function closeAiModal() {
+  document.getElementById('fc-ai-edit-overlay').classList.remove('open');
+  _aiEditIdx = null;
+}
+
+async function applyAiEdit() {
+  if (_aiEditIdx === null) return;
+  const instruction = document.getElementById('fc-ai-edit-instruction').value.trim();
+  if (!instruction) return;
+  const card = fcCards[_aiEditIdx];
+  const btn = document.getElementById('fc-ai-edit-confirm');
+  btn.textContent = '...';
+  btn.disabled = true;
+
+  try {
+    const apiKey = window._wmApiKey || "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj";
+    const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+      body: JSON.stringify({
+        model: "mistral-small-latest",
+        max_tokens: 300,
+        messages: [{
+          role: "user",
+          content: `Modifie cette flashcard selon l'instruction donnée.
+Réponds UNIQUEMENT en JSON : {"front":"...","back":"..."}
+
+Carte actuelle :
+- Recto: ${card.front}
+- Verso: ${card.back}
+
+Instruction: ${instruction}`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || '';
+    const clean = raw.replace(/^```json?\s*/i,'').replace(/```\s*$/,'').trim();
+    const parsed = JSON.parse(clean);
+    if (parsed.front && parsed.back) {
+      fcCards[_aiEditIdx] = { ...fcCards[_aiEditIdx], front: parsed.front, back: parsed.back };
+      saveToFirebase();
+      renderCards();
+      if (window.toast) window.toast('Carte modifiée par IA ✓');
+    }
+  } catch (e) {
+    if (window.toast) window.toast('Erreur IA');
+  } finally {
+    btn.textContent = 'Appliquer';
+    btn.disabled = false;
+    closeAiModal();
+  }
+}
+
+// ── REGEN WITH AI ──
+async function regenWithAI() {
+  if (!fcDeckTitle) return;
+  const topic = prompt('Modifier le sujet des flashcards :', fcDeckTitle) || fcDeckTitle;
+  const apiKey = window._wmApiKey || "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj";
+  const { userId, db, ref: fbRef, set: fbSet } = getFirebaseHandles();
+  const push = window._firebasePush;
+  try {
+    const result = await generate(topic, apiKey, window._wmSelectedModelObj?.id || 'mistral-small-latest', userId, db, fbRef, push, fbSet);
+    openPanel(result.title, result.cards, result.deckId);
+  } catch(e) { if (window.toast) window.toast('Erreur de génération'); }
+}
+
+// ── THINKING ANIMATION ──
+let _fcThinkingEl = null;
+let _fcThinkingTimer = null;
+const FC_STEPS = [
+  "Ouverture de Flashcards 5.1...",
+  "Création des Flashcards...",
+  "Finalisation des Flashcards..."
+];
+
+function showFcThinking(steps) {
+  hideFcThinking();
+  const messages = document.getElementById('messages');
+  if (!messages) return;
+
+  const g = document.createElement('div');
+  g.className = 'msg-group ai';
+  g.id = 'fc-thinking-group';
+
+  g.innerHTML = `<div class="msg-inner">
+    <div class="thinking-fc">
+      <div class="thinking-fc-icon">
+        <img src="flashcards.png" alt="FC" onerror="this.style.display='none'">
+      </div>
+      <div>
+        <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:2px">Flashcards 5.1</div>
+        <div id="fc-thinking-step" style="font-size:0.75rem;color:var(--text3)">${steps[0]}</div>
+      </div>
+      <div class="thinking-dots" style="margin-left:auto"><span></span><span></span><span></span></div>
+    </div>
+  </div>`;
+  messages.appendChild(g);
+  messages.parentElement.scrollTop = messages.parentElement.scrollHeight;
+  _fcThinkingEl = g;
+
+  let stepIdx = 0;
+  _fcThinkingTimer = setInterval(() => {
+    stepIdx = (stepIdx + 1) % steps.length;
+    const el = document.getElementById('fc-thinking-step');
+    if (el) el.textContent = steps[stepIdx];
+  }, 1400);
+}
+
+function hideFcThinking() {
+  if (_fcThinkingTimer) { clearInterval(_fcThinkingTimer); _fcThinkingTimer = null; }
+  const el = document.getElementById('fc-thinking-group');
+  if (el) el.remove();
+  _fcThinkingEl = null;
+}
+
+// ── UTILS ──
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── CHIP DANS LA ROW D'INPUT ──
+window.renderFcChip = function(active) {
+  const row = document.getElementById('active-connectors-row');
+  if (!row) return;
+  const existing = row.querySelector('.fc-active-chip');
+  if (existing) existing.remove();
+  if (!active) return;
+  const chip = document.createElement('div');
+  chip.className = 'fc-active-chip';
+  chip.innerHTML = `
+    <img src="flashcards.png" alt="FC" onerror="this.style.display='none'">
+    <span>Flashcards</span>
+    <button class="fc-active-chip-remove" title="Désactiver">✕</button>
+  `;
+  chip.querySelector('.fc-active-chip-remove').addEventListener('click', () => {
+    window._fcModeActive = false;
+    chip.remove();
+    if (window.toast) window.toast('Mode Flashcards désactivé');
+  });
+  row.appendChild(chip);
 };
 
-// ==================== INITIALISATION ====================
-document.addEventListener("DOMContentLoaded", () => {
-  FlashcardsManager.init();
+// ── AUTO-INIT ──
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
-  // Fermer les panneaux en cliquant à l'extérieur
-  document.addEventListener("click", (e) => {
-    const toolsPanel = document.getElementById("tools-panel");
-    const flashcardsPanel = document.getElementById("flashcards-panel");
-
-    if (toolsPanel && !toolsPanel.contains(e.target) && !e.target.closest(".menu-item.outils")) {
-      toolsPanel.classList.remove("open");
-      FlashcardsManager.isPanelOpen = false;
-    }
-
-    if (flashcardsPanel && !flashcardsPanel.contains(e.target)) {
-      flashcardsPanel.classList.remove("open");
-      FlashcardsManager.currentDeckId = null;
-    }
-  });
-});
-
-// Exposer globalement pour l'IA
-window.FlashcardsManager = FlashcardsManager;
+})();
