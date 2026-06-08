@@ -1416,23 +1416,28 @@ body.chat-empty-state #input-container {
 
 /* ========== PERSONNALISATION MODAL ========== */
 #personalize-overlay {
-  position: fixed; inset: 0; z-index: 2000;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
-  display: none; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
-#personalize-overlay.open { display: flex; }
+#personalize-overlay.open { opacity: 1; pointer-events: all; }
+
 #personalize-modal {
   background: #111; border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 20px; width: 780px; max-width: 96vw; max-height: 88vh;
+  border-radius: 20px; width: 820px; max-width: 96vw;
+  height: min(88vh, 680px);
   display: flex; overflow: hidden;
   animation: boxIn 0.2s cubic-bezier(0.4,0,0.2,1);
 }
+
+/* ── NAV GAUCHE (desktop) ── */
 .pers-left {
-  width: 220px; flex-shrink: 0;
+  width: 200px; flex-shrink: 0;
   border-right: 1px solid rgba(255,255,255,0.07);
-  padding: 22px 14px; display: flex; flex-direction: column; gap: 4px;
+  padding: 20px 12px; display: flex; flex-direction: column; gap: 3px;
 }
-.pers-left-title { font-size: 1.05rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; padding: 0 8px 12px; }
+.pers-left-title { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; padding: 0 8px 14px; }
 .pers-nav-btn {
   display: flex; align-items: center; gap: 9px; padding: 9px 10px;
   border-radius: 9px; border: none; background: transparent;
@@ -1441,35 +1446,40 @@ body.chat-empty-state #input-container {
   text-align: left; width: 100%;
 }
 .pers-nav-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
-.pers-nav-btn.active { background: rgba(255,255,255,0.08); color: #fff; }
+.pers-nav-btn.active { background: rgba(255,255,255,0.09); color: #fff; }
 .pers-nav-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-.pers-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── ZONE DROITE ── */
+.pers-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .pers-right-head {
-  padding: 22px 26px 18px; display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 22px 16px; display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
 }
-.pers-right-head h2 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+.pers-right-head h2 { font-size: 1.05rem; font-weight: 700; color: #fff; }
 .pers-close {
   background: rgba(255,255,255,0.06); border: none; color: rgba(255,255,255,0.5);
   cursor: pointer; width: 30px; height: 30px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center; transition: all 0.12s;
 }
 .pers-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
-.pers-body { flex: 1; overflow-y: auto; padding: 22px 26px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+.pers-body { flex: 1; overflow-y: auto; padding: 20px 22px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
 .pers-body::-webkit-scrollbar { width: 4px; }
 .pers-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-.pers-preview { width: 300px; flex-shrink: 0; border-left: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; overflow: hidden; }
-.pers-preview-head { padding: 22px 18px 12px; font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: .07em; flex-shrink: 0; }
-.pers-preview-body { flex: 1; overflow-y: auto; padding: 0 18px 18px; }
-.pers-preview-msg { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 0.82rem; color: rgba(255,255,255,0.7); line-height: 1.6; }
+
+/* ── PREVIEW ── */
+.pers-preview { width: 260px; flex-shrink: 0; border-left: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; overflow: hidden; }
+.pers-preview-head { padding: 20px 16px 10px; font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: .08em; flex-shrink: 0; }
+.pers-preview-body { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+.pers-preview-msg { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 11px 13px; margin-bottom: 9px; font-size: 0.80rem; color: rgba(255,255,255,0.65); line-height: 1.55; }
 .pers-preview-msg.user-msg { background: rgba(255,255,255,0.07); border-radius: 12px 12px 4px 12px; }
-.pers-preview-icon { width: 28px; height: 28px; border-radius: 7px; overflow: hidden; margin-bottom: 6px; }
-/* Field styles */
+
+/* ── CHAMPS ── */
 .pers-field { margin-bottom: 20px; }
-.pers-label { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 7px; display: block; }
+.pers-label { font-size: 0.80rem; font-weight: 600; color: rgba(255,255,255,0.55); margin-bottom: 7px; display: block; }
+.pers-sublabel { font-size: 0.74rem; color: rgba(255,255,255,0.3); margin-bottom: 8px; display: block; margin-top: -4px; }
 .pers-select {
   width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.88rem;
+  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.86rem;
   padding: 10px 14px; outline: none; appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff60' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
@@ -1479,31 +1489,103 @@ body.chat-empty-state #input-container {
 .pers-select option { background: #1a1a1a; color: #fff; }
 .pers-textarea {
   width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.88rem;
+  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.86rem;
   padding: 10px 14px; outline: none; resize: vertical; min-height: 80px; line-height: 1.6;
   transition: border-color 0.14s;
 }
 .pers-textarea:focus { border-color: rgba(255,255,255,0.25); }
-.pers-textarea::placeholder { color: rgba(255,255,255,0.25); }
-/* Tone chips */
+.pers-textarea::placeholder { color: rgba(255,255,255,0.22); }
+.pers-input {
+  width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.86rem;
+  padding: 10px 14px; outline: none; transition: border-color 0.14s;
+}
+.pers-input:focus { border-color: rgba(255,255,255,0.25); }
+.pers-input::placeholder { color: rgba(255,255,255,0.22); }
+
+/* Chips */
 .pers-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .pers-chip {
-  padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+  padding: 6px 13px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
   background: transparent; color: rgba(255,255,255,0.5); font-family: 'Geist', sans-serif;
   font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.12s;
 }
 .pers-chip:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.8); }
-.pers-chip.active { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); color: #fff; }
-.pers-chip.add-chip { color: rgba(255,255,255,0.3); }
+.pers-chip.active { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.4); color: #fff; }
+
+/* Mémoire RAG */
+.pers-memory-item {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.pers-memory-text { flex: 1; font-size: 0.82rem; color: rgba(255,255,255,0.7); line-height: 1.5; }
+.pers-memory-del {
+  background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.25);
+  padding: 2px; border-radius: 5px; transition: color 0.12s; flex-shrink: 0;
+}
+.pers-memory-del:hover { color: rgba(255,80,80,0.8); }
+.pers-memory-empty { font-size: 0.82rem; color: rgba(255,255,255,0.25); text-align: center; padding: 20px 0; }
+.pers-memory-add { display: flex; gap: 8px; margin-top: 10px; }
+.pers-memory-add input {
+  flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.84rem;
+  padding: 9px 13px; outline: none; transition: border-color 0.14s;
+}
+.pers-memory-add input:focus { border-color: rgba(255,255,255,0.25); }
+.pers-memory-add input::placeholder { color: rgba(255,255,255,0.22); }
+.pers-memory-add button {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 9px; color: #fff; font-family: 'Geist', sans-serif; font-size: 0.82rem;
+  font-weight: 600; padding: 9px 14px; cursor: pointer; transition: all 0.12s; white-space: nowrap;
+}
+.pers-memory-add button:hover { background: rgba(255,255,255,0.16); }
+
 /* Footer */
 .pers-footer {
-  padding: 14px 26px 18px; display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 22px 16px; display: flex; justify-content: flex-end; gap: 8px;
   border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
 }
 .pers-btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.15); border-radius: 9px; color: rgba(255,255,255,0.5); font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 8px 16px; cursor: pointer; transition: all 0.12s; }
 .pers-btn-cancel:hover { background: rgba(255,255,255,0.06); color: #fff; }
 .pers-btn-save { background: #fff; border: none; border-radius: 9px; color: #000; font-family: 'Geist', sans-serif; font-size: 0.8rem; font-weight: 700; padding: 8px 18px; cursor: pointer; transition: opacity 0.12s; }
 .pers-btn-save:hover { opacity: 0.88; }
+
+/* ── MOBILE : layout vertical ── */
+@media (max-width: 600px) {
+  #personalize-modal {
+    flex-direction: column;
+    width: 100%; max-width: 100%;
+    height: 100dvh; max-height: 100dvh;
+    border-radius: 0; border: none;
+    animation: none;
+  }
+  .pers-left {
+    width: 100%; flex-direction: row; flex-wrap: nowrap;
+    border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 10px 10px 0; gap: 2px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pers-left::-webkit-scrollbar { display: none; }
+  .pers-left-title { display: none; }
+  .pers-nav-btn {
+    flex-direction: column; gap: 4px; padding: 8px 12px 10px;
+    border-radius: 10px 10px 0 0; font-size: 0.72rem;
+    white-space: nowrap; flex-shrink: 0; min-width: 70px;
+    justify-content: center; align-items: center; text-align: center;
+    border-bottom: 2px solid transparent;
+  }
+  .pers-nav-btn.active {
+    background: rgba(255,255,255,0.07);
+    border-bottom-color: #fff;
+    color: #fff;
+  }
+  .pers-nav-btn svg { width: 17px; height: 17px; }
+  .pers-preview { display: none; }
+  .pers-body { padding: 16px 16px; }
+  .pers-right-head { padding: 14px 16px 12px; }
+  .pers-footer { padding: 10px 16px 14px; }
+}
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
@@ -3072,8 +3154,6 @@ function tierBadge(tier) {
 function providerBadge(provider) {
   if (provider === "groq") return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
     background:rgba(249,115,22,0.15);color:#f97316;border-radius:4px;padding:1px 5px;margin-left:4px;">GROQ</span>`;
-  if (provider === "pollinations") return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
-    background:rgba(168,85,247,0.15);color:#a855f7;border-radius:4px;padding:1px 5px;margin-left:4px;">🎨 IMG</span>`;
   return "";
 }
 
@@ -3681,31 +3761,6 @@ async function regenMsg(msgObj, groupEl) {
 // =============================================
 // SEND MESSAGE
 // =============================================
-// =============================================
-// GÉNÉRATION D'IMAGES — Pollinations.ai
-// =============================================
-const _wmImgGen = {
-  lastUsed: null,
-  COOLDOWN_MS: 60 * 60 * 1000, // 1h par IP (limite Pollinations)
-  canGenerate() {
-    if (!this.lastUsed) return true;
-    return (Date.now() - this.lastUsed) >= this.COOLDOWN_MS;
-  },
-  timeLeft() {
-    if (!this.lastUsed) return 0;
-    return Math.max(0, Math.ceil((this.COOLDOWN_MS - (Date.now() - this.lastUsed)) / 60000));
-  },
-  async generate(prompt) {
-    if (!this.canGenerate()) {
-      return { error: `⏳ Limite d'une image/heure atteinte. Réessaie dans ${this.timeLeft()} min.` };
-    }
-    const encoded = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&model=flux&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
-    this.lastUsed = Date.now();
-    return { url };
-  }
-};
-
 async function sendMessage() {
   const text = chatInput.value.trim();
   if ((!text && attachedFiles.length === 0) || streaming) return;
@@ -3713,49 +3768,6 @@ async function sendMessage() {
   userId = getOrCreateUserId();
   if (!chatStarted) setStarted(true);
   if (!currentConvId) currentConvId = genId();
-
-  // ── Modèle Image Pollinations ───────────────────────────────────────
-  if (window._wmSelectedModelObj && window._wmSelectedModelObj.provider === "pollinations") {
-    const imgPrompt = text;
-    chatInput.value = "";
-    autoResize();
-    attachedFiles = [];
-    renderAttachedFilesPreview();
-
-    // Push user message
-    const userMsg = { role: "user", content: imgPrompt, files: [], visionContent: null };
-    messages.push(userMsg);
-    appendUserMsg(imgPrompt, []);
-
-    if (userId && messages.length === 1) await saveConversationTitle(imgPrompt);
-    if (userId && currentConvId) await saveConversation();
-
-    // Affiche thinking
-    appendThinking();
-    streaming = true;
-    stopBtn.classList.add("on");
-    sendBtn.disabled = true;
-
-    const result = await _wmImgGen.generate(imgPrompt);
-    removeThinking();
-    streaming = false;
-    stopBtn.classList.remove("on");
-    sendBtn.disabled = false;
-
-    let aiContent;
-    if (result.error) {
-      aiContent = result.error;
-    } else {
-      aiContent = `🎨 **Image générée** pour : *${imgPrompt}*\n\n<div style="text-align:center;margin:10px 0"><img src="${result.url}" alt="${escHtml(imgPrompt)}" style="max-width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.5)" onerror="this.parentElement.innerHTML='<span style=color:var(--text2)>❌ Erreur de chargement — réessaie dans quelques secondes.</span>'"/></div>\n\n<a href="${result.url}" target="_blank" style="font-size:0.8rem;color:var(--text2);text-decoration:none">🔗 Ouvrir en plein écran</a>`;
-    }
-    const aiMsgObj = { role: "assistant", content: aiContent, modelName: "Image AI", msgId: genId() };
-    messages.push(aiMsgObj);
-    appendAIMsg(aiMsgObj);
-    if (userId && currentConvId) await saveConversation();
-    nameConversationWithAI(imgPrompt);
-    return;
-  }
-  // ────────────────────────────────────────────────────────────────────
 
   // Construire le contenu du message avec fichiers
   let fullContent = text;
@@ -4466,15 +4478,21 @@ let personalization = {
   chips: [],
   userName: '',
   userRole: '',
+  userAge: '',
+  userLocation: '',
+  userGoals: '',
+  userInterests: '',
   responseLength: 'medium',
   useEmoji: false,
   useBullets: true,
+  memory: [], // RAG : tableau de strings
 };
 
 function loadPersonalization() {
   try {
     const saved = localStorage.getItem('wm_personalization');
     if (saved) Object.assign(personalization, JSON.parse(saved));
+    if (!Array.isArray(personalization.memory)) personalization.memory = [];
   } catch {}
 }
 
@@ -4489,24 +4507,35 @@ async function savePersonalization() {
 
 loadPersonalization();
 
-// Charger depuis Firebase si connecté
 async function loadPersonalizationFromDB() {
   if (!userId || !currentUser) return;
   try {
     const snap = await get(ref(db, `wikimind5/users/${userId}/settings/personalization`));
-    if (snap.exists()) Object.assign(personalization, snap.val());
+    if (snap.exists()) {
+      Object.assign(personalization, snap.val());
+      if (!Array.isArray(personalization.memory)) personalization.memory = [];
+    }
   } catch {}
 }
 
 const TONE_OPTIONS = [
-  { value: 'professional', label: 'Professionnel', desc: 'Idéal pour le travail, les communications formelles, les emails, etc.' },
-  { value: 'casual', label: 'Décontracté', desc: 'Réponses décontractées et conversationnelles.' },
-  { value: 'concise', label: 'Concis', desc: 'Répond de façon courte et directe, sans détails inutiles.' },
-  { value: 'detailed', label: 'Détaillé', desc: 'Répond de façon approfondie avec des explications complètes.' },
-  { value: 'educational', label: 'Pédagogique', desc: 'Explique avec des exemples et analogies.' },
+  { value: 'professional', label: 'Professionnel', desc: 'Idéal pour le travail, communications formelles.' },
+  { value: 'casual', label: 'Décontracté', desc: 'Réponses conversationnelles et accessibles.' },
+  { value: 'concise', label: 'Concis', desc: 'Court et direct, sans détails inutiles.' },
+  { value: 'detailed', label: 'Détaillé', desc: 'Approfondi avec explications complètes.' },
+  { value: 'educational', label: 'Pédagogique', desc: 'Explique avec exemples et analogies.' },
 ];
 
-const CHIP_OPTIONS = ['Poli', 'Décontracté', 'Pragmatique', 'Empathique', 'Objectif', 'Humoristique', 'Motivant'];
+// Chips avec leur phrase de prompt associée
+const CHIP_OPTIONS = [
+  { label: 'Poli',         prompt: 'Utilise toujours un langage poli, courtois et respectueux.' },
+  { label: 'Décontracté', prompt: 'Adopte un ton décontracté et naturel, comme une conversation entre amis.' },
+  { label: 'Pragmatique', prompt: 'Privilégie les réponses concrètes, pratiques et directement applicables.' },
+  { label: 'Empathique',  prompt: 'Fais preuve d\'empathie et de bienveillance dans chaque réponse.' },
+  { label: 'Objectif',    prompt: 'Reste neutre et objectif, présente les faits sans parti pris.' },
+  { label: 'Humoristique',prompt: 'Intègre une touche d\'humour léger et approprié quand c\'est possible.' },
+  { label: 'Motivant',    prompt: 'Adopte un ton encourageant et motivant pour aider l\'utilisateur à aller de l\'avant.' },
+];
 
 const PERS_SECTIONS = {
   tonality: {
@@ -4517,17 +4546,19 @@ const PERS_SECTIONS = {
         <select class="pers-select" id="pers-tone">
           ${TONE_OPTIONS.map(t => `<option value="${t.value}" ${personalization.tone === t.value ? 'selected' : ''}>${t.label}</option>`).join('')}
         </select>
-        <div id="pers-tone-desc" style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin-top:7px;">${TONE_OPTIONS.find(t=>t.value===personalization.tone)?.desc||''}</div>
+        <div id="pers-tone-desc" style="font-size:0.76rem;color:rgba(255,255,255,0.3);margin-top:6px;">${TONE_OPTIONS.find(t=>t.value===personalization.tone)?.desc||''}</div>
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Traits de personnalité</label>
+        <span class="pers-sublabel">Clique pour activer — une instruction est ajoutée automatiquement</span>
+        <div class="pers-chips">
+          ${CHIP_OPTIONS.map(c => `<button class="pers-chip ${personalization.chips.includes(c.label) ? 'active' : ''}" data-chip="${c.label}">+ ${c.label}</button>`).join('')}
+        </div>
       </div>
       <div class="pers-field">
         <label class="pers-label">Instructions supplémentaires</label>
-        <textarea class="pers-textarea" id="pers-extra" placeholder="Ex: Encouragez une réflexion plus profonde avec des questions ouvertes et des résumés.">${personalization.extraInstructions}</textarea>
-      </div>
-      <div class="pers-field">
-        <label class="pers-label" style="margin-bottom:10px">Traits de personnalité</label>
-        <div class="pers-chips">
-          ${CHIP_OPTIONS.map(c => `<button class="pers-chip ${personalization.chips.includes(c) ? 'active' : ''}" data-chip="${c}">+ ${c}</button>`).join('')}
-        </div>
+        <span class="pers-sublabel">Les traits actifs y sont automatiquement ajoutés</span>
+        <textarea class="pers-textarea" id="pers-extra" placeholder="Ex: Termine chaque réponse par une question de relance.">${personalization.extraInstructions}</textarea>
       </div>
     `
   },
@@ -4535,12 +4566,59 @@ const PERS_SECTIONS = {
     title: 'Identité utilisateur',
     render: () => `
       <div class="pers-field">
-        <label class="pers-label">Votre prénom</label>
-        <textarea class="pers-textarea" id="pers-username" placeholder="Ex: Thomas" style="min-height:44px;resize:none">${personalization.userName}</textarea>
+        <label class="pers-label">Ton prénom</label>
+        <input class="pers-input" id="pers-username" placeholder="Ex : Thomas" value="${escHtml(personalization.userName)}">
       </div>
       <div class="pers-field">
-        <label class="pers-label">Votre rôle / profession</label>
-        <textarea class="pers-textarea" id="pers-userrole" placeholder="Ex: développeur, étudiant en médecine, chef de projet..." style="min-height:44px;resize:none">${personalization.userRole}</textarea>
+        <label class="pers-label">Ton rôle / profession</label>
+        <input class="pers-input" id="pers-userrole" placeholder="Ex : développeur, étudiant en médecine, chef de projet..." value="${escHtml(personalization.userRole)}">
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Ton âge</label>
+        <input class="pers-input" id="pers-userage" placeholder="Ex : 24 ans" value="${escHtml(personalization.userAge||'')}">
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Ta ville / pays</label>
+        <input class="pers-input" id="pers-userlocation" placeholder="Ex : Paris, France" value="${escHtml(personalization.userLocation||'')}">
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Tes objectifs principaux</label>
+        <span class="pers-sublabel">Qu'est-ce que tu veux accomplir avec Wikimind ?</span>
+        <textarea class="pers-textarea" id="pers-usergoals" placeholder="Ex : Apprendre à coder, préparer des examens, booster ma productivité...">${escHtml(personalization.userGoals||'')}</textarea>
+      </div>
+      <div class="pers-field">
+        <label class="pers-label">Tes centres d'intérêt</label>
+        <span class="pers-sublabel">Sujets que tu abordes souvent</span>
+        <textarea class="pers-textarea" id="pers-userinterests" placeholder="Ex : technologie, sport, finance, littérature...">${escHtml(personalization.userInterests||'')}</textarea>
+      </div>
+    `
+  },
+  memory: {
+    title: 'Mémoire',
+    render: () => `
+      <div class="pers-field">
+        <label class="pers-label">Ce que Wikimind sait sur toi</label>
+        <span class="pers-sublabel">Ces infos sont injectées dans chaque conversation pour que l'IA s'en souvienne.</span>
+        <div id="pers-memory-list">
+          ${personalization.memory.length === 0
+            ? `<div class="pers-memory-empty">Aucun souvenir enregistré.<br>Ajoute des infos clés ci-dessous.</div>`
+            : personalization.memory.map((m, i) => `
+              <div class="pers-memory-item" data-idx="${i}">
+                <span class="pers-memory-text">${escHtml(m)}</span>
+                <button class="pers-memory-del" data-idx="${i}" title="Supprimer">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>`).join('')}
+        </div>
+        <div class="pers-memory-add">
+          <input id="pers-memory-input" placeholder="Ex : Je suis allergique au gluten / J'utilise React au travail…" maxlength="200">
+          <button id="pers-memory-add-btn">+ Ajouter</button>
+        </div>
+      </div>
+      <div class="pers-field" style="margin-top:4px">
+        <label class="pers-label" style="color:rgba(255,255,255,0.3);font-size:0.72rem;">
+          💡 Exemples utiles : préférences techniques, projets en cours, contraintes, langue préférée…
+        </label>
       </div>
     `
   },
@@ -4572,17 +4650,35 @@ const PERS_SECTIONS = {
   }
 };
 
+// Reconstruit extraInstructions en fusionnant phrases-chips + texte manuel
+function rebuildExtraInstructions(manualText) {
+  const chipPhrases = personalization.chips
+    .map(label => CHIP_OPTIONS.find(c => c.label === label)?.prompt)
+    .filter(Boolean);
+  // Garde le texte manuel (sans les phrases auto déjà présentes)
+  const autoLines = CHIP_OPTIONS.map(c => c.prompt);
+  const manualLines = (manualText || personalization.extraInstructions)
+    .split('\n')
+    .filter(l => l.trim() && !autoLines.includes(l.trim()));
+  const all = [...chipPhrases, ...manualLines];
+  personalization.extraInstructions = all.join('\n');
+}
+
 function buildSystemPromptFromPersonalization() {
   const tone = TONE_OPTIONS.find(t => t.value === personalization.tone);
   const toneStr = tone ? `Adopte un style ${tone.label.toLowerCase()}.` : '';
-  const chipsStr = personalization.chips.length ? `Traits de ton: ${personalization.chips.join(', ')}.` : '';
   const extraStr = personalization.extraInstructions ? personalization.extraInstructions.trim() : '';
   const nameStr = personalization.userName ? `L'utilisateur s'appelle ${personalization.userName}.` : '';
   const roleStr = personalization.userRole ? `Il est ${personalization.userRole}.` : '';
+  const ageStr = personalization.userAge ? `Il a ${personalization.userAge}.` : '';
+  const locStr = personalization.userLocation ? `Il se trouve à ${personalization.userLocation}.` : '';
+  const goalsStr = personalization.userGoals ? `Ses objectifs : ${personalization.userGoals}.` : '';
+  const interestsStr = personalization.userInterests ? `Ses centres d'intérêt : ${personalization.userInterests}.` : '';
   const lengthStr = personalization.responseLength === 'short' ? 'Réponds de façon courte et directe.' : personalization.responseLength === 'long' ? 'Réponds de façon détaillée et complète.' : '';
-  const emojiStr = personalization.useEmoji ? 'Tu peux utiliser des emojis pour illustrer tes propos.' : 'Évite les emojis.';
-  const bulletStr = personalization.useBullets ? '' : 'Évite les listes à puces, préfère des phrases continues.';
-  return [toneStr, chipsStr, nameStr, roleStr, lengthStr, emojiStr, bulletStr, extraStr].filter(Boolean).join(' ');
+  const emojiStr = personalization.useEmoji ? 'Tu peux utiliser des emojis.' : 'Évite les emojis.';
+  const bulletStr = personalization.useBullets ? '' : 'Évite les listes à puces.';
+  const memStr = personalization.memory.length > 0 ? `Informations mémorisées sur l'utilisateur : ${personalization.memory.join(' | ')}.` : '';
+  return [toneStr, extraStr, nameStr, roleStr, ageStr, locStr, goalsStr, interestsStr, lengthStr, emojiStr, bulletStr, memStr].filter(Boolean).join(' ');
 }
 
 let _persSection = 'tonality';
@@ -4603,7 +4699,7 @@ function renderPersSection() {
   $("pers-section-title").textContent = sec.title;
   $("pers-body").innerHTML = sec.render();
 
-  // Bind events
+  // — Tonalité —
   const toneEl = $("pers-tone");
   if (toneEl) {
     toneEl.addEventListener("change", () => {
@@ -4613,27 +4709,99 @@ function renderPersSection() {
       updatePersPreview();
     });
   }
-  const extraEl = $("pers-extra");
-  if (extraEl) extraEl.addEventListener("input", () => { personalization.extraInstructions = extraEl.value; updatePersPreview(); });
 
+  // — Extra instructions (textarea manuel) —
+  const extraEl = $("pers-extra");
+  if (extraEl) {
+    extraEl.addEventListener("input", () => {
+      // Récupère le texte manuel hors des phrases auto
+      const autoLines = CHIP_OPTIONS.map(c => c.prompt);
+      const manualLines = extraEl.value.split('\n').filter(l => l.trim() && !autoLines.includes(l.trim()));
+      rebuildExtraInstructions(manualLines.join('\n'));
+      updatePersPreview();
+    });
+  }
+
+  // — Chips → insertion phrase dans extra —
   document.querySelectorAll(".pers-chip").forEach(chip => {
     chip.addEventListener("click", () => {
-      const c = chip.dataset.chip;
-      if (personalization.chips.includes(c)) {
-        personalization.chips = personalization.chips.filter(x => x !== c);
+      const label = chip.dataset.chip;
+      const chipObj = CHIP_OPTIONS.find(c => c.label === label);
+      if (!chipObj) return;
+      if (personalization.chips.includes(label)) {
+        personalization.chips = personalization.chips.filter(x => x !== label);
         chip.classList.remove("active");
       } else {
-        personalization.chips.push(c);
+        personalization.chips.push(label);
         chip.classList.add("active");
       }
+      // Récupère texte manuel actuel depuis le textarea
+      const currentExtra = extraEl ? extraEl.value : personalization.extraInstructions;
+      const autoLines = CHIP_OPTIONS.map(c => c.prompt);
+      const manualLines = currentExtra.split('\n').filter(l => l.trim() && !autoLines.includes(l.trim()));
+      rebuildExtraInstructions(manualLines.join('\n'));
+      // Met à jour le textarea visuellement
+      if (extraEl) extraEl.value = personalization.extraInstructions;
       updatePersPreview();
     });
   });
 
+  // — Identité —
   const userNameEl = $("pers-username");
   if (userNameEl) userNameEl.addEventListener("input", () => { personalization.userName = userNameEl.value; });
   const userRoleEl = $("pers-userrole");
   if (userRoleEl) userRoleEl.addEventListener("input", () => { personalization.userRole = userRoleEl.value; });
+  const userAgeEl = $("pers-userage");
+  if (userAgeEl) userAgeEl.addEventListener("input", () => { personalization.userAge = userAgeEl.value; });
+  const userLocEl = $("pers-userlocation");
+  if (userLocEl) userLocEl.addEventListener("input", () => { personalization.userLocation = userLocEl.value; });
+  const userGoalsEl = $("pers-usergoals");
+  if (userGoalsEl) userGoalsEl.addEventListener("input", () => { personalization.userGoals = userGoalsEl.value; });
+  const userInterestsEl = $("pers-userinterests");
+  if (userInterestsEl) userInterestsEl.addEventListener("input", () => { personalization.userInterests = userInterestsEl.value; });
+
+  // — Mémoire —
+  document.querySelectorAll(".pers-memory-del").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.idx);
+      personalization.memory.splice(idx, 1);
+      $("pers-body").innerHTML = PERS_SECTIONS.memory.render();
+      // rebind après re-render
+      renderPersSection();
+    });
+  });
+  const memInput = $("pers-memory-input");
+  const memAddBtn = $("pers-memory-add-btn");
+  if (memAddBtn && memInput) {
+    const doAdd = () => {
+      const val = memInput.value.trim();
+      if (!val) return;
+      personalization.memory.push(val);
+      memInput.value = '';
+      // Re-render la liste uniquement
+      const listEl = $("pers-memory-list");
+      if (listEl) {
+        listEl.innerHTML = personalization.memory.map((m, i) => `
+          <div class="pers-memory-item" data-idx="${i}">
+            <span class="pers-memory-text">${escHtml(m)}</span>
+            <button class="pers-memory-del" data-idx="${i}" title="Supprimer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`).join('');
+        document.querySelectorAll(".pers-memory-del").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idx = parseInt(btn.dataset.idx);
+            personalization.memory.splice(idx, 1);
+            renderPersSection();
+          });
+        });
+      }
+    };
+    memAddBtn.addEventListener("click", doAdd);
+    memInput.addEventListener("keydown", e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+  }
+
+  // — Format —
   const lengthEl = $("pers-length");
   if (lengthEl) lengthEl.addEventListener("change", () => { personalization.responseLength = lengthEl.value; });
   const bulletsEl = $("pers-bullets");
@@ -4641,6 +4809,7 @@ function renderPersSection() {
   const emojiEl = $("pers-emoji");
   if (emojiEl) emojiEl.addEventListener("change", () => { personalization.useEmoji = emojiEl.checked; });
 
+  // — Nav active —
   document.querySelectorAll(".pers-nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.section === _persSection);
   });
@@ -4692,6 +4861,10 @@ runPlaceholder();
       <button class="pers-nav-btn" data-section="identity">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Identité
+      </button>
+      <button class="pers-nav-btn" data-section="memory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Mémoire
       </button>
       <button class="pers-nav-btn" data-section="format">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
