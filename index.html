@@ -5136,22 +5136,25 @@ runPlaceholder();
 </div>
   <script src="flashcards.js" defer></script>
   <!-- PANEL OUTILS (pour Flashcards et autres) -->
-<div id="tools-panel">
-  <div id="tools-panel-head">
-    <button id="tools-panel-back">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <div>
-      <h1>Outils</h1>
-      <p>Activez un outil pour l'utiliser dans cette conversation</p>
+<!-- Structure du panneau Outils (à placer près de #connectors-panel) -->
+<div id="tools-panel" class="side-panel">
+  <div class="panel-header">
+    <button class="back-btn" aria-label="Retour">←</button>
+    <div class="panel-title">
+      <h2>Outils</h2>
+      <p class="panel-subtitle">Activez un outil pour l'utiliser dans cette conversation</p>
     </div>
   </div>
-  <div id="tools-panel-body">
-    <div class="tools-section-title">Outils disponibles</div>
-    <div class="tools-grid" id="tools-grid"></div>
+  <div class="panel-content">
+    <div class="tools-section">
+      <h3>OUTILS DISPONIBLES</h3>
+      <div id="tools-list" class="tools-grid"></div>
+    </div>
   </div>
 </div>
-</body>
+
+<!-- Script Flashcards (après les autres scripts) -->
+<script src="flashcards.js"></script>
 <!-- Settings module — chargé après le script principal (type=module) -->
 <script src="settings5.js" defer></script>
 </html>
