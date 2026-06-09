@@ -733,6 +733,129 @@ body:not(.chat-empty-state) #welcome-screen {
 .act-btn.liked { color: #4ade80; }
 .act-btn.disliked { color: #f87171; }
 
+/* ========== SOURCES BUTTON ========== */
+.sources-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 5px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  font-family: 'Geist', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: all 0.12s;
+  position: relative;
+}
+.sources-btn:hover {
+  background: var(--bg3);
+  color: var(--text2);
+  border-color: var(--border2);
+}
+.sources-btn-logos {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sources-btn-logos img {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+/* Sources dropdown */
+.sources-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 500;
+  min-width: 220px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  display: none;
+  animation: popupIn 0.13s ease;
+}
+.sources-dropdown.open { display: block; }
+.sources-dropdown-header {
+  padding: 8px 12px 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.sources-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.1s;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sources-dropdown-item:last-child { border-bottom: none; }
+.sources-dropdown-item:hover { background: rgba(255,255,255,0.05); }
+.sources-dropdown-item img {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.sources-dropdown-item-info { flex: 1; min-width: 0; }
+.sources-dropdown-item-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.sources-dropdown-item-url {
+  font-size: 0.68rem;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sources-dropdown-item svg {
+  width: 11px;
+  height: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+/* Image generation thinking */
+.img-thinking-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  color: var(--text3);
+  font-size: 0.85rem;
+}
+.img-thinking-partner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.img-thinking-partner img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
 /* ========== INFO POPUP — FIX BUG ========== */
 .msg-info-popup {
   position: absolute;
@@ -4091,14 +4214,25 @@ function appendFcFileCard(title, count, deckId) {
   scrollBottom();
 }
 
-function appendThinking() {
+function appendThinking(partnerInfo = null) {
   const g = document.createElement("div");
   g.className = "msg-group ai";
   g.id = "thinking-group";
 
-  // Si connecteur actif, afficher "Ouverture de Gmail..." avec logo
   let thinkingHTML = '';
-  if (activeConnectors.length > 0) {
+
+  // Si un partenaire image est actif (Pollinations, etc.)
+  if (partnerInfo) {
+    thinkingHTML = `<div class="img-thinking-bubble">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span>Wikimind AI réfléchit avec</span>
+      <div class="img-thinking-partner">
+        <img src="${partnerInfo.logo}" alt="${partnerInfo.name}" onerror="this.style.display='none'">
+        <span style="font-weight:600;color:var(--text2)">${partnerInfo.name}</span>
+      </div>
+    </div>`;
+  } else if (activeConnectors.length > 0) {
+    // Si connecteur actif, afficher avec logo du connecteur
     const conn = CONNECTORS_LIST.find(c => c.id === activeConnectors[0]);
     if (conn) {
       thinkingHTML = `<div class="thinking-bubble thinking-connector">
@@ -4184,6 +4318,13 @@ function appendAIMsg(msgObj, isStreaming = false) {
   });
 
   actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
+
+  // Sources button — determine provider from model
+  const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
+  const providerForSrc = _mObjForSrc?.provider || 'mistral';
+  const sourcesBtn = buildSourcesBtn([providerForSrc === 'groq' ? 'groq' : 'mistral']);
+  if (sourcesBtn) actBar.appendChild(sourcesBtn);
+
   inner.append(bubble, meta, actBar);
   g.appendChild(inner);
   messagesEl.appendChild(g);
@@ -4451,6 +4592,72 @@ function incrementImageUsage(modelKey) {
   localStorage.setItem('wm_img_usage_' + modelKey, JSON.stringify(recent));
 }
 
+// ── SOURCES DATA ────────────────────────────────────────────────────────────
+const PROVIDER_SOURCES = {
+  pollinations: {
+    name: "Pollinations AI",
+    logo: "pollinationai.png",
+    url: "https://pollinations.ai/",
+    desc: "Génération d'images IA"
+  },
+  mistral: {
+    name: "Mistral AI",
+    logo: "mistrallogo.png",
+    url: "https://chat.mistral.ai/chat",
+    desc: "Modèles de langage"
+  },
+  groq: {
+    name: "Mistral AI",
+    logo: "mistrallogo.png",
+    url: "https://chat.mistral.ai/chat",
+    desc: "Modèles de langage"
+  }
+};
+
+function buildSourcesBtn(sources) {
+  // sources = array of provider keys like ['pollinations'] or ['mistral']
+  const validSources = sources.filter(s => PROVIDER_SOURCES[s]);
+  if (validSources.length === 0) return null;
+
+  const btn = document.createElement("button");
+  btn.className = "sources-btn";
+  btn.title = "Sources";
+
+  const logosHtml = validSources.map(s => {
+    const src = PROVIDER_SOURCES[s];
+    return `<img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">`;
+  }).join('');
+
+  btn.innerHTML = `
+    <div class="sources-btn-logos">${logosHtml}</div>
+    <span>Sources</span>
+    <div class="sources-dropdown" id="sources-dd-${Math.random().toString(36).slice(2)}">
+      <div class="sources-dropdown-header">Sources utilisées</div>
+      ${validSources.map(s => {
+        const src = PROVIDER_SOURCES[s];
+        return `<a href="${src.url}" target="_blank" rel="noopener" class="sources-dropdown-item">
+          <img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">
+          <div class="sources-dropdown-item-info">
+            <div class="sources-dropdown-item-name">${src.name}</div>
+            <div class="sources-dropdown-item-url">${src.url}</div>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>`;
+      }).join('')}
+    </div>
+  `;
+
+  const dropdown = btn.querySelector('.sources-dropdown');
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.sources-dropdown.open').forEach(d => { if (d !== dropdown) d.classList.remove('open'); });
+    dropdown.classList.toggle('open');
+  });
+  document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+  return btn;
+}
+
 async function generateImage(prompt, modelObj) {
   const limit = modelObj.apiModel === 'gptimage-large' ? 10 : 100;
   if (!checkImageRateLimit(modelObj.apiModel, limit)) {
@@ -4472,40 +4679,27 @@ async function generateImage(prompt, modelObj) {
     modelName: selectedModelName,
     ts: Date.now(),
     responseTime: null,
-    liked: 0
+    liked: 0,
+    isImage: true,
+    provider: "pollinations"
   };
   messages.push(aiMsgObj);
 
-  // Rendu temporaire du loader
-  const g = document.createElement("div");
-  g.className = "msg-group ai";
-  g.dataset.msgId = aiMsgId;
-  g.innerHTML = `
-    <div class="msg-inner">
-      <div class="bubble ai" id="bubble-${aiMsgId}" style="padding:0;background:transparent;border:none;">
-        <div class="img-gen-loader" id="loader-${aiMsgId}">
-          <div class="img-gen-spinner"></div>
-          <span>Création de l'image (cela peut prendre quelques secondes)...</span>
-        </div>
-      </div>
-      <div class="msg-meta"><span class="model-tag-sm">${selectedModelName}</span></div>
-    </div>
-  `;
-  messagesEl.appendChild(g);
-  scrollBottom();
+  // Afficher thinking bubble avec logo Pollinations
+  appendThinking({ name: "Pollinations AI", logo: "pollinationai.png" });
 
   const start = Date.now();
   const seed = Math.floor(Math.random() * 10000000);
   
-  // Nettoyer le prompt (au cas où il y a des fichiers attachés on prend juste le texte)
+  // Nettoyer le prompt
   let cleanPrompt = prompt.split('### Fichier')[0].trim();
   if(!cleanPrompt) cleanPrompt = "Une belle image créative";
 
-  // URL publique gratuite (sans la clé pk_ qui bloque à 1 image/heure)
+  // URL publique
   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}`;
 
   try {
-    // Précharger l'image via JS pour remplacer proprement le loader
+    // Précharger l'image
     await new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = resolve;
@@ -4513,34 +4707,91 @@ async function generateImage(prompt, modelObj) {
       img.src = imageUrl;
     });
 
+    removeThinking();
     aiMsgObj.responseTime = Date.now() - start;
-    // Format markdown : on utilise la syntaxe standard Markdown qui est digérée par renderContent()
     aiMsgObj.content = `![${escHtml(cleanPrompt)}](${imageUrl})`;
-    
-    const bubble = document.getElementById(`bubble-${aiMsgId}`);
-    if (bubble) {
-       bubble.style.padding = "";
-       bubble.style.background = "";
-       bubble.style.border = "";
-       bubble.innerHTML = renderContent(aiMsgObj.content);
-       
-       const imgEl = bubble.querySelector("img");
-       if (imgEl) {
-         imgEl.style.cursor = "zoom-in";
-         imgEl.addEventListener("click", () => window.open(imageUrl, '_blank'));
-       }
+
+    // Créer le groupe message avec image + barre d'actions complète
+    const g = document.createElement("div");
+    g.className = "msg-group ai";
+    g.dataset.msgId = aiMsgId;
+
+    const inner = document.createElement("div");
+    inner.className = "msg-inner";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble ai";
+    bubble.innerHTML = renderContent(aiMsgObj.content);
+    const imgEl = bubble.querySelector("img");
+    if (imgEl) {
+      imgEl.style.cursor = "zoom-in";
+      imgEl.addEventListener("click", () => window.open(imageUrl, '_blank'));
     }
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    meta.innerHTML = `<span class="model-tag-sm">${selectedModelName}</span>`;
+
+    // Barre d'actions
+    const actBar = document.createElement("div");
+    actBar.className = "msg-actions";
+
+    // Copier
+    const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier le lien");
+    btnCopy.addEventListener("click", () => {
+      navigator.clipboard.writeText(imageUrl).then(() => {
+        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => { btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; }, 1600);
+      });
+    });
+
+    // Like
+    const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
+    const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
+    btnLike.addEventListener("click", () => handleReaction(aiMsgObj, 1, btnLike, btnDislike, g));
+    btnDislike.addEventListener("click", () => handleReaction(aiMsgObj, -1, btnLike, btnDislike, g));
+
+    // Télécharger (bouton spécial pour les images)
+    const btnDownload = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`, "Télécharger");
+    btnDownload.addEventListener("click", async () => {
+      try {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wikimind-image-${seed}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast("Image téléchargée !");
+      } catch {
+        window.open(imageUrl, '_blank');
+      }
+    });
+
+    // Sources
+    const sourcesBtn = buildSourcesBtn(['pollinations']);
+
+    actBar.append(btnCopy, btnLike, btnDislike, btnDownload);
+    if (sourcesBtn) actBar.appendChild(sourcesBtn);
+
+    inner.append(bubble, meta, actBar);
+    g.appendChild(inner);
+    messagesEl.appendChild(g);
+    scrollBottom();
 
     incrementImageUsage(modelObj.apiModel);
     if (userId && currentConvId) await saveConversation();
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    const loader = document.getElementById(`loader-${aiMsgId}`);
-    if (loader) {
-       loader.innerHTML = `<span style="color:#ff4444">Erreur lors de la génération. Le serveur est peut-être surchargé.</span>`;
-    }
-    messages.pop(); // Retire de l'historique en cas d'erreur
+    removeThinking();
+    // Afficher l'erreur directement dans le chat
+    const g = document.createElement("div");
+    g.className = "msg-group ai";
+    g.innerHTML = `<div class="msg-inner"><div class="bubble ai"><span style="color:#ff4444">Erreur lors de la génération. Le serveur est peut-être surchargé.</span></div></div>`;
+    messagesEl.appendChild(g);
+    messages.pop();
   } finally {
     streaming = false;
     stopBtn.classList.remove("on");
