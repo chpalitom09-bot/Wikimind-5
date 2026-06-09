@@ -1883,6 +1883,181 @@ body.chat-empty-state #input-container {
   #connectors-panel-body { padding: 18px; }
   .connectors-grid { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════
+   WORKFLOWS PANEL
+══════════════════════════════════════════ */
+#wf-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 380px; max-width: 100vw;
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+}
+#wf-panel.open { transform: translateX(0); }
+
+#wf-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#wf-panel-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+#wf-close-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+#wf-close-btn:hover { background: var(--bg4); color: var(--text); }
+
+#wf-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.wf-tab {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  border-radius: 7px 7px 0 0;
+  border: none;
+  background: none;
+  transition: color 0.15s, background 0.15s;
+}
+.wf-tab:hover { color: var(--text2); }
+.wf-tab.active {
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--bg3);
+  margin-bottom: -1px;
+}
+
+#wf-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+}
+#wf-body::-webkit-scrollbar { width: 4px; }
+#wf-body::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+
+#wf-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  color: var(--text3);
+  font-size: 0.85rem;
+}
+.wf-spinner {
+  width: 22px; height: 22px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--text2);
+  border-radius: 50%;
+  animation: wf-spin 0.7s linear infinite;
+}
+@keyframes wf-spin { to { transform: rotate(360deg); } }
+
+#wf-empty {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 200px;
+  color: var(--text3);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.wf-deck-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wf-deck-card:hover {
+  border-color: var(--border2);
+  background: var(--bg4);
+}
+.wf-deck-icon {
+  width: 38px; height: 38px;
+  border-radius: 9px;
+  background: var(--bg4);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.wf-deck-icon img { width: 24px; height: 24px; object-fit: contain; }
+.wf-deck-info { flex: 1; min-width: 0; }
+.wf-deck-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wf-deck-meta {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+.wf-deck-open {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text2);
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.wf-deck-open:hover { background: var(--border); color: var(--text); border-color: var(--border2); }
+
+#wf-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1199;
+}
+#wf-overlay.open { display: block; }
+
 </style>
 </head>
 <body class="chat-empty-state">
@@ -3458,7 +3633,7 @@ document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
     const id = item.id;
     if (id === "pm-skills") toast("Skills — Bientôt disponible");
     else if (id === "pm-libraries") toast("Bibliothèques — Bientôt disponible");
-    else if (id === "pm-workflows") toast("Workflows — Bientôt disponible");
+    else if (id === "pm-workflows") openWorkflowsPanel();
     else if (id === "pm-agents") toast("Agents — Bientôt disponible");
     else if (id === "pm-flashcards") {
       fcModeActive = !fcModeActive;
@@ -4974,6 +5149,114 @@ $("pers-save-btn").addEventListener("click", async () => {
 
 // =============================================
 runPlaceholder();
+
+// ══════════════════════════════════════════
+// WORKFLOWS PANEL
+// ══════════════════════════════════════════
+let wfPanelOpen = false;
+
+function openWorkflowsPanel() {
+  const panel = document.getElementById('wf-panel');
+  const overlay = document.getElementById('wf-overlay');
+  panel.classList.add('open');
+  overlay.classList.add('open');
+  wfPanelOpen = true;
+  loadWorkflowsDecks();
+}
+
+function closeWorkflowsPanel() {
+  const panel = document.getElementById('wf-panel');
+  const overlay = document.getElementById('wf-overlay');
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+  wfPanelOpen = false;
+}
+
+async function loadWorkflowsDecks() {
+  const loadingEl = document.getElementById('wf-loading');
+  const emptyEl = document.getElementById('wf-empty');
+  const listEl = document.getElementById('wf-decks-list');
+
+  loadingEl.style.display = 'flex';
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = '';
+
+  const uid = userId || window._fcUserId;
+  if (!uid || !db) {
+    loadingEl.style.display = 'none';
+    emptyEl.style.display = 'flex';
+    return;
+  }
+
+  try {
+    const snap = await get(ref(db, `wikimind5/users/${uid}/workflows/flashcards`));
+    loadingEl.style.display = 'none';
+
+    if (!snap.exists()) {
+      emptyEl.style.display = 'flex';
+      return;
+    }
+
+    const decks = [];
+    snap.forEach(child => {
+      decks.push({ id: child.key, ...child.val() });
+    });
+
+    // Trier par date décroissante
+    decks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    if (decks.length === 0) {
+      emptyEl.style.display = 'flex';
+      return;
+    }
+
+    decks.forEach(deck => {
+      const count = Array.isArray(deck.cards) ? deck.cards.length : 0;
+      const date = deck.createdAt
+        ? new Date(deck.createdAt).toLocaleDateString('fr', { day:'numeric', month:'short', year:'numeric' })
+        : '';
+
+      const card = document.createElement('div');
+      card.className = 'wf-deck-card';
+      card.innerHTML = `
+        <div class="wf-deck-icon">
+          <img src="flashcards.png" alt="FC" onerror="this.style.display='none'">
+        </div>
+        <div class="wf-deck-info">
+          <div class="wf-deck-title">${escHtml(deck.title || 'Sans titre')}</div>
+          <div class="wf-deck-meta">${count} carte${count>1?'s':''} · ${date}</div>
+        </div>
+        <button class="wf-deck-open">Ouvrir</button>
+      `;
+
+      const openDeck = () => {
+        closeWorkflowsPanel();
+        // Charger les cartes dans le panel flashcards
+        const cards = Array.isArray(deck.cards) ? deck.cards : [];
+        window.FlashcardsEngine?.openPanel(deck.title, cards, deck.id);
+      };
+
+      card.addEventListener('click', openDeck);
+      card.querySelector('.wf-deck-open').addEventListener('click', e => {
+        e.stopPropagation();
+        openDeck();
+      });
+
+      listEl.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error('Workflows load error:', err);
+    loadingEl.style.display = 'none';
+    emptyEl.style.display = 'flex';
+  }
+}
+
+// Event listeners Workflows panel
+document.getElementById('wf-close-btn')?.addEventListener('click', closeWorkflowsPanel);
+document.getElementById('wf-overlay')?.addEventListener('click', closeWorkflowsPanel);
+
+
 </script>
 <!-- MODALE PERSONNALISATION -->
 <div id="personalize-overlay">
@@ -5236,6 +5519,39 @@ runPlaceholder();
     Agents
   </div>
 </div>
+
+<!-- ══ WORKFLOWS PANEL ══ -->
+<div id="wf-overlay"></div>
+<div id="wf-panel">
+  <div id="wf-panel-head">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+    <h2>Workflows</h2>
+    <button id="wf-close-btn" title="Fermer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div id="wf-tabs">
+    <button class="wf-tab active" data-tab="flashcards">🃏 Flashcards</button>
+  </div>
+  <div id="wf-body">
+    <div id="wf-loading">
+      <div class="wf-spinner"></div>
+      Chargement...
+    </div>
+    <div id="wf-empty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3)">
+        <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/>
+      </svg>
+      <span>Aucun deck créé pour l'instant.<br>Génère des flashcards pour les retrouver ici !</span>
+    </div>
+    <div id="wf-decks-list"></div>
+  </div>
+</div>
+
 </body>
 <!-- Settings module — chargé après le script principal (type=module) -->
 <script src="settings5.js" defer></script>
