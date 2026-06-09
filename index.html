@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <link rel="stylesheet" href="settings5.css">
 <link rel="stylesheet" href="flashcards.css">
+<link rel="stylesheet" href="quiz.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
@@ -2383,6 +2384,7 @@ const _gk = ["gsk_wHXg87k3ELkt4D3b","DP73WGdyb3FYGPxjni","cCl9eWCGO6aRhA8xs"].jo
 window.auth = auth;
 window.db   = db;
 window._firebaseRef = ref;
+window._firebasePush = push;
 window._firebaseGet = get;
 window._firebaseSignOut = signOut;
 
@@ -2410,6 +2412,8 @@ let activeConnectors = []; // connecteurs activés pour cette conv
 // Flashcards
 let fcModeActive = false; // outil flashcards activé
 window._fcModeActive = false;
+let qzModeActive = false; // outil QCM activé
+window._qzModeActive = false;
 window._wmApiKey = KEY; // exposer la clé pour flashcards.js
 window._firebaseSet = set;
 window._firebasePush = push;
@@ -3742,6 +3746,16 @@ $("pm-outils").addEventListener("click", (e) => {
           ${fcModeActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </div>
       </div>
+      <div id="pm-outils-qz-item" style="padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.1s;">
+        <div style="width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(99,179,237,0.12);border-radius:7px;border:1px solid rgba(99,179,237,0.2);">
+          <img src="quiz.png" alt="QCM" width="16" height="16" style="object-fit:contain" onerror="this.parentElement.innerHTML='<svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#63b3ed&quot; stroke-width=&quot;2&quot; width=&quot;14&quot; height=&quot;14&quot;><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot;/><path d=&quot;M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3&quot;/><line x1=&quot;12&quot; y1=&quot;17&quot; x2=&quot;12.01&quot; y2=&quot;17&quot;/></svg>'">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.82rem;font-weight:600;color:var(--text)">QCM</div>
+          <div id="pm-outils-qz-status" style="font-size:0.68rem;color:var(--text3)">Générer un questionnaire</div>
+        </div>
+        <div id="pm-outils-qz-toggle" style="width:18px;height:18px;border-radius:4px;border:1px solid var(--border2);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.12s;"></div>
+      </div>
 
     </div>
   `;
@@ -3772,6 +3786,25 @@ $("pm-outils").addEventListener("click", (e) => {
     if (status) status.textContent = fcModeActive ? '● Activé' : 'Générer des cartes mémoire';
     if (status) status.style.color = fcModeActive ? '#ec4899' : 'var(--text3)';
     toast(fcModeActive ? 'Flashcards activé ✦' : 'Flashcards désactivé');
+  });
+
+  // QCM toggle
+  document.getElementById('pm-outils-qz-item').addEventListener('click', () => {
+    qzModeActive = !qzModeActive;
+    window._qzModeActive = qzModeActive;
+    const outisBadge = document.getElementById('pm-outils-badge');
+    if (outisBadge) outisBadge.style.display = (fcModeActive || qzModeActive) ? 'inline-block' : 'none';
+    window.renderQzChip?.(qzModeActive);
+    const toggle = document.getElementById('pm-outils-qz-toggle');
+    const status = document.getElementById('pm-outils-qz-status');
+    if (toggle) {
+      toggle.style.background = qzModeActive ? '#63b3ed' : 'transparent';
+      toggle.style.borderColor = qzModeActive ? '#63b3ed' : 'var(--border2)';
+      toggle.innerHTML = qzModeActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+    }
+    if (status) status.textContent = qzModeActive ? '● Activé' : 'Générer un questionnaire';
+    if (status) status.style.color = qzModeActive ? '#63b3ed' : 'var(--text3)';
+    toast(qzModeActive ? 'QCM activé ✦' : 'QCM désactivé');
   });
 
   // Fermer en cliquant ailleurs
@@ -4229,10 +4262,17 @@ async function sendMessage() {
   if (userId && messages.length === 1) await saveConversationTitle(text || filesForDisplay[0]?.name || "Nouveau");
   if (userId && currentConvId) await saveConversation();
 
-  // ── Détection mode flashcards ──
-  const fcKeywords = /flashcard|flash.card|carte.?s?.?(mémo|révision|réviser|mémoire)|fiche.?s?.?révision|anki/i;
+  // ── Détection mode flashcards (intention stricte) ──
+  // On déclenche uniquement si l'utilisateur DEMANDE explicitement des flashcards/cartes
+  // (pas juste mentionner le mot dans une phrase ordinaire)
+  const fcKeywords = /\b(cr[ée]{1,2}[sz]?|g[ée]n[ée]re?[sz]?|fais?|produis?|donne[\s-]moi|crée[\s-]moi|génère[\s-]moi|mets?|propose[sz]?|fiche[sz]?|r[ée]sume[sz]?)\b.{0,60}\b(flashcard[sz]?|flash[\s-]card[sz]?|carte[sz]?[\s-]m[ée]mo|carte[sz]?[\s-]r[ée]vision|fiche[sz]?[\s-]r[ée]vision|anki)\b|\b(flashcard[sz]?|flash[\s-]card[sz]?|carte[sz]?[\s-]m[ée]mo|fiche[sz]?[\s-]r[ée]vision)\b.{0,60}\b(cr[ée]{1,2}[sz]?|g[ée]n[ée]re?|fais?|produis?|voulu?[sz]?|besoin|pour\s+apprendre|pour\s+r[ée]viser)\b/i;
   const fcTriggeredByKeyword = !fcModeActive && fcKeywords.test(text);
   const wantsFc = fcModeActive || fcTriggeredByKeyword;
+
+  // ── Détection mode QCM (intention stricte) ──
+  const qzKeywords = /\b(cr[ée]{1,2}[sz]?|g[ée]n[ée]re?[sz]?|fais?|produis?|donne[\s-]moi|propose[sz]?)\b.{0,60}\b(qcm|quiz|questionnaire|questions?[\s-]choix|questions?[\s-]multiples?)\b|\b(qcm|quiz|questionnaire)\b.{0,60}\b(cr[ée]{1,2}[sz]?|g[ée]n[ée]re?|fais?|produis?|besoin|pour\s+apprendre|pour\s+r[ée]viser|sur\b)\b/i;
+  const qzTriggeredByKeyword = !qzModeActive && qzKeywords.test(text);
+  const wantsQz = qzModeActive || qzTriggeredByKeyword;
 
   if (wantsFc) {
     if (fcTriggeredByKeyword) toast("Flashcards détectées ✦");
@@ -4274,6 +4314,52 @@ async function sendMessage() {
     if (fcBadge) fcBadge.style.display = "none";
     window.renderFcChip?.(false);
     return; // pas de doStream normal
+  }
+
+  // ── Génération QCM ──
+  if (wantsQz) {
+    if (qzTriggeredByKeyword) toast("QCM détecté ✦");
+    const qzCountMatch = text.match(/\b(\d+)\s*(questions?|qcm|quiz)/i);
+    let qzRequestedCount = 10;
+    if (qzCountMatch) {
+      const n = parseInt(qzCountMatch[1]);
+      if (!isNaN(n)) qzRequestedCount = Math.min(30, Math.max(3, n));
+    }
+    const qzOptMatch = text.match(/\b(\d+)\s*(propositions?|options?|choix|réponses?)\b/i);
+    let qzOptionCount = 4;
+    if (qzOptMatch) {
+      const n = parseInt(qzOptMatch[1]);
+      if (!isNaN(n)) qzOptionCount = Math.min(5, Math.max(2, n));
+    }
+    try {
+      const result = await window.QuizEngine?.generate(
+        text, KEY, selectedModel, userId,
+        db, ref, push, set, qzRequestedCount, qzOptionCount
+      );
+      if (result) {
+        const qzMsgObj = {
+          role: "ai",
+          content: `Voici ton QCM sur **${result.title}** — ${result.questions.length} question${result.questions.length > 1 ? 's' : ''} ✦`,
+          msgId: genId(), ts: Date.now(),
+          model: selectedModel, modelName: selectedModelName,
+          responseTime: 0, liked: 0
+        };
+        messages.push(qzMsgObj);
+        appendAIMsg(qzMsgObj);
+        window.appendQzFileCard?.(result.title, result.questions.length, result.quizId);
+        window.QuizEngine?.openPanel(result.title, result.questions, result.quizId);
+        if (userId && currentConvId) await saveConversation();
+      }
+    } catch (error) {
+      console.error("QZ generation error:", error);
+      toast("Erreur lors de la génération du QCM.");
+    }
+    qzModeActive = false;
+    window._qzModeActive = false;
+    const qzBadge = document.getElementById("pm-qz-badge");
+    if (qzBadge) qzBadge.style.display = "none";
+    window.renderQzChip?.(false);
+    return;
   }
 
   try {
@@ -5318,7 +5404,7 @@ runPlaceholder();
 function openWorkflowsPanel() {
   document.getElementById('wf-panel').classList.add('open');
   document.getElementById('wf-overlay').classList.add('open');
-  loadWorkflowsDecks();
+  loadWorkflowsDecks('flashcards');
 }
 
 function closeWorkflowsPanel() {
@@ -5326,11 +5412,14 @@ function closeWorkflowsPanel() {
   document.getElementById('wf-overlay').classList.remove('open');
 }
 
-async function loadWorkflowsDecks() {
+async function loadWorkflowsDecks(tab) {
+  tab = tab || 'flashcards';
+  document.querySelectorAll('.wf-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
   const loadingEl  = document.getElementById('wf-loading');
   const emptyEl    = document.getElementById('wf-empty');
   const listEl     = document.getElementById('wf-decks-list');
-  const countEl    = document.getElementById('wf-fc-count');
 
   loadingEl.style.display  = 'flex';
   emptyEl.style.display    = 'none';
@@ -5344,76 +5433,131 @@ async function loadWorkflowsDecks() {
     return;
   }
 
+  const countEl = document.getElementById(tab === 'quiz' ? 'wf-qz-count' : 'wf-fc-count');
+
   try {
-    const snap = await get(ref(db, `wikimind5/users/${uid}/workflows/flashcards`));
-    loadingEl.style.display = 'none';
+    if (tab === 'flashcards') {
+      const snap = await get(ref(db, `wikimind5/users/${uid}/workflows/flashcards`));
+      loadingEl.style.display = 'none';
 
-    if (!snap.exists()) {
-      emptyEl.style.display = 'flex';
-      if (countEl) countEl.textContent = '0';
-      return;
-    }
-
-    const decks = [];
-    snap.forEach(child => { decks.push({ id: child.key, ...child.val() }); });
-    decks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    if (countEl) countEl.textContent = decks.length;
-
-    if (decks.length === 0) {
-      emptyEl.style.display = 'flex';
-      return;
-    }
-
-    // Label section
-    const label = document.createElement('div');
-    label.className = 'wf-section-label';
-    label.textContent = `${decks.length} deck${decks.length > 1 ? 's' : ''}`;
-    listEl.appendChild(label);
-
-    decks.forEach(deck => {
-      // Firebase stocke les cards comme objet keyed → reconvertir en array
-      if (deck.cards && !Array.isArray(deck.cards) && typeof deck.cards === 'object') {
-        deck.cards = Object.values(deck.cards);
+      if (!snap.exists()) {
+        emptyEl.style.display = 'flex';
+        document.getElementById('wf-empty-title').textContent = 'Aucun deck encore';
+        document.getElementById('wf-empty-sub').textContent = 'Génère des flashcards dans le chat\net retrouve tous tes decks ici.';
+        if (countEl) countEl.textContent = '0';
+        return;
       }
-      const count = Array.isArray(deck.cards) ? deck.cards.length : 0;
-      const date  = deck.createdAt
-        ? new Date(deck.createdAt).toLocaleDateString('fr', { day:'numeric', month:'short', year:'numeric' })
-        : '';
 
-      const card = document.createElement('div');
-      card.className = 'wf-deck-card';
-      card.innerHTML = `
-        <div class="wf-deck-icon">
-          <img src="flashcards.png" alt="FC"
-            onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'wf-deck-icon-fallback\'>🃏</span>'">
-        </div>
-        <div class="wf-deck-info">
-          <div class="wf-deck-title">${escHtml(deck.title || 'Sans titre')}</div>
-          <div class="wf-deck-meta">
-            <span class="wf-deck-badge cards">${count} carte${count>1?'s':''}</span>
-            <span class="wf-deck-badge date">${date}</span>
+      const decks = [];
+      snap.forEach(child => { decks.push({ id: child.key, ...child.val() }); });
+      decks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      if (countEl) countEl.textContent = decks.length;
+      if (decks.length === 0) { emptyEl.style.display = 'flex'; return; }
+
+      const label = document.createElement('div');
+      label.className = 'wf-section-label';
+      label.textContent = `${decks.length} deck${decks.length > 1 ? 's' : ''}`;
+      listEl.appendChild(label);
+
+      decks.forEach(deck => {
+        if (deck.cards && !Array.isArray(deck.cards) && typeof deck.cards === 'object') {
+          deck.cards = Object.values(deck.cards);
+        }
+        const count = Array.isArray(deck.cards) ? deck.cards.length : 0;
+        const date  = deck.createdAt
+          ? new Date(deck.createdAt).toLocaleDateString('fr', { day:'numeric', month:'short', year:'numeric' })
+          : '';
+        const card = document.createElement('div');
+        card.className = 'wf-deck-card';
+        card.innerHTML = `
+          <div class="wf-deck-icon">
+            <img src="flashcards.png" alt="FC"
+              onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'wf-deck-icon-fallback\'>🃏</span>'">
           </div>
-        </div>
-        <button class="wf-deck-open">Ouvrir →</button>
-      `;
-
-      const openDeck = () => {
-        closeWorkflowsPanel();
-        // Reconvertir si Firebase a stocké comme objet keyed
-        let cards = deck.cards || [];
-        if (!Array.isArray(cards) && typeof cards === 'object') cards = Object.values(cards);
-        window.FlashcardsEngine?.openPanel(deck.title, cards, deck.id);
-      };
-
-      card.addEventListener('click', openDeck);
-      card.querySelector('.wf-deck-open').addEventListener('click', e => {
-        e.stopPropagation();
-        openDeck();
+          <div class="wf-deck-info">
+            <div class="wf-deck-title">${escHtml(deck.title || 'Sans titre')}</div>
+            <div class="wf-deck-meta">
+              <span class="wf-deck-badge cards">${count} carte${count>1?'s':''}</span>
+              <span class="wf-deck-badge date">${date}</span>
+            </div>
+          </div>
+          <button class="wf-deck-open">Ouvrir →</button>
+        `;
+        const openDeck = () => {
+          closeWorkflowsPanel();
+          let cards = deck.cards || [];
+          if (!Array.isArray(cards) && typeof cards === 'object') cards = Object.values(cards);
+          window.FlashcardsEngine?.openPanel(deck.title, cards, deck.id);
+        };
+        card.addEventListener('click', openDeck);
+        card.querySelector('.wf-deck-open').addEventListener('click', e => { e.stopPropagation(); openDeck(); });
+        listEl.appendChild(card);
       });
 
-      listEl.appendChild(card);
-    });
+    } else {
+      // ── QCM tab ──
+      const snap = await get(ref(db, `wikimind5/users/${uid}/workflows/quiz`));
+      loadingEl.style.display = 'none';
+
+      if (!snap.exists()) {
+        emptyEl.style.display = 'flex';
+        document.getElementById('wf-empty-title').textContent = 'Aucun QCM encore';
+        document.getElementById('wf-empty-sub').textContent = 'Génère des QCM dans le chat\net retrouve-les ici.';
+        if (countEl) countEl.textContent = '0';
+        return;
+      }
+
+      const quizzes = [];
+      snap.forEach(child => { quizzes.push({ id: child.key, ...child.val() }); });
+      quizzes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      if (countEl) countEl.textContent = quizzes.length;
+      if (quizzes.length === 0) {
+        emptyEl.style.display = 'flex';
+        document.getElementById('wf-empty-title').textContent = 'Aucun QCM encore';
+        return;
+      }
+
+      const label = document.createElement('div');
+      label.className = 'wf-section-label';
+      label.textContent = `${quizzes.length} QCM`;
+      listEl.appendChild(label);
+
+      quizzes.forEach(quiz => {
+        if (quiz.questions && !Array.isArray(quiz.questions) && typeof quiz.questions === 'object') {
+          quiz.questions = Object.values(quiz.questions);
+        }
+        const count = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+        const opts  = quiz.config?.optionCount || 4;
+        const date  = quiz.createdAt
+          ? new Date(quiz.createdAt).toLocaleDateString('fr', { day:'numeric', month:'short', year:'numeric' })
+          : '';
+        const card = document.createElement('div');
+        card.className = 'wf-deck-card';
+        card.innerHTML = `
+          <div class="wf-deck-icon" style="background:rgba(99,179,237,0.1);border-color:rgba(99,179,237,0.2)">
+            <img src="quiz.png" alt="QCM" width="16" height="16" style="object-fit:contain"
+              onerror="this.style.display='none'">
+          </div>
+          <div class="wf-deck-info">
+            <div class="wf-deck-title">${escHtml(quiz.title || 'QCM sans titre')}</div>
+            <div class="wf-deck-meta">
+              <span class="wf-deck-badge cards" style="background:rgba(99,179,237,0.12);color:#63b3ed;border-color:rgba(99,179,237,0.25)">${count} question${count>1?'s':''} · ${opts} choix</span>
+              <span class="wf-deck-badge date">${date}</span>
+            </div>
+          </div>
+          <button class="wf-deck-open" style="color:#63b3ed;border-color:rgba(99,179,237,0.3);background:rgba(99,179,237,0.1)">Ouvrir →</button>
+        `;
+        const openQuiz = () => {
+          closeWorkflowsPanel();
+          let questions = quiz.questions || [];
+          if (!Array.isArray(questions) && typeof questions === 'object') questions = Object.values(questions);
+          window.QuizEngine?.openPanel(quiz.title, questions, quiz.id);
+        };
+        card.addEventListener('click', openQuiz);
+        card.querySelector('.wf-deck-open').addEventListener('click', e => { e.stopPropagation(); openQuiz(); });
+        listEl.appendChild(card);
+      });
+    }
 
   } catch (err) {
     console.error('Workflows load error:', err);
@@ -5426,6 +5570,12 @@ async function loadWorkflowsDecks() {
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('wf-close-btn')?.addEventListener('click', closeWorkflowsPanel);
   document.getElementById('wf-overlay')?.addEventListener('click', closeWorkflowsPanel);
+
+  // Tab switching
+  document.getElementById('wf-tabs')?.addEventListener('click', e => {
+    const tab = e.target.closest('.wf-tab');
+    if (tab) loadWorkflowsDecks(tab.dataset.tab);
+  });
 });
 
 </script>
@@ -5723,6 +5873,13 @@ window.addEventListener('DOMContentLoaded', () => {
       Flashcards
       <span class="wf-tab-count" id="wf-fc-count">—</span>
     </button>
+    <button class="wf-tab" data-tab="quiz">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      QCM
+      <span class="wf-tab-count" id="wf-qz-count">—</span>
+    </button>
   </div>
   <div id="wf-body">
     <div id="wf-loading">
@@ -5743,4 +5900,5 @@ window.addEventListener('DOMContentLoaded', () => {
 <!-- Settings module — chargé après le script principal (type=module) -->
 <script src="settings5.js" defer></script>
 <script src="flashcards.js" defer></script>
+<script src="quiz.js" defer></script>
 </html>
