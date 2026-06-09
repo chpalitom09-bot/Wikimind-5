@@ -3899,24 +3899,25 @@ async function sendMessage() {
 
   // ── Détection mode flashcards ──
   const fcKeywords = /flashcard|flash.card|carte.?s?.?(mémo|révision|réviser|mémoire)|fiche.?s?.?révision|anki/i;
-  const wantsFc = fcModeActive || fcKeywords.test(text);
+  const fcTriggeredByKeyword = !fcModeActive && fcKeywords.test(text);
+  const wantsFc = fcModeActive || fcTriggeredByKeyword;
 
   if (wantsFc) {
-    // Activer le mode si détecté automatiquement
-    if (!fcModeActive) {
-      fcModeActive = true;
-      window._fcModeActive = true;
-      const badge = document.getElementById("pm-fc-badge");
-      if (badge) badge.style.display = "inline-block";
-      window.renderFcChip?.(true);
+    if (fcTriggeredByKeyword) toast("Flashcards détectées ✦");
+    // Extraire le nombre de cartes demandé (5-30), défaut 10
+    const fcCountMatch = text.match(/\b(\d+)\s*(cartes?|flashcards?|fiches?)/i)
+      || text.match(/\b(vingt|quinze|dix|cinq|huit|douze|vingt[- ]cinq|trente)\b/i);
+    let fcRequestedCount = 10;
+    if (fcCountMatch) {
+      const n = parseInt(fcCountMatch[1]);
+      if (!isNaN(n)) fcRequestedCount = Math.min(30, Math.max(5, n));
     }
     try {
       const result = await window.FlashcardsEngine?.generate(
         text, KEY, selectedModel, userId,
-        db, ref, push, set
+        db, ref, push, set, fcRequestedCount
       );
       if (result) {
-        // Ajouter la réponse IA récap dans le chat
         const fcMsgObj = {
           role: "ai",
           content: `Voici tes flashcards sur **${result.title}** — ${result.cards.length} carte${result.cards.length > 1 ? 's' : ''} créée${result.cards.length > 1 ? 's' : ''} ✦`,
@@ -3925,10 +3926,8 @@ async function sendMessage() {
           responseTime: 0, liked: 0
         };
         messages.push(fcMsgObj);
-        // Afficher bulle récap + file card
         appendAIMsg(fcMsgObj);
         appendFcFileCard(result.title, result.cards.length, result.deckId);
-        // Ouvrir le panel
         window.FlashcardsEngine?.openPanel(result.title, result.cards, result.deckId);
         if (userId && currentConvId) await saveConversation();
       }
@@ -3936,6 +3935,12 @@ async function sendMessage() {
       console.error("FC generation error:", error);
       toast("Erreur lors de la génération des flashcards.");
     }
+    // ── Toujours désactiver après génération (retour chat normal) ──
+    fcModeActive = false;
+    window._fcModeActive = false;
+    const fcBadge = document.getElementById("pm-fc-badge");
+    if (fcBadge) fcBadge.style.display = "none";
+    window.renderFcChip?.(false);
     return; // pas de doStream normal
   }
 
