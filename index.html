@@ -4328,6 +4328,11 @@ function appendAIMsg(msgObj, isStreaming = false) {
   if (msgObj.content) {
     bubble.innerHTML = renderContent(msgObj.content);
     addCodeButtons(bubble);
+    // Si message image, rendre l'img cliquable
+    if (msgObj.isImage || msgObj.provider === 'pollinations') {
+      const imgEl = bubble.querySelector("img");
+      if (imgEl) { imgEl.style.cursor = "zoom-in"; imgEl.addEventListener("click", () => window.open(imgEl.src, "_blank")); }
+    }
   }
 
   const meta = document.createElement("div");
@@ -4359,6 +4364,26 @@ function appendAIMsg(msgObj, isStreaming = false) {
   const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Regénérer");
   btnRegen.addEventListener("click", () => regenMsg(msgObj, g));
 
+  // Bouton télécharger pour les messages image
+  let btnDownloadImg = null;
+  if (msgObj.isImage || msgObj.provider === 'pollinations') {
+    const imgUrlMatch = (msgObj.content || '').match(/\!\[.*?\]\((https?:\/\/[^)]+)\)/);
+    const imgUrlForDl = imgUrlMatch ? imgUrlMatch[1] : null;
+    if (imgUrlForDl) {
+      btnDownloadImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`, "Télécharger");
+      btnDownloadImg.addEventListener("click", async () => {
+        try {
+          const res = await fetch(imgUrlForDl);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url; a.download = `wikimind-image.png`; a.click();
+          URL.revokeObjectURL(url); toast("Image téléchargée !");
+        } catch { window.open(imgUrlForDl, "_blank"); }
+      });
+    }
+  }
+
   // Bouton info — FIX popup visible
   const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
   const popup = document.createElement("div");
@@ -4372,12 +4397,20 @@ function appendAIMsg(msgObj, isStreaming = false) {
     popup.classList.toggle("open");
   });
 
-  actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
+  actBar.append(btnCopy, btnLike, btnDislike);
+  if (btnDownloadImg) actBar.appendChild(btnDownloadImg);
+  actBar.append(btnRegen, btnInfo);
 
-  // Sources button — determine provider from model
-  const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
-  const providerForSrc = _mObjForSrc?.provider || 'mistral';
-  const sourcesBtn = buildSourcesBtn([providerForSrc === 'groq' ? 'groq' : 'mistral']);
+  // Sources button — use explicit provider if set (ex: pollinations pour les images), sinon dériver du modèle
+  let providerForSrc;
+  if (msgObj.provider === 'pollinations') {
+    providerForSrc = 'pollinations';
+  } else {
+    const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
+    const p = _mObjForSrc?.provider || 'mistral';
+    providerForSrc = p === 'groq' ? 'groq' : 'mistral';
+  }
+  const sourcesBtn = buildSourcesBtn([providerForSrc]);
   if (sourcesBtn) actBar.appendChild(sourcesBtn);
 
   inner.append(bubble, meta, actBar);
@@ -4612,7 +4645,8 @@ async function sendMessage() {
 
   const _mObj = window._wmSelectedModelObj || WIKIMIND_MODELS.find(m => m.apiModel === selectedModel);
   if (_mObj && _mObj.isImageModel) {
-    await generateImage(fullContent, _mObj);
+    // generateImage gère entièrement son propre état (streaming, sendBtn) via finally
+    generateImage(fullContent, _mObj);
     return;
   }
 
