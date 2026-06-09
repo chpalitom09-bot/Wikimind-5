@@ -191,9 +191,12 @@ Format EXACT :
       try {
         const deckRef = push(ref(db, `wikimind5/users/${userId}/workflows/flashcards`));
         fcDeckId = deckRef.key;
+        // Firebase ne supporte pas les arrays → convertir en objet keyed
+        const cardsObj = {};
+        fcCards.forEach((c, i) => { cardsObj[c.id || ('c' + i)] = c; });
         await set(deckRef, {
           title: fcDeckTitle,
-          cards: fcCards,
+          cards: cardsObj,
           createdAt: Date.now(),
           updatedAt: Date.now(),
           topic: topic
@@ -217,7 +220,10 @@ async function loadDeck(deckId, userId, db, ref, get) {
     const snap = await get(ref(db, `wikimind5/users/${userId}/workflows/flashcards/${deckId}`));
     if (snap.exists()) {
       const data = snap.val();
-      fcCards = data.cards || [];
+      // Firebase stocke les cards comme objet keyed → reconvertir en array
+      let rawCards = data.cards || [];
+      if (!Array.isArray(rawCards) && typeof rawCards === 'object') rawCards = Object.values(rawCards);
+      fcCards = rawCards;
       fcDeckTitle = data.title || 'Flashcards';
       fcDeckId = deckId;
       openPanel();
@@ -231,9 +237,11 @@ async function saveToFirebase() {
   try {
     const { userId, db, ref, set } = getFirebaseHandles();
     if (!userId || !db) return;
+    const cardsObj = {};
+    fcCards.forEach((c, i) => { cardsObj[c.id || ('c' + i)] = c; });
     await set(ref(db, `wikimind5/users/${userId}/workflows/flashcards/${fcDeckId}`), {
       title: fcDeckTitle,
-      cards: fcCards,
+      cards: cardsObj,
       updatedAt: Date.now()
     });
   } catch (e) { console.warn('FC save error:', e); }
