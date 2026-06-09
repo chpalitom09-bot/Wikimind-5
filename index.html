@@ -958,6 +958,61 @@ body:not(.chat-empty-state) #welcome-screen {
   top: 4px !important;
 }
 
+/* Animation WebGL génération d'image */
+.bubble.ai.img-gen-bubble {
+  padding: 0;
+  background: transparent;
+  border: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.img-gen-anim-wrap {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  flex-shrink: 0;
+}
+.img-gen-anim-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.img-gen-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px 0;
+  font-size: 0.8rem;
+  color: var(--text3);
+  font-weight: 500;
+}
+.img-gen-label img {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  object-fit: contain;
+  opacity: 0.7;
+}
+.bubble.ai.img-gen-error .img-gen-anim-wrap { opacity: 0.4; }
+.img-gen-error-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px 0;
+  font-size: 0.82rem;
+  color: var(--text3);
+  max-width: 400px;
+}
+.img-gen-error-label svg { flex-shrink: 0; opacity: 0.7; }
+
 /* Animation et affichage de l'image générée */
 .img-gen-loader {
   width: 100%;
@@ -4658,6 +4713,139 @@ function buildSourcesBtn(sources) {
   return btn;
 }
 
+// ── WebGL animation pour la génération d'image ────────────────────────────
+function createImgGenAnimation(containerEl) {
+  const wrap = document.createElement("div");
+  wrap.className = "img-gen-anim-wrap";
+  wrap.innerHTML = `<canvas class="img-gen-anim-canvas"></canvas>`;
+  containerEl.appendChild(wrap);
+
+  const canvas = wrap.querySelector("canvas");
+  const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+  if (!gl) { wrap.style.background = "#111"; return { wrap, stop: () => {} }; }
+
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  function resize() {
+    const r = wrap.getBoundingClientRect();
+    canvas.width = r.width * DPR; canvas.height = r.height * DPR;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
+  const vert = `#version 300 es\nprecision highp float;\nin vec2 a_pos;\nvoid main(){gl_Position=vec4(a_pos,0,1);}`;
+  const frag = `#version 300 es
+precision highp float;
+uniform vec2 u_res;uniform float u_t;out vec4 fragColor;
+#define PI 3.141592653589793
+float hash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+19.19);return fract(p.x*p.y);}
+float noise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);vec2 u=f*f*(3.-2.*f);float a=hash(i);float b=hash(i+vec2(1,0));float c=hash(i+vec2(0,1));float d=hash(i+vec2(1,1));return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}
+float fbm(vec2 p,int oct){float v=0.,a=.5;for(int i=0;i<8;i++){if(i>=oct)break;v+=a*noise(p);p=p*2.+.3;a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;uv.y=1.-uv.y;
+  vec2 p=uv*2.8;float T=u_t*0.00038;
+  vec2 q=vec2(fbm(p+T*.7,6),fbm(p+vec2(1.3,.9)+T*.5,6));
+  vec2 r=vec2(fbm(p+2.2*q+vec2(.4,T*.3),6),fbm(p+2.2*q+vec2(8.2,T*.4),6));
+  float f=fbm(p+2.8*r+T*.2,7);
+  float band1=smoothstep(.0,.6,f+.15*sin(T*2.1+uv.x*3.));
+  float band2=smoothstep(.3,.9,f+.12*cos(T*1.7+uv.y*2.5));
+  vec3 dark=vec3(0.);vec3 mid=vec3(.08,.08,.10);vec3 light=vec3(.96,.96,.98);
+  vec3 col=mix(dark,mid,band1);col=mix(col,light,band2*band2);
+  float tint=f*.5+.5*sin(T*3.+f*6.);
+  vec3 hue1=vec3(.68,.78,.92);vec3 hue2=vec3(.88,.80,.96);vec3 hue3=vec3(.76,.90,.82);
+  vec3 irid=mix(hue1,mix(hue2,hue3,sin(tint*PI)*.5+.5),cos(tint*PI*.7)*.5+.5);
+  col=mix(col,col*irid,0.22);
+  float d=length(uv-.5)*1.6;float vig=1.-smoothstep(.4,1.15,d);col*=vig;
+  col=mix(col,col*1.18,smoothstep(.3,.0,d));
+  fragColor=vec4(col,1.);
+}`;
+
+  function compile(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vert));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, frag));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, "a_pos");
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uRes = gl.getUniformLocation(prog, "u_res");
+  const uT = gl.getUniformLocation(prog, "u_t");
+
+  let alive = true; let start = null;
+  function frame(ts) {
+    if (!alive) return;
+    if (!start) start = ts;
+    resize();
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uT, ts - start);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  resize();
+  requestAnimationFrame(frame);
+  return { wrap, stop: () => { alive = false; } };
+}
+
+function buildImgActBar(aiMsgObj, g, imageUrl, seed, hasImage) {
+  const actBar = document.createElement("div");
+  actBar.className = "msg-actions";
+
+  const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier le lien");
+  btnCopy.addEventListener("click", () => {
+    navigator.clipboard.writeText(imageUrl).then(() => {
+      btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+      setTimeout(() => { btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; }, 1600);
+    });
+  });
+
+  const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
+  const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
+  btnLike.addEventListener("click", () => handleReaction(aiMsgObj, 1, btnLike, btnDislike, g));
+  btnDislike.addEventListener("click", () => handleReaction(aiMsgObj, -1, btnLike, btnDislike, g));
+
+  const btnDownload = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`, "Télécharger");
+  btnDownload.addEventListener("click", async () => {
+    try {
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `wikimind-image-${seed}.png`; a.click();
+      URL.revokeObjectURL(url); toast("Image téléchargée !");
+    } catch { window.open(imageUrl, "_blank"); }
+  });
+
+  const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Regénérer");
+  btnRegen.addEventListener("click", () => {
+    if (streaming) return;
+    g.remove();
+    const idx = messages.findIndex(m => m.msgId === aiMsgObj.msgId);
+    if (idx >= 0) messages.splice(idx, 1);
+    const _mObj = window._wmSelectedModelObj || WIKIMIND_MODELS.find(m => m.apiModel === selectedModel);
+    const lastUser = [...messages].reverse().find(m => m.role === "user");
+    if (lastUser && _mObj) generateImage(lastUser.content, _mObj);
+  });
+
+  // Bouton 3 points
+  const btnMore = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Plus");
+  const morePopup = document.createElement("div");
+  morePopup.className = "msg-info-popup";
+  const ts2 = aiMsgObj.ts ? new Date(aiMsgObj.ts).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" }) : "–";
+  const rt2 = aiMsgObj.responseTime ? fmtTime(aiMsgObj.responseTime) : "–";
+  morePopup.innerHTML = `<div><strong>Modèle</strong> — ${aiMsgObj.modelName || selectedModelName}</div><div><strong>Heure</strong> — ${ts2}</div><div><strong>Temps</strong> — ${rt2}</div>`;
+  btnMore.style.position = "relative";
+  btnMore.appendChild(morePopup);
+  btnMore.addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.querySelectorAll(".msg-info-popup.open").forEach(p => { if (p !== morePopup) p.classList.remove("open"); });
+    morePopup.classList.toggle("open");
+  });
+
+  actBar.append(btnCopy, btnLike, btnDislike, btnDownload, btnRegen, btnMore);
+  const sourcesBtn = buildSourcesBtn(["pollinations"]);
+  if (sourcesBtn) actBar.appendChild(sourcesBtn);
+  return actBar;
+}
+
 async function generateImage(prompt, modelObj) {
   const limit = modelObj.apiModel === 'gptimage-large' ? 10 : 100;
   if (!checkImageRateLimit(modelObj.apiModel, limit)) {
@@ -4685,18 +4873,43 @@ async function generateImage(prompt, modelObj) {
   };
   messages.push(aiMsgObj);
 
-  // Afficher thinking bubble avec logo Pollinations
-  appendThinking({ name: "Pollinations AI", logo: "pollinationai.png" });
-
   const start = Date.now();
   const seed = Math.floor(Math.random() * 10000000);
-  
-  // Nettoyer le prompt
-  let cleanPrompt = prompt.split('### Fichier')[0].trim();
-  if(!cleanPrompt) cleanPrompt = "Une belle image créative";
 
-  // URL publique
+  // Nettoyer le prompt
+  let cleanPrompt = prompt.split("### Fichier")[0].trim();
+  if (!cleanPrompt) cleanPrompt = "Une belle image créative";
+
   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}`;
+
+  // — Créer la bulle avec l'animation WebGL dès maintenant —
+  const g = document.createElement("div");
+  g.className = "msg-group ai";
+  g.dataset.msgId = aiMsgId;
+
+  const inner = document.createElement("div");
+  inner.className = "msg-inner";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble ai img-gen-bubble";
+
+  // Label de génération
+  const genLabel = document.createElement("div");
+  genLabel.className = "img-gen-label";
+  genLabel.innerHTML = `<img src="pollinationai.png" alt="Pollinations AI" onerror="this.style.display='none'"><span>Génération en cours…</span>`;
+  bubble.appendChild(genLabel);
+
+  const meta = document.createElement("div");
+  meta.className = "msg-meta";
+  meta.innerHTML = `<span class="model-tag-sm">${selectedModelName}</span>`;
+
+  // Lancer l'animation WebGL dans la bulle
+  const anim = createImgGenAnimation(bubble);
+
+  inner.append(bubble, meta);
+  g.appendChild(inner);
+  messagesEl.appendChild(g);
+  scrollBottom();
 
   try {
     // Précharger l'image
@@ -4707,77 +4920,21 @@ async function generateImage(prompt, modelObj) {
       img.src = imageUrl;
     });
 
-    removeThinking();
+    anim.stop();
     aiMsgObj.responseTime = Date.now() - start;
     aiMsgObj.content = `![${escHtml(cleanPrompt)}](${imageUrl})`;
 
-    // Créer le groupe message avec image + barre d'actions complète
-    const g = document.createElement("div");
-    g.className = "msg-group ai";
-    g.dataset.msgId = aiMsgId;
-
-    const inner = document.createElement("div");
-    inner.className = "msg-inner";
-
-    const bubble = document.createElement("div");
-    bubble.className = "bubble ai";
+    // Remplacer le contenu de la bulle par l'image
     bubble.innerHTML = renderContent(aiMsgObj.content);
+    bubble.classList.remove("img-gen-bubble");
     const imgEl = bubble.querySelector("img");
     if (imgEl) {
       imgEl.style.cursor = "zoom-in";
-      imgEl.addEventListener("click", () => window.open(imageUrl, '_blank'));
+      imgEl.addEventListener("click", () => window.open(imageUrl, "_blank"));
     }
 
-    const meta = document.createElement("div");
-    meta.className = "msg-meta";
-    meta.innerHTML = `<span class="model-tag-sm">${selectedModelName}</span>`;
-
-    // Barre d'actions
-    const actBar = document.createElement("div");
-    actBar.className = "msg-actions";
-
-    // Copier
-    const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier le lien");
-    btnCopy.addEventListener("click", () => {
-      navigator.clipboard.writeText(imageUrl).then(() => {
-        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
-        setTimeout(() => { btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; }, 1600);
-      });
-    });
-
-    // Like
-    const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
-    const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
-    btnLike.addEventListener("click", () => handleReaction(aiMsgObj, 1, btnLike, btnDislike, g));
-    btnDislike.addEventListener("click", () => handleReaction(aiMsgObj, -1, btnLike, btnDislike, g));
-
-    // Télécharger (bouton spécial pour les images)
-    const btnDownload = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`, "Télécharger");
-    btnDownload.addEventListener("click", async () => {
-      try {
-        const res = await fetch(imageUrl);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `wikimind-image-${seed}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast("Image téléchargée !");
-      } catch {
-        window.open(imageUrl, '_blank');
-      }
-    });
-
-    // Sources
-    const sourcesBtn = buildSourcesBtn(['pollinations']);
-
-    actBar.append(btnCopy, btnLike, btnDislike, btnDownload);
-    if (sourcesBtn) actBar.appendChild(sourcesBtn);
-
-    inner.append(bubble, meta, actBar);
-    g.appendChild(inner);
-    messagesEl.appendChild(g);
+    const actBar = buildImgActBar(aiMsgObj, g, imageUrl, seed, true);
+    inner.append(actBar);
     scrollBottom();
 
     incrementImageUsage(modelObj.apiModel);
@@ -4785,13 +4942,19 @@ async function generateImage(prompt, modelObj) {
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    removeThinking();
-    // Afficher l'erreur directement dans le chat
-    const g = document.createElement("div");
-    g.className = "msg-group ai";
-    g.innerHTML = `<div class="msg-inner"><div class="bubble ai"><span style="color:#ff4444">Erreur lors de la génération. Le serveur est peut-être surchargé.</span></div></div>`;
-    messagesEl.appendChild(g);
-    messages.pop();
+    anim.stop();
+    aiMsgObj.responseTime = Date.now() - start;
+
+    // Garder l'animation (canvas figé) + afficher message d'erreur neutre par-dessus
+    bubble.classList.add("img-gen-error");
+    const errLabel = document.createElement("div");
+    errLabel.className = "img-gen-error-label";
+    errLabel.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>La génération n'a pas abouti. Le serveur est peut-être occupé.</span>`;
+    bubble.appendChild(errLabel);
+
+    const actBar = buildImgActBar(aiMsgObj, g, imageUrl, seed, false);
+    inner.append(actBar);
+    scrollBottom();
   } finally {
     streaming = false;
     stopBtn.classList.remove("on");
