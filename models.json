@@ -5,8 +5,8 @@
     "mistral": "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj",
     "groq_p1": "gsk_wHXg87k3ELkt4D3b",
     "groq_p2": "DP73WGdyb3FYGPxjnic",
-    "groq_p3": "bCl9eWCGO6aRhA8xs"
-    "pollination": "pk_w6wnuGBObh7FeHwp"
+    "groq_p3": "bCl9eWCGO6aRhA8xs",
+    "pollinations": "pk_w6wnuGBObh7FeHwp"
   },
   "models": [
     {
@@ -52,6 +52,19 @@
       "contextWindow": 131072
     },
     {
+      "id": "wm-image-gpt-large",
+      "displayName": "GPT 1.5 Image",
+      "apiModel": "gptimage-large",
+      "tier": "large",
+      "category": "main",
+      "description": "Génération d'images (Limite: 10/h)",
+      "provider": "pollinations",
+      "apiEndpoint": "https://gen.pollinations.ai/image/",
+      "supportsVision": false,
+      "supportsStreaming": false,
+      "isImageModel": true
+    },
+    {
       "id": "wm-code-5.1",
       "displayName": "Code 5.1",
       "apiModel": "codestral-latest",
@@ -65,6 +78,19 @@
       "maxTokens": 32768,
       "contextWindow": 262144,
       "isCodeModel": true
+    },
+    {
+      "id": "wm-image-flux",
+      "displayName": "Flux Schnell",
+      "apiModel": "flux",
+      "tier": "flash",
+      "category": "more",
+      "description": "Images ultra-rapides (Limite: 100/h)",
+      "provider": "pollinations",
+      "apiEndpoint": "https://gen.pollinations.ai/image/",
+      "supportsVision": false,
+      "supportsStreaming": false,
+      "isImageModel": true
     },
     {
       "id": "wm-flash-groq-llama-instant",
@@ -289,40 +315,6 @@
       "supportsStreaming": true,
       "maxTokens": 8192,
       "contextWindow": 131072
-    },
-    {
-  "id": "wm-image-gpt15-large",
-  "displayName": "GPT 1.5 Image (Large)",
-  "apiModel": "gptimage-large",
-  "tier": "image",
-  "category": "main",
-  "description": "Génération d'images via Pollination AI (10/h/IP)",
-  "provider": "pollination",
-  "apiEndpoint": "https://image.pollinations.ai/prompt",
-  "supportsVision": false,
-  "supportsStreaming": false,
-  "supportsImageGeneration": true,
-  "maxImagesPerHour": 10,
-  "imageWidth": 1024,
-  "imageHeight": 1024,
-  "rateLimitType": "ip"
-},
-{
-  "id": "wm-image-flux-schnell",
-  "displayName": "Flux Schnell",
-  "apiModel": "flux",
-  "tier": "image",
-  "category": "more",
-  "description": "Génération d'images via Pollination AI (100/h/IP)",
-  "provider": "pollination",
-  "apiEndpoint": "https://image.pollinations.ai/prompt",
-  "supportsVision": false,
-  "supportsStreaming": false,
-  "supportsImageGeneration": true,
-  "maxImagesPerHour": 100,
-  "imageWidth": 1024,
-  "imageHeight": 1024,
-  "rateLimitType": "ip"
-}
+    }
   ]
 }
