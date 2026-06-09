@@ -5290,6 +5290,10 @@ async function loadWorkflowsDecks() {
     listEl.appendChild(label);
 
     decks.forEach(deck => {
+      // Firebase stocke les cards comme objet keyed → reconvertir en array
+      if (deck.cards && !Array.isArray(deck.cards) && typeof deck.cards === 'object') {
+        deck.cards = Object.values(deck.cards);
+      }
       const count = Array.isArray(deck.cards) ? deck.cards.length : 0;
       const date  = deck.createdAt
         ? new Date(deck.createdAt).toLocaleDateString('fr', { day:'numeric', month:'short', year:'numeric' })
@@ -5314,7 +5318,9 @@ async function loadWorkflowsDecks() {
 
       const openDeck = () => {
         closeWorkflowsPanel();
-        const cards = Array.isArray(deck.cards) ? deck.cards : [];
+        // Reconvertir si Firebase a stocké comme objet keyed
+        let cards = deck.cards || [];
+        if (!Array.isArray(cards) && typeof cards === 'object') cards = Object.values(cards);
         window.FlashcardsEngine?.openPanel(deck.title, cards, deck.id);
       };
 
