@@ -4325,6 +4325,37 @@ function appendAIMsg(msgObj, isStreaming = false) {
   const inner = document.createElement("div");
   inner.className = "msg-inner";
 
+  // ── Cas spécial : message image en erreur sauvegardé ──
+  if (msgObj.content && msgObj.content.startsWith("__img_error__:")) {
+    const failedUrl = msgObj.content.slice("__img_error__:".length);
+    const failSeed = Math.floor(Math.random() * 10000000);
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble ai img-gen-bubble img-gen-error";
+
+    // Canvas statique (pas d'animation, juste un fond sombre)
+    const placeholder = document.createElement("div");
+    placeholder.className = "img-gen-anim-wrap";
+    placeholder.style.cssText = "background:#0d0d0d;border-radius:14px;";
+    bubble.appendChild(placeholder);
+
+    const errLabel = document.createElement("div");
+    errLabel.className = "img-gen-error-label";
+    errLabel.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>La génération n'a pas abouti. Le serveur est peut-être occupé.</span>`;
+    bubble.appendChild(errLabel);
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName || selectedModelName}</span>`;
+
+    const actBar = buildImgActBar(msgObj, g, failedUrl, failSeed, false);
+    inner.append(bubble, meta, actBar);
+    g.appendChild(inner);
+    messagesEl.appendChild(g);
+    scrollBottom();
+    return null;
+  }
+
   const bubble = document.createElement("div");
   bubble.className = "bubble ai";
   if (isStreaming) bubble.id = "stream-bubble";
@@ -4988,6 +5019,9 @@ async function generateImage(prompt, modelObj) {
     anim.stop();
     aiMsgObj.responseTime = Date.now() - start;
 
+    // Sauvegarder un contenu détectable au reload
+    aiMsgObj.content = `__img_error__:${imageUrl}`;
+
     // Garder l'animation (canvas figé) + afficher message d'erreur neutre par-dessus
     bubble.classList.add("img-gen-error");
     const errLabel = document.createElement("div");
@@ -4998,6 +5032,8 @@ async function generateImage(prompt, modelObj) {
     const actBar = buildImgActBar(aiMsgObj, g, imageUrl, seed, false);
     inner.append(actBar);
     scrollBottom();
+
+    if (userId && currentConvId) await saveConversation();
   } finally {
     streaming = false;
     stopBtn.classList.remove("on");
@@ -5233,7 +5269,9 @@ async function saveConversation() {
       model: msg.model || selectedModel,
       modelName: msg.modelName || selectedModelName,
       responseTime: msg.responseTime || null,
-      liked: msg.liked || 0
+      liked: msg.liked || 0,
+      ...(msg.isImage ? { isImage: true } : {}),
+      ...(msg.provider ? { provider: msg.provider } : {})
     }));
 
     const firstUserMsg = messages.find(m => m.role === "user");
@@ -5426,7 +5464,9 @@ async function loadConversation(convId) {
           model: msg.model || selectedModel,
           modelName: msg.modelName || selectedModelName,
           responseTime: msg.responseTime || null,
-          liked: msg.liked || 0
+          liked: msg.liked || 0,
+          ...(msg.isImage ? { isImage: true } : {}),
+          ...(msg.provider ? { provider: msg.provider } : {})
         });
       });
 
