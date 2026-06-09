@@ -835,7 +835,7 @@ body:not(.chat-empty-state) #welcome-screen {
   top: 4px !important;
 }
 
-  /* Animation et affichage de l'image générée */
+/* Animation et affichage de l'image générée */
 .img-gen-loader {
   width: 100%;
   max-width: 400px;
@@ -872,6 +872,10 @@ body:not(.chat-empty-state) #welcome-screen {
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   display: block;
 }
+
+/* ========== FILE ATTACHMENT PREVIEW ========== */
+}
+
 /* ========== FILE ATTACHMENT PREVIEW ========== */
 .file-attachment {
   display: flex;
@@ -3494,7 +3498,9 @@ function buildMainDropdown() {
     const sel = m.apiModel === selectedModel;
     html += `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}">
       <div class="model-opt-info">
-        <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${m.displayName}${providerBadge(m.provider)}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}</div>`;
+        <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${m.displayName}${providerBadge(m.provider)}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}</div>
+        <div class="model-opt-desc">${m.description}</div>
+      </div>${checkSVG()}</div>`;
   });
   html += `<div class="model-opt-more" id="model-more-btn">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -4402,8 +4408,6 @@ async function sendMessage() {
     }
     qzModeActive = false;
     window._qzModeActive = false;
-    qzModeActive = false;
-    window._qzModeActive = false;
     const qzBadge = document.getElementById("pm-qz-badge");
     if (qzBadge) qzBadge.style.display = "none";
     window.renderQzChip?.(false);
@@ -4510,7 +4514,7 @@ async function generateImage(prompt, modelObj) {
     // Format markdown : on utilise la syntaxe standard Markdown qui est digérée par renderContent()
     aiMsgObj.content = `![${escHtml(cleanPrompt)}](${imageUrl})`;
     
-    const bubble = document.getElementById(`bubble-${aiMsgId}`);
+    const bubble = document.getElementById(\`bubble-\${aiMsgId}\`);
     if (bubble) {
        bubble.style.padding = "";
        bubble.style.background = "";
@@ -4529,9 +4533,9 @@ async function generateImage(prompt, modelObj) {
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    const loader = document.getElementById(`loader-${aiMsgId}`);
+    const loader = document.getElementById(\`loader-\${aiMsgId}\`);
     if (loader) {
-       loader.innerHTML = `<span style="color:#ff4444">Erreur lors de la génération. Veuillez réessayer.</span>`;
+       loader.innerHTML = \`<span style="color:#ff4444">Erreur lors de la génération. Veuillez réessayer.</span>\`;
     }
     messages.pop(); // Retire de l'historique en cas d'erreur
   } finally {
@@ -4541,15 +4545,11 @@ async function generateImage(prompt, modelObj) {
     scrollBottom();
   }
 }
-    removeThinking();
-    toast("Une erreur est survenue. Veuillez réessayer.");
-    sendBtn.disabled = false;
-  }
-}
 
 // =============================================
 // STREAM
 // =============================================
+
 async function doStream(userText, isRegen, visionContent = null) {
   if (streaming) return;
 
