@@ -4433,6 +4433,9 @@ async function sendMessage() {
 // =============================================
 // IMAGE GENERATION (Pollinations AI)
 // =============================================
+// =============================================
+// IMAGE GENERATION (Pollinations AI)
+// =============================================
 function checkImageRateLimit(modelKey, limit) {
   const now = Date.now();
   const history = JSON.parse(localStorage.getItem('wm_img_usage_' + modelKey) || '[]');
@@ -4493,13 +4496,13 @@ async function generateImage(prompt, modelObj) {
 
   const start = Date.now();
   const seed = Math.floor(Math.random() * 10000000);
-  const pollinationsKey = WM_API_KEYS.pollinations || "pk_w6wnuGBObh7FeHwp";
   
   // Nettoyer le prompt (au cas où il y a des fichiers attachés on prend juste le texte)
   let cleanPrompt = prompt.split('### Fichier')[0].trim();
   if(!cleanPrompt) cleanPrompt = "Une belle image créative";
 
-  const imageUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&key=${pollinationsKey}`;
+  // URL publique gratuite (sans la clé pk_ qui bloque à 1 image/heure)
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}`;
 
   try {
     // Précharger l'image via JS pour remplacer proprement le loader
@@ -4535,7 +4538,7 @@ async function generateImage(prompt, modelObj) {
     console.error("Erreur Image:", err);
     const loader = document.getElementById(`loader-${aiMsgId}`);
     if (loader) {
-       loader.innerHTML = `<span style="color:#ff4444">Erreur lors de la génération. Veuillez réessayer.</span>`;
+       loader.innerHTML = `<span style="color:#ff4444">Erreur lors de la génération. Le serveur est peut-être surchargé.</span>`;
     }
     messages.pop(); // Retire de l'historique en cas d'erreur
   } finally {
