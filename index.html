@@ -4360,12 +4360,39 @@ function appendAIMsg(msgObj, isStreaming = false) {
   bubble.className = "bubble ai";
   if (isStreaming) bubble.id = "stream-bubble";
   if (msgObj.content) {
-    bubble.innerHTML = renderContent(msgObj.content);
-    addCodeButtons(bubble);
-    // Si message image, rendre l'img cliquable
-    if (msgObj.isImage || msgObj.provider === 'pollinations') {
-      const imgEl = bubble.querySelector("img");
-      if (imgEl) { imgEl.style.cursor = "zoom-in"; imgEl.addEventListener("click", () => window.open(imgEl.src, "_blank")); }
+    // Message image réussi : afficher l'animation WebGL le temps que l'img charge
+    if ((msgObj.isImage || msgObj.provider === 'pollinations') && !msgObj.content.startsWith('__img_error__')) {
+      const imgUrlMatch = msgObj.content.match(/\!\[.*?\]\((https?:\/\/[^)]+)\)/);
+      if (imgUrlMatch) {
+        const imgSrc = imgUrlMatch[1];
+        bubble.className = "bubble ai img-gen-bubble";
+        const reloadAnim = createImgGenAnimation(bubble);
+        const reloadLabel = document.createElement("div");
+        reloadLabel.className = "img-gen-label";
+        reloadLabel.innerHTML = `<img src="pollinationai.png" alt="Pollinations AI" onerror="this.style.display='none'"><span>Chargement…</span>`;
+        bubble.appendChild(reloadLabel);
+        // Charger l'image en arrière-plan, puis remplacer
+        const preloadImg = new Image();
+        preloadImg.onload = () => {
+          reloadAnim.stop();
+          bubble.className = "bubble ai";
+          bubble.innerHTML = renderContent(msgObj.content);
+          const imgEl = bubble.querySelector("img");
+          if (imgEl) { imgEl.style.cursor = "zoom-in"; imgEl.addEventListener("click", () => window.open(imgEl.src, "_blank")); }
+        };
+        preloadImg.onerror = () => {
+          reloadAnim.stop();
+          bubble.className = "bubble ai";
+          bubble.innerHTML = renderContent(msgObj.content);
+        };
+        preloadImg.src = imgSrc;
+      } else {
+        bubble.innerHTML = renderContent(msgObj.content);
+        addCodeButtons(bubble);
+      }
+    } else {
+      bubble.innerHTML = renderContent(msgObj.content);
+      addCodeButtons(bubble);
     }
   }
 
@@ -4986,13 +5013,16 @@ async function generateImage(prompt, modelObj) {
   scrollBottom();
 
   try {
-    // Précharger l'image
-    await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = resolve;
-      img.onerror = () => reject(new Error("Erreur chargement image"));
-      img.src = imageUrl;
-    });
+    // Précharger l'image + délai minimum 5s
+    await Promise.all([
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Erreur chargement image"));
+        img.src = imageUrl;
+      }),
+      new Promise(resolve => setTimeout(resolve, 5000))
+    ]);
 
     anim.stop();
     aiMsgObj.responseTime = Date.now() - start;
