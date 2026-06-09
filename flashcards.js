@@ -142,7 +142,7 @@ function closePanel() {
 }
 
 // ── GENERATE (appelé depuis index.html) ──
-async function generate(topic, apiKey, model, userId, db, ref, push, set) {
+async function generate(topic, apiKey, model, userId, db, ref, push, set, requestedCount) {
   const steps = [
     "Ouverture de Flashcards 5.1...",
     "Création des Flashcards...",
@@ -161,11 +161,11 @@ async function generate(topic, apiKey, model, userId, db, ref, push, set) {
       },
       body: JSON.stringify({
         model: model || "mistral-small-latest",
-        max_tokens: 1800,
+        max_tokens: 3200,
         temperature: 0.4,
         messages: [{
           role: "user",
-          content: `Crée 8 à 12 flashcards sur le sujet suivant : "${topic}".
+          content: `Crée exactement ${Math.min(30, Math.max(5, requestedCount || 10))} flashcards sur le sujet suivant : "${topic}".
 Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans balises markdown.
 Format EXACT :
 {"title":"Titre du deck","cards":[{"front":"Question ou terme","back":"Réponse ou définition"},...]}`
