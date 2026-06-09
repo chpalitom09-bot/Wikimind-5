@@ -3587,7 +3587,7 @@ function updateSendBtn() {
 // WIKIMIND MODELS — chargés depuis models.json
 // =============================================
 let WIKIMIND_MODELS = [];
-let WM_API_KEYS = { mistral: "", groq: "", pollinations: "" };
+let WM_API_KEYS = { mistral: "", groq: "", pollinations: "", cerebras: "" };
 
 async function loadModels() {
   try {
@@ -3605,7 +3605,8 @@ async function loadModels() {
       WM_API_KEYS = { 
         mistral: data.apiKeys.mistral || "", 
         groq: gk,
-        pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp"
+        pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp",
+        cerebras: data.apiKeys.cerebras || ""
       };
     }
     const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
@@ -3651,6 +3652,8 @@ function providerBadge(provider) {
     background:rgba(249,115,22,0.15);color:#f97316;border-radius:4px;padding:1px 5px;margin-left:4px;">GROQ</span>`;
   if (provider === "pollinations") return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
     background:rgba(167,139,250,0.15);color:#a78bfa;border-radius:4px;padding:1px 5px;margin-left:4px;">POLLINATIONS</span>`;
+  if (provider === "cerebras") return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;
+    background:rgba(56,189,248,0.15);color:#38bdf8;border-radius:4px;padding:1px 5px;margin-left:4px;">CEREBRAS</span>`;
   return "";
 }
 
@@ -4408,7 +4411,7 @@ function appendAIMsg(msgObj, isStreaming = false) {
   } else {
     const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
     const p = _mObjForSrc?.provider || 'mistral';
-    providerForSrc = p === 'groq' ? 'groq' : 'mistral';
+    providerForSrc = (p === 'groq' || p === 'cerebras') ? p : 'mistral';
   }
   const sourcesBtn = buildSourcesBtn([providerForSrc]);
   if (sourcesBtn) actBar.appendChild(sourcesBtn);
@@ -4700,6 +4703,12 @@ const PROVIDER_SOURCES = {
     logo: "mistrallogo.png",
     url: "https://chat.mistral.ai/chat",
     desc: "Modèles de langage"
+  },
+  cerebras: {
+    name: "Cerebras AI",
+    logo: "cerebraslogo.png",
+    url: "https://cerebras.ai/",
+    desc: "Inférence ultra-rapide"
   }
 };
 
@@ -5045,6 +5054,8 @@ async function doStream(userText, isRegen, visionContent = null) {
     const _apiEndpoint = _mObj.apiEndpoint || "https://api.mistral.ai/v1/chat/completions";
     const _apiKey = _mObj.provider === "groq"
       ? (_gk || WM_API_KEYS.groq || KEY)
+      : _mObj.provider === "cerebras"
+      ? (WM_API_KEYS.cerebras || KEY)
       : (WM_API_KEYS.mistral || KEY);
 
     // Détecter si la dernière requête concerne une modification de fichier volumineux
