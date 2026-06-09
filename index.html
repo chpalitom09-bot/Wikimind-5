@@ -4514,7 +4514,7 @@ async function generateImage(prompt, modelObj) {
     // Format markdown : on utilise la syntaxe standard Markdown qui est digérée par renderContent()
     aiMsgObj.content = `![${escHtml(cleanPrompt)}](${imageUrl})`;
     
-    const bubble = document.getElementById(\`bubble-\${aiMsgId}\`);
+    const bubble = document.getElementById(`bubble-${aiMsgId}`);
     if (bubble) {
        bubble.style.padding = "";
        bubble.style.background = "";
@@ -4533,9 +4533,9 @@ async function generateImage(prompt, modelObj) {
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    const loader = document.getElementById(\`loader-\${aiMsgId}\`);
+    const loader = document.getElementById(`loader-${aiMsgId}`);
     if (loader) {
-       loader.innerHTML = \`<span style="color:#ff4444">Erreur lors de la génération. Veuillez réessayer.</span>\`;
+       loader.innerHTML = `<span style="color:#ff4444">Erreur lors de la génération. Veuillez réessayer.</span>`;
     }
     messages.pop(); // Retire de l'historique en cas d'erreur
   } finally {
