@@ -3699,6 +3699,110 @@ $("pm-connectors").addEventListener("click", (e) => {
   }, 10);
 });
 
+// ── OUTILS PANEL (même comportement que Connecteurs) ──
+$("pm-outils").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const existing = document.getElementById("pm-outils-right-panel");
+  if (existing) { existing.remove(); return; }
+
+  const panel = document.createElement("div");
+  panel.id = "pm-outils-right-panel";
+  panel.style.cssText = `
+    position:fixed;
+    background:var(--bg2);
+    border:1px solid var(--border2);
+    border-radius:14px;
+    overflow:hidden;
+    z-index:10003;
+    min-width:220px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 8px 40px rgba(0,0,0,0.85);
+    animation:slideUpModel 0.18s cubic-bezier(0.34,1.2,0.64,1);
+  `;
+
+  const plusRect = plusMenu.getBoundingClientRect();
+  const top = plusRect.top;
+  const left = plusRect.right + 8;
+  panel.style.top = Math.max(8, top) + "px";
+  panel.style.left = (left + 220 > window.innerWidth - 8 ? plusRect.left - 228 : left) + "px";
+
+  panel.innerHTML = `
+    <div style="padding:10px 12px 8px;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);flex-shrink:0">Outils</div>
+    <div style="padding:4px 0;">
+      <div id="pm-outils-fc-item" style="padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.1s;">
+        <div style="width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(236,72,153,0.12);border-radius:7px;border:1px solid rgba(236,72,153,0.2);">
+          <img src="flashcards.png" alt="FC" width="16" height="16" style="object-fit:contain" onerror="this.parentElement.textContent='🃏'">
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.82rem;font-weight:600;color:var(--text)">Flashcards</div>
+          <div id="pm-outils-fc-status" style="font-size:0.68rem;color:var(--text3)">Générer des cartes mémoire</div>
+        </div>
+        <div id="pm-outils-fc-toggle" style="width:18px;height:18px;border-radius:4px;border:1px solid var(--border2);background:${fcModeActive ? '#ec4899' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.12s;">
+          ${fcModeActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </div>
+      </div>
+      <div id="pm-outils-wf-item" style="padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.1s;">
+        <div style="width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:7px;border:1px solid rgba(255,255,255,0.08);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:#888"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.82rem;font-weight:600;color:var(--text)">Workflows</div>
+          <div style="font-size:0.68rem;color:var(--text3)">Voir vos créations IA</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="color:#555;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  // Hover effects
+  panel.querySelectorAll('[id^="pm-outils-"][id$="-item"]').forEach(item => {
+    item.addEventListener('mouseenter', () => item.style.background = 'rgba(255,255,255,0.04)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+  });
+
+  // Flashcards toggle
+  document.getElementById('pm-outils-fc-item').addEventListener('click', () => {
+    fcModeActive = !fcModeActive;
+    window._fcModeActive = fcModeActive;
+    const badge = document.getElementById('pm-fc-badge');
+    if (badge) badge.style.display = fcModeActive ? 'inline-block' : 'none';
+    const outisBadge = document.getElementById('pm-outils-badge');
+    if (outisBadge) outisBadge.style.display = fcModeActive ? 'inline-block' : 'none';
+    window.renderFcChip?.(fcModeActive);
+    // Mettre à jour le toggle visuel
+    const toggle = document.getElementById('pm-outils-fc-toggle');
+    const status = document.getElementById('pm-outils-fc-status');
+    if (toggle) {
+      toggle.style.background = fcModeActive ? '#ec4899' : 'transparent';
+      toggle.innerHTML = fcModeActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+    }
+    if (status) status.textContent = fcModeActive ? '● Activé' : 'Générer des cartes mémoire';
+    if (status) status.style.color = fcModeActive ? '#ec4899' : 'var(--text3)';
+    toast(fcModeActive ? 'Flashcards activé ✦' : 'Flashcards désactivé');
+  });
+
+  // Workflows open
+  document.getElementById('pm-outils-wf-item').addEventListener('click', () => {
+    panel.remove();
+    plusMenu.classList.remove('open');
+    openWorkflowsPanel();
+  });
+
+  // Fermer en cliquant ailleurs
+  setTimeout(() => {
+    const closeOutils = (ev) => {
+      if (!panel.contains(ev.target) && ev.target !== $('pm-outils')) {
+        panel.remove();
+        document.removeEventListener('click', closeOutils);
+      }
+    };
+    document.addEventListener('click', closeOutils);
+  }, 10);
+});
+
+
 // pm-see-all-btn is now inside the dynamically created panel
 
 // Search handled inside dynamic panel
@@ -3710,15 +3814,8 @@ document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
     else if (id === "pm-libraries") toast("Bibliothèques — Bientôt disponible");
     else if (id === "pm-workflows") openWorkflowsPanel();
     else if (id === "pm-agents") toast("Agents — Bientôt disponible");
-    else if (id === "pm-flashcards") {
-      fcModeActive = !fcModeActive;
-      window._fcModeActive = fcModeActive;
-      const badge = document.getElementById("pm-fc-badge");
-      if (badge) badge.style.display = fcModeActive ? "inline-block" : "none";
-      window.renderFcChip?.(fcModeActive);
-      toast(fcModeActive ? "Flashcards activé ✦" : "Flashcards désactivé");
-    }
-    if (!['pm-upload','pm-connectors'].includes(id)) plusMenu.classList.remove("open");
+    else if (id === "pm-outils") { /* handled separately */ }
+    if (!['pm-upload','pm-connectors','pm-outils'].includes(id)) plusMenu.classList.remove("open");
   });
 });
 
@@ -5587,18 +5684,14 @@ window.addEventListener('DOMContentLoaded', () => {
     </svg>
     Bibliothèques
   </div>
-  <!-- OUTILS SEPARATOR -->
-  <div style="padding:3px 12px 2px;font-size:0.62rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);margin-top:3px">Outils</div>
-  <div class="pm-item" id="pm-flashcards">
-    <img src="flashcards.png" alt="FC" width="18" height="18" style="object-fit:contain;border-radius:4px;flex-shrink:0">
-    Flashcards
-    <span id="pm-fc-badge" style="display:none;margin-left:auto;width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0"></span>
-  </div>
-  <div class="pm-item" id="pm-workflows">
+  <!-- OUTILS ITEM -->
+  <div class="pm-item pm-item-outils-toggle" id="pm-outils" style="border-top:1px solid var(--border);margin-top:3px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
     </svg>
-    Workflows
+    Outils
+    <span id="pm-outils-badge" style="display:none;margin-left:6px;width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0"></span>
+    <svg id="pm-outils-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="9 18 15 12 9 6"/></svg>
   </div>
   <div class="pm-item" id="pm-agents">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
