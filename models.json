@@ -6,7 +6,8 @@
     "groq_p1": "gsk_wHXg87k3ELkt4D3b",
     "groq_p2": "DP73WGdyb3FYGPxjnic",
     "groq_p3": "bCl9eWCGO6aRhA8xs",
-    "pollinations": "pk_w6wnuGBObh7FeHwp"
+    "pollinations": "pk_w6wnuGBObh7FeHwp",
+    "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55"
   },
   "models": [
     {
@@ -314,6 +315,34 @@
       "supportsVision": true,
       "supportsStreaming": true,
       "maxTokens": 8192,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-flash-1.3",
+      "displayName": "Flash 1.3",
+      "apiModel": "llama3.1-8b",
+      "tier": "flash",
+      "category": "more",
+      "description": "Llama 3.1 8B via Cerebras, ultra-rapide",
+      "provider": "cerebras",
+      "apiEndpoint": "https://api.cerebras.ai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-large-5.6",
+      "displayName": "Large 5.6",
+      "apiModel": "gpt-oss-120b",
+      "tier": "large",
+      "category": "more",
+      "description": "GPT-OSS 120B raisonneur OpenAI, via Cerebras",
+      "provider": "cerebras",
+      "apiEndpoint": "https://api.cerebras.ai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 16384,
       "contextWindow": 131072
     }
   ]
