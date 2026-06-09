@@ -3742,16 +3742,7 @@ $("pm-outils").addEventListener("click", (e) => {
           ${fcModeActive ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </div>
       </div>
-      <div id="pm-outils-wf-item" style="padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.1s;">
-        <div style="width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:7px;border:1px solid rgba(255,255,255,0.08);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:#888"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.82rem;font-weight:600;color:var(--text)">Workflows</div>
-          <div style="font-size:0.68rem;color:var(--text3)">Voir vos créations IA</div>
-        </div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="color:#555;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
+
     </div>
   `;
   document.body.appendChild(panel);
@@ -3783,13 +3774,6 @@ $("pm-outils").addEventListener("click", (e) => {
     toast(fcModeActive ? 'Flashcards activé ✦' : 'Flashcards désactivé');
   });
 
-  // Workflows open
-  document.getElementById('pm-outils-wf-item').addEventListener('click', () => {
-    panel.remove();
-    plusMenu.classList.remove('open');
-    openWorkflowsPanel();
-  });
-
   // Fermer en cliquant ailleurs
   setTimeout(() => {
     const closeOutils = (ev) => {
@@ -3816,6 +3800,7 @@ document.querySelectorAll("#plus-menu .pm-item").forEach(item => {
     else if (id === "pm-agents") toast("Agents — Bientôt disponible");
     else if (id === "pm-outils") { /* handled separately */ }
     if (!['pm-upload','pm-connectors','pm-outils'].includes(id)) plusMenu.classList.remove("open");
+    if (id === "pm-workflows") { plusMenu.classList.remove("open"); openWorkflowsPanel(); }
   });
 });
 
@@ -5692,6 +5677,12 @@ window.addEventListener('DOMContentLoaded', () => {
     Outils
     <span id="pm-outils-badge" style="display:none;margin-left:6px;width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0"></span>
     <svg id="pm-outils-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="9 18 15 12 9 6"/></svg>
+  </div>
+  <div class="pm-item" id="pm-workflows">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+    Workflows
   </div>
   <div class="pm-item" id="pm-agents">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
