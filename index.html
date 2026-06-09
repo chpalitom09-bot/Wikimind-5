@@ -5273,7 +5273,7 @@ async function loadWorkflowsDecks() {
     }
 
     const decks = [];
-    snap.forEach(child => decks.push({ id: child.key, ...child.val() }));
+    snap.forEach(child => { decks.push({ id: child.key, ...child.val() }); });
     decks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     if (countEl) countEl.textContent = decks.length;
