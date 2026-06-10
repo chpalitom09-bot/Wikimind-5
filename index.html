@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="settings5.css">
 <link rel="stylesheet" href="flashcards.css">
 <link rel="stylesheet" href="quiz.css">
+<link rel="stylesheet" href="pollination-popup.css">
+<script src="pollination-popup.js" defer></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
@@ -2307,6 +2309,9 @@ body.chat-empty-state #input-container {
   <div id="sidebar-head">
     <span id="sidebar-logo">Wikimind AI</span>
     <div id="sidebar-head-right">
+      <button id="pollinations-sidebar-btn" title="Générer une image avec Pollinations AI" style="width:30px;height:30px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.12s;padding:0;flex-shrink:0;">
+        <img src="pollinationai.png" alt="Pollinations AI" width="20" height="20" style="border-radius:4px;object-fit:contain;" onerror="this.style.display='none';this.parentElement.innerHTML='<svg width=14 height=14 viewBox=&quot;0 0 24 24&quot; fill=none stroke=currentColor stroke-width=2><path d=&quot;M12 2L2 7l10 5 10-5-10-5z&quot;/><path d=&quot;M2 17l10 5 10-5&quot;/><path d=&quot;M2 12l10 5 10-5&quot;/></svg>'">
+      </button>
       <button id="search-sidebar-btn" title="Rechercher">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
@@ -2762,6 +2767,13 @@ const closeSidebarFn = () => {
 $("burger").addEventListener("click", openSidebar);
 $("close-sidebar").addEventListener("click", closeSidebarFn);
 sidebarOverlay.addEventListener("click", closeSidebarFn);
+
+// Pollinations popup button
+$("pollinations-sidebar-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (window.openPollinationPopup) window.openPollinationPopup();
+  else if (window.PollinationPopup) window.PollinationPopup.open();
+});
 
 // Search in sidebar
 $("search-sidebar-btn").addEventListener("click", (e) => {
@@ -4988,11 +5000,9 @@ async function doStream(userText, isRegen, visionContent = null) {
     console.error("Stream error:", error);
     removeThinking();
     if (error.name === 'AbortError') {
-      // Annulation volontaire — on retire le message vide
       messages.pop();
       if (userId && currentConvId) await saveConversation();
     } else {
-      // Extraire le code HTTP si présent dans le message
       const codeMatch = error.message?.match(/\b([345]\d{2})\b/);
       const errCode = codeMatch ? codeMatch[1] : null;
       const errLabel = errCode === '401' ? 'Clé API invalide (401)'
@@ -5002,7 +5012,6 @@ async function doStream(userText, isRegen, visionContent = null) {
         : errCode === '503' ? 'Service indisponible (503)'
         : (error.message?.slice(0, 80) || 'Erreur inconnue');
       const errText = `Désolé, notre modèle n'est pas disponible pour le moment. Veuillez réessayer ou contactez-nous si cela persiste.\n\n*Erreur : ${errLabel}*`;
-      // Remplir le msgObj déjà dans messages[] au lieu d'en ajouter un nouveau
       aiMsgObj.content = errText;
       aiMsgObj.isError = true;
       appendAIMsg(aiMsgObj);
