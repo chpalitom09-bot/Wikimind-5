@@ -96,7 +96,7 @@
           <i data-lucide="cpu" class="w-4 h-4 text-brand-500"></i>
           Analyse de performance par modèle
         </h2>
-        <p class="text-xs text-slate-400 mt-1">Indicateurs de latence moyenne et d'appréciation basés sur les retours réels.</p>
+        <p class="text-xs text-slate-400 mt-1">Indicateurs de latence moyenne et d'appréciation basés sur les retours réels (les non-votes sont ignorés).</p>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -235,11 +235,25 @@
     const statsRef = ref(db, 'wikimind5_public_stats');
 
     // États globaux pour l'application
-    let statsData = []; // Contiendra toutes les données formatées
-    let sortConfig = { key: 'timestamp', direction: 'desc' }; // Tri par défaut (plus récent d'abord)
+    let statsData = []; 
+    let sortConfig = { key: 'timestamp', direction: 'desc' }; 
 
     let modelChartInstance = null;
     let timelineChartInstance = null;
+
+    // Décodage du Push ID Firebase de secours si pas de timestamp direct
+    function getTimestampFromPushId(id) {
+      if (typeof id !== 'string' || id.length < 8) return null;
+      const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+      let time = 0;
+      for (let i = 0; i < 8; i++) {
+        const c = id.charAt(i);
+        const val = PUSH_CHARS.indexOf(c);
+        if (val === -1) return null;
+        time = (time * 64) + val;
+      }
+      return time;
+    }
 
     // Écoute des données
     onValue(statsRef, (snapshot) => {
@@ -253,16 +267,29 @@
 
       // Formatage des objets issus de Firebase
       statsData = Object.entries(data).map(([id, val]) => {
+        const deducedTime = val.timestamp || getTimestampFromPushId(id) || null;
+        const responseTime = val.responseTime !== undefined ? parseFloat(val.responseTime) : null;
+        
+        // Normalisation stricte de liked :
+        // 1 = like, -1 = dislike, 0 (ou autre) = pas de vote
+        const rawLiked = val.liked !== undefined ? parseInt(val.liked) : 0;
+        let feedback = null;
+        if (rawLiked === 1) {
+          feedback = 'like';
+        } else if (rawLiked === -1) {
+          feedback = 'dislike';
+        }
+
         return {
-          id, // Non affiché à l'écran, conservé uniquement en mémoire
+          id, 
           model: val.model || 'Inconnu',
-          timestamp: val.timestamp || null,
-          responseTime: val.responseTime !== undefined ? parseFloat(val.responseTime) : null,
-          liked: val.liked !== undefined ? parseInt(val.liked) : null
+          timestamp: deducedTime,
+          responseTime: responseTime,
+          liked: rawLiked, // Valeur brute (-1, 0, 1) conservée pour le tri
+          feedback // 'like', 'dislike' ou null (pas de vote)
         };
       });
 
-      // Rendu initial (calculs globaux + graphiques + table triée)
       renderKPIs(statsData);
       renderModelStats(statsData);
       renderCharts(statsData);
@@ -277,10 +304,8 @@
     
     window.toggleSort = function(key) {
       if (sortConfig.key === key) {
-        // Alterne l'ordre si on clique sur la même colonne
         sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
       } else {
-        // Définit une nouvelle colonne et réinitialise à décroissant
         sortConfig.key = key;
         sortConfig.direction = 'desc';
       }
@@ -292,7 +317,6 @@
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
 
-        // Gestion des valeurs null/undefined pour les placer à la fin
         if (valA === null || valA === undefined) return 1;
         if (valB === null || valB === undefined) return -1;
 
@@ -349,11 +373,11 @@
             : `${Math.round(item.responseTime)} ms`;
         }
 
-        // Évaluation UI
-        let feedbackHTML = '<span class="text-slate-600">—</span>';
-        if (item.liked === 1) {
+        // Rendu de l'évaluation selon la nouvelle spécification
+        let feedbackHTML = '<span class="text-slate-500 text-xs">Sans vote</span>';
+        if (item.feedback === 'like') {
           feedbackHTML = '<span class="text-emerald-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-up" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">100%</span></span>';
-        } else if (item.liked === 0) {
+        } else if (item.feedback === 'dislike') {
           feedbackHTML = '<span class="text-rose-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-down" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">0%</span></span>';
         }
 
@@ -415,11 +439,11 @@
         document.getElementById('kpi-latency').innerText = 'N/A';
       }
 
-      // Satisfaction Globale (%)
-      const ratedItems = list.filter(item => item.liked !== null);
-      if (ratedItems.length > 0) {
-        const likes = ratedItems.filter(item => item.liked === 1).length;
-        const percent = Math.round((likes / ratedItems.length) * 100);
+      // Satisfaction Globale (%) — Ignore les votes neutres (0)
+      const votedItems = list.filter(item => item.feedback !== null);
+      if (votedItems.length > 0) {
+        const likes = votedItems.filter(item => item.feedback === 'like').length;
+        const percent = Math.round((likes / votedItems.length) * 100);
         document.getElementById('kpi-satisfaction').innerText = `${percent}%`;
       } else {
         document.getElementById('kpi-satisfaction').innerText = 'N/A';
@@ -450,9 +474,10 @@
           stats.latencyCount++;
         }
 
-        if (item.liked !== null) {
+        // Les calculs de satisfaction par modèle excluent également les non-votes (0)
+        if (item.feedback !== null) {
           stats.totalVotes++;
-          if (item.liked === 1) {
+          if (item.feedback === 'like') {
             stats.likes++;
           }
         }
