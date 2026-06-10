@@ -4780,6 +4780,7 @@ async function generateImage(prompt, modelObj) {
     scrollBottom();
 
     incrementImageUsage(modelObj.apiModel);
+    savePublicStat(aiMsgObj);
     if (userId && currentConvId) await saveConversation();
 
   } catch (err) {
@@ -4967,6 +4968,9 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
     aiMsgObj.responseTime = Date.now() - _streamStart;
     removeThinking();
 
+    // ── Statistiques publiques ──────────────────────────────────────────────
+    savePublicStat(aiMsgObj);
+
     const streamBubble = document.getElementById("stream-bubble");
     if (streamBubble) {
       streamBubble.id = "";
@@ -4976,6 +4980,12 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
       if (window.injectPersonalityLinks) window.injectPersonalityLinks(streamBubble);
       // Reconstruire le bouton Sources avec les extras (Jina, Tavily, Wikipedia…)
       if (window.rebuildSourcesBtnForMsg) window.rebuildSourcesBtnForMsg(aiMsgObj);
+      // FIX: Rebuild info popup now that responseTime is set
+      const msgGroup = streamBubble.closest(".msg-group");
+      if (msgGroup) {
+        const infoPopup = msgGroup.querySelector(".msg-info-popup");
+        if (infoPopup) buildInfoPopup(infoPopup, aiMsgObj);
+      }
     } else {
       appendAIMsg(aiMsgObj);
     }
@@ -5048,6 +5058,32 @@ async function nameConversationWithAI(userMessage) {
     const title = data.choices?.[0]?.message?.content?.trim()?.replace(/["""''«»]/g, "");
     return title && title.length > 2 && title.length < 60 ? title : null;
   } catch { return null; }
+}
+
+// =============================================
+// STATISTIQUES PUBLIQUES (wikimind5_public_stats)
+// =============================================
+async function savePublicStat(aiMsgObj) {
+  try {
+    const statId = genId();
+    const stat = {
+      model: aiMsgObj.model || selectedModel,
+      modelName: aiMsgObj.modelName || selectedModelName,
+      provider: aiMsgObj.provider || 'mistral',
+      responseTime: aiMsgObj.responseTime || null,
+      ts: aiMsgObj.ts || Date.now(),
+      msgLength: (aiMsgObj.content || '').length,
+      // uid anonymisé : on hash juste pour distinguer utilisateurs uniques sans exposer l'uid réel
+      userHash: userId ? userId.slice(0, 8) : 'guest',
+      // Jamais de contenu textuel — conforme à la règle .validate: !newData.hasChild('content')
+    };
+    if (db) {
+      await set(ref(db, `wikimind5_public_stats/${statId}`), stat);
+    }
+  } catch (e) {
+    // Silencieux — les stats ne doivent pas bloquer l'UX
+    console.debug("savePublicStat error:", e);
+  }
 }
 
 async function saveConversation() {
@@ -5606,9 +5642,43 @@ var PERS_SECTIONS = {
   },
   memory: {
     title: 'Mémoire',
-    render: () => `
+    render: () => {
+      // Construire le résumé de ce que l'IA sait
+      const knowledgeItems = [];
+      if (personalization.userName) knowledgeItems.push({ icon: '👤', label: 'Prénom', value: personalization.userName });
+      if (personalization.userRole) knowledgeItems.push({ icon: '💼', label: 'Rôle', value: personalization.userRole });
+      if (personalization.userAge) knowledgeItems.push({ icon: '🎂', label: 'Âge', value: personalization.userAge });
+      if (personalization.userLocation) knowledgeItems.push({ icon: '📍', label: 'Lieu', value: personalization.userLocation });
+      if (personalization.userGoals) knowledgeItems.push({ icon: '🎯', label: 'Objectifs', value: personalization.userGoals });
+      if (personalization.userInterests) knowledgeItems.push({ icon: '✨', label: 'Centres d\'intérêt', value: personalization.userInterests });
+      const tone = (window.TONE_OPTIONS || TONE_OPTIONS || []).find(t => t.value === personalization.tone);
+      if (tone) knowledgeItems.push({ icon: '🗣️', label: 'Ton', value: tone.label });
+      if (personalization.chips.length > 0) knowledgeItems.push({ icon: '🎭', label: 'Traits', value: personalization.chips.join(', ') });
+      const lengthLabels = { short: 'Courtes', medium: 'Moyennes', long: 'Longues' };
+      knowledgeItems.push({ icon: '📏', label: 'Réponses', value: lengthLabels[personalization.responseLength] || 'Moyennes' });
+      if (personalization.memory.length > 0) knowledgeItems.push({ icon: '🧠', label: 'Souvenirs', value: `${personalization.memory.length} mémorisé${personalization.memory.length > 1 ? 's' : ''}` });
+
+      const knowledgeSummaryHtml = knowledgeItems.length > 0
+        ? `<div style="display:flex;flex-direction:column;gap:6px;">
+            ${knowledgeItems.map(item => `
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+                <span style="font-size:1rem;flex-shrink:0;line-height:1.4">${item.icon}</span>
+                <div style="min-width:0;flex:1">
+                  <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:2px">${escHtml(item.label)}</div>
+                  <div style="font-size:0.83rem;color:rgba(255,255,255,0.75);word-break:break-word">${escHtml(item.value)}</div>
+                </div>
+              </div>`).join('')}
+          </div>`
+        : `<div style="font-size:0.82rem;color:rgba(255,255,255,0.25);font-style:italic;padding:8px 0;">Aucune info renseignée — complète les sections Identité et Tonalité !</div>`;
+
+      return `
       <div class="pers-field">
-        <label class="pers-label">Ce que Wikimind sait sur toi</label>
+        <label class="pers-label">🤖 Ce que l'IA sait sur toi</label>
+        <span class="pers-sublabel">Résumé de toutes les infos injectées dans le prompt système à chaque échange.</span>
+        ${knowledgeSummaryHtml}
+      </div>
+      <div class="pers-field" style="margin-top:12px">
+        <label class="pers-label">Souvenirs personnalisés</label>
         <span class="pers-sublabel">Ces infos sont injectées dans chaque conversation pour que l'IA s'en souvienne.</span>
         <div id="pers-memory-list">
           ${personalization.memory.length === 0
@@ -5631,7 +5701,8 @@ var PERS_SECTIONS = {
           💡 Exemples utiles : préférences techniques, projets en cours, contraintes, langue préférée…
         </label>
       </div>
-    `
+    `;
+    }
   },
   format: {
     title: 'Format des réponses',
