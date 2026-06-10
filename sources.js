@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════
-   WIKIMIND AI v5 — sources.js
-   Gestion des sources : Jina Reader, Tavily, OpenAI,
-   détection d'URLs, et construction du bouton Sources
+   WIKIMIND AI v5 — sources.js  (v2)
+   Sources : Jina, Tavily, OpenAI, Wikipedia
+   Personnalités soulignées + panneau latéral
    ═══════════════════════════════════════════════════ */
 
 // ── 1. REGISTRE DES SOURCES ──────────────────────────────────────────────────
@@ -54,103 +54,81 @@ const PROVIDER_SOURCES = {
     desc: "Modèles OpenAI",
     badge: "GPT",
     badgeClass: "sources-badge-openai"
+  },
+  wikipedia: {
+    name: "Wikipedia",
+    logo: "wikipedialogo.png",
+    url: "https://www.wikipedia.org/",
+    desc: "Encyclopédie libre",
+    badge: "WIKI",
+    badgeClass: "sources-badge-wikipedia"
   }
 };
 
-// Modèles qui nécessitent la source "openai"
+// Modèles qui ajoutent la source "openai"
 const OPENAI_MODEL_IDS = ["wm-image-gpt-large", "wm-large-5.6"];
 
 // ── 2. CLÉS API ──────────────────────────────────────────────────────────────
 
-const JINA_API_KEY   = "jina_f3e1d6a7b2c84e9f0a3b5d2c1e8f7a6b4d9e2c0f1a3b5d7e9f";
 const TAVILY_API_KEY = "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";
-const JINA_RPM_MAX   = 20; // limite Jina Reader gratuit
+const JINA_RPM_MAX   = 20;
 
-// Rate-limit Jina en mémoire (timestamps des appels dans l'heure)
+// Récupère la clé Cerebras depuis WM_API_KEYS si dispo
+function _getCerebrasKey() {
+  return (window.WM_API_KEYS && window.WM_API_KEYS.cerebras) || "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55";
+}
+
 let _jinaCallTimestamps = [];
-
 function _jinaCheckRateLimit() {
   const now = Date.now();
-  _jinaCallTimestamps = _jinaCallTimestamps.filter(ts => now - ts < 60000); // 1 min
+  _jinaCallTimestamps = _jinaCallTimestamps.filter(ts => now - ts < 60000);
   return _jinaCallTimestamps.length < JINA_RPM_MAX;
 }
+function _jinaRegisterCall() { _jinaCallTimestamps.push(Date.now()); }
 
-function _jinaRegisterCall() {
-  _jinaCallTimestamps.push(Date.now());
-}
-
-// ── 3. DÉTECTION D'ACTUALITÉ (pour déclencher Tavily) ──────────────────────
+// ── 3. DÉTECTIONS ────────────────────────────────────────────────────────────
 
 const NEWS_KEYWORDS = /\b(actualit[ée]s?|news|dernières?[\s-]nouvelles?|récent|récemment|aujourd'hui|ce\s+(matin|soir|jour|week-?end|mois)|cette\s+(semaine|année)|en\s+(ce\s+moment|cours)|live|direct|breaking|dernier[se]?\s+(heure|jour|semaine)|quoi\s+de\s+neuf|que\s+se\s+passe[- ]t[- ]il|événement[s]?\s+r[ée]cent|info[s]?\s+du\s+jour|tendance[s]?)\b/i;
+const WIKI_KEYWORDS  = /\bwikip[eé]dia\b/i;
 
-function isTavilyRequest(text) {
-  return NEWS_KEYWORDS.test(text);
-}
-
-// ── 4. EXTRACTION D'URLS DANS LE TEXTE ──────────────────────────────────────
+function isTavilyRequest(text)    { return NEWS_KEYWORDS.test(text); }
+function isWikipediaRequest(text) { return WIKI_KEYWORDS.test(text); }
 
 const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g;
-
 function extractUrls(text) {
   const matches = [];
   let m;
   URL_REGEX.lastIndex = 0;
-  while ((m = URL_REGEX.exec(text)) !== null) {
-    matches.push(m[0]);
-  }
+  while ((m = URL_REGEX.exec(text)) !== null) matches.push(m[0]);
   return [...new Set(matches)];
 }
 
-// ── 5. JINA READER — Fetch d'une URL ────────────────────────────────────────
+// ── 4. JINA READER ───────────────────────────────────────────────────────────
 
 async function jinaFetchUrl(url) {
-  if (!_jinaCheckRateLimit()) {
-    console.warn("[Jina] Rate limit atteint (20 RPM)");
-    return null;
-  }
+  if (!_jinaCheckRateLimit()) { console.warn("[Jina] Rate limit 20 RPM atteint"); return null; }
   try {
     _jinaRegisterCall();
     const resp = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`, {
-      headers: {
-        "Accept": "text/plain",
-        "X-Return-Format": "text",
-        ...(JINA_API_KEY ? { "Authorization": `Bearer ${JINA_API_KEY}` } : {})
-      }
+      headers: { "Accept": "text/plain", "X-Return-Format": "text" }
     });
-    if (!resp.ok) {
-      console.warn(`[Jina] Erreur HTTP ${resp.status} pour ${url}`);
-      return null;
-    }
+    if (!resp.ok) { console.warn(`[Jina] HTTP ${resp.status}`); return null; }
     const text = await resp.text();
-    // Tronquer à ~4000 chars pour ne pas saturer le contexte
-    return text.slice(0, 4000) + (text.length > 4000 ? "\n\n[...contenu tronqué]" : "");
-  } catch (err) {
-    console.warn("[Jina] Erreur réseau :", err);
-    return null;
-  }
+    return text.slice(0, 4000) + (text.length > 4000 ? "\n\n[...tronqué]" : "");
+  } catch (err) { console.warn("[Jina] Erreur :", err); return null; }
 }
 
-// ── 6. TAVILY SEARCH ─────────────────────────────────────────────────────────
+// ── 5. TAVILY ────────────────────────────────────────────────────────────────
 
 async function tavilySearch(query) {
   try {
     const resp = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
-        query: query,
-        search_depth: "basic",
-        max_results: 5,
-        include_answer: true
-      })
+      body: JSON.stringify({ api_key: TAVILY_API_KEY, query, search_depth: "basic", max_results: 5, include_answer: true })
     });
-    if (!resp.ok) {
-      console.warn(`[Tavily] Erreur HTTP ${resp.status}`);
-      return null;
-    }
+    if (!resp.ok) { console.warn(`[Tavily] HTTP ${resp.status}`); return null; }
     const data = await resp.json();
-    // Formatter pour injection dans le contexte
     let ctx = "";
     if (data.answer) ctx += `Réponse rapide : ${data.answer}\n\n`;
     if (data.results?.length) {
@@ -160,16 +138,12 @@ async function tavilySearch(query) {
       });
     }
     return ctx || null;
-  } catch (err) {
-    console.warn("[Tavily] Erreur réseau :", err);
-    return null;
-  }
+  } catch (err) { console.warn("[Tavily] Erreur :", err); return null; }
 }
 
-// ── 7. TOAST JINA (indicateur visuel pendant la lecture) ────────────────────
+// ── 6. TOAST ─────────────────────────────────────────────────────────────────
 
 let _jinaToastEl = null;
-
 function _ensureJinaToast() {
   if (_jinaToastEl) return _jinaToastEl;
   _jinaToastEl = document.createElement("div");
@@ -178,41 +152,30 @@ function _ensureJinaToast() {
   document.body.appendChild(_jinaToastEl);
   return _jinaToastEl;
 }
-
 function showJinaToast(msg) {
   const t = _ensureJinaToast();
   t.querySelector("span").textContent = msg;
   t.classList.add("show");
 }
+function hideJinaToast() { if (_jinaToastEl) _jinaToastEl.classList.remove("show"); }
 
-function hideJinaToast() {
-  if (_jinaToastEl) _jinaToastEl.classList.remove("show");
-}
+// ── 7. ENRICHISSEMENT AVANT ENVOI ────────────────────────────────────────────
 
-// ── 8. ENRICHISSEMENT DU MESSAGE AVANT ENVOI ────────────────────────────────
-/**
- * Appelé depuis sendMessage() avant doStream().
- * Détecte les URLs et/ou l'actualité, appelle Jina/Tavily,
- * retourne { enrichedText, extraSources }
- *   enrichedText  : texte enrichi à injecter dans le contexte
- *   extraSources  : tableau de clés PROVIDER_SOURCES à ajouter au bouton
- */
 async function wmEnrichMessage(userText) {
   const extraSources = [];
   let enrichedText = userText;
 
   const urls = extractUrls(userText);
   const wantsNews = isTavilyRequest(userText);
+  const wantsWiki = isWikipediaRequest(userText);
 
-  // ── Jina Reader : lecture des URLs ──
+  // Jina Reader
   if (urls.length > 0) {
     const urlResults = [];
-    for (const url of urls.slice(0, 3)) { // max 3 URLs par message
+    for (const url of urls.slice(0, 3)) {
       showJinaToast(`Lecture de ${new URL(url).hostname}…`);
       const content = await jinaFetchUrl(url);
-      if (content) {
-        urlResults.push(`### Contenu de ${url}\n${content}`);
-      }
+      if (content) urlResults.push(`### Contenu de ${url}\n${content}`);
     }
     hideJinaToast();
     if (urlResults.length > 0) {
@@ -221,7 +184,7 @@ async function wmEnrichMessage(userText) {
     }
   }
 
-  // ── Tavily : recherche d'actualité ──
+  // Tavily
   if (wantsNews) {
     showJinaToast("Recherche d'actualités…");
     const tavilyCtx = await tavilySearch(userText.slice(0, 200));
@@ -232,50 +195,42 @@ async function wmEnrichMessage(userText) {
     }
   }
 
+  // Wikipedia mention
+  if (wantsWiki) extraSources.push("wikipedia");
+
   return { enrichedText, extraSources };
 }
 
-// ── 9. RÉSOLUTION DES SOURCES D'UN MESSAGE ──────────────────────────────────
-/**
- * Retourne le tableau de clés sources pour un msgObj donné.
- * Inclut le provider du modèle + openai si applicable + extras dynamiques.
- */
+// ── 8. RÉSOLUTION DES SOURCES D'UN MESSAGE ───────────────────────────────────
+
 function resolveMsgSources(msgObj) {
   const sources = [];
-
-  // Source provider principal
   const provider = msgObj.provider || 'mistral';
   if (PROVIDER_SOURCES[provider]) sources.push(provider);
 
-  // OpenAI si modèle GPT
   const modelId = msgObj.modelId || "";
-  if (OPENAI_MODEL_IDS.includes(modelId) && !sources.includes("openai")) {
-    sources.push("openai");
-  }
+  if (OPENAI_MODEL_IDS.includes(modelId) && !sources.includes("openai")) sources.push("openai");
 
-  // Extras dynamiques (jina, tavily) stockés sur le msgObj
   if (msgObj.extraSources) {
     for (const s of msgObj.extraSources) {
-      if (!sources.includes(s)) sources.push(s);
+      if (PROVIDER_SOURCES[s] && !sources.includes(s)) sources.push(s);
     }
   }
-
   return sources;
 }
 
-// ── 10. CONSTRUCTION DU BOUTON SOURCES ──────────────────────────────────────
+// ── 9. BOUTON SOURCES ────────────────────────────────────────────────────────
 
 function buildSourcesBtn(sourceKeys) {
-  const validSources = sourceKeys.filter(s => PROVIDER_SOURCES[s]);
+  const validSources = (sourceKeys || []).filter(s => PROVIDER_SOURCES[s]);
   if (validSources.length === 0) return null;
 
   const btn = document.createElement("button");
   btn.className = "sources-btn";
   btn.title = "Sources";
 
-  // Affiche max 3 logos (empilés)
-  const logosSrc = validSources.slice(0, 3);
-  const logosHtml = logosSrc.map(s => {
+  // max 3 logos empilés
+  const logosHtml = validSources.slice(0, 3).map(s => {
     const src = PROVIDER_SOURCES[s];
     return `<img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">`;
   }).join('');
@@ -307,28 +262,39 @@ function buildSourcesBtn(sourceKeys) {
   const dropdown = btn.querySelector('.sources-dropdown');
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    document.querySelectorAll('.sources-dropdown.open').forEach(d => {
-      if (d !== dropdown) d.classList.remove('open');
-    });
+    document.querySelectorAll('.sources-dropdown.open').forEach(d => { if (d !== dropdown) d.classList.remove('open'); });
     dropdown.classList.toggle('open');
   });
   document.addEventListener('click', () => dropdown.classList.remove('open'), { passive: true });
-
   return btn;
 }
 
-// ── 11. HIGHLIGHT URLS DANS LE TEXTAREA ──────────────────────────────────────
+// ── 10. RECONSTRUCTION DU BOUTON SOURCES APRÈS STREAM ────────────────────────
 /**
- * Appelé sur l'événement input du textarea.
- * Rend les URLs détectées visibles en bleu.
- * On utilise un overlay transparent superposé au textarea.
+ * Appelé à la fin de doStream pour mettre à jour le bouton Sources
+ * sur le groupe de message déjà dans le DOM.
  */
+function rebuildSourcesBtnForMsg(msgObj) {
+  if (!msgObj.msgId) return;
+  const g = document.querySelector(`[data-msg-id="${msgObj.msgId}"]`);
+  if (!g) return;
+  const actBar = g.querySelector('.msg-actions');
+  if (!actBar) return;
+
+  // Supprimer l'ancien bouton sources s'il existe
+  const old = actBar.querySelector('.sources-btn');
+  if (old) old.remove();
+
+  const sourcesKeys = resolveMsgSources(msgObj);
+  const btn = buildSourcesBtn(sourcesKeys);
+  if (btn) actBar.appendChild(btn);
+}
+
+// ── 11. LIENS DANS LE TEXTAREA (highlight) ───────────────────────────────────
+
 function initUrlHighlight(textareaEl) {
-  // Créer le wrapper overlay si pas déjà fait
   const container = textareaEl.parentElement;
   if (!container) return;
-
-  // S'assurer que le container est en position relative
   container.style.position = "relative";
 
   let overlay = container.querySelector(".wm-url-highlight-wrapper");
@@ -337,81 +303,55 @@ function initUrlHighlight(textareaEl) {
     overlay.className = "wm-url-highlight-wrapper";
     overlay.setAttribute("aria-hidden", "true");
     container.insertBefore(overlay, textareaEl);
-    // Le textarea doit être transparent sur son background pour laisser passer l'overlay
-    // mais on garde le texte normal — l'overlay est en dessous et pointer-events:none
   }
 
   function syncOverlay() {
-    const val = textareaEl.value;
-    // Remplacer les URLs par des spans colorés (le texte reste transparent dans l'overlay)
-    const escaped = val
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    const highlighted = escaped.replace(
+    const escaped = textareaEl.value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    overlay.innerHTML = escaped.replace(
       /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g,
-      (match) => `<span class="wm-url-highlight">${match}</span>`
+      match => `<span class="wm-url-highlight">${match}</span>`
     );
-    overlay.innerHTML = highlighted;
-
-    // Sync scroll
     overlay.scrollTop = textareaEl.scrollTop;
   }
 
   textareaEl.addEventListener("input", syncOverlay);
-  textareaEl.addEventListener("scroll", () => {
-    overlay.scrollTop = textareaEl.scrollTop;
-  });
+  textareaEl.addEventListener("scroll", () => { overlay.scrollTop = textareaEl.scrollTop; });
 
-  // Sync font/padding de l'overlay avec le textarea
-  const syncStyles = () => {
-    const cs = getComputedStyle(textareaEl);
-    overlay.style.padding = cs.padding;
-    overlay.style.fontSize = cs.fontSize;
-    overlay.style.fontFamily = cs.fontFamily;
-    overlay.style.lineHeight = cs.lineHeight;
-    overlay.style.letterSpacing = cs.letterSpacing;
-  };
-  syncStyles();
-
-  return syncOverlay;
+  const cs = getComputedStyle(textareaEl);
+  overlay.style.padding = cs.padding;
+  overlay.style.fontSize = cs.fontSize;
+  overlay.style.fontFamily = cs.fontFamily;
+  overlay.style.lineHeight = cs.lineHeight;
+  overlay.style.letterSpacing = cs.letterSpacing;
 }
 
-// ── 12. RENDU DES URLS EN PILLS DANS LE MESSAGE UTILISATEUR ─────────────────
-/**
- * Transforme les URLs brutes dans le HTML d'un bubble user
- * en pills cliquables (ouvre dans un nouvel onglet).
- */
+// ── 12. URLS EN LIENS BLEUS SOULIGNÉS DANS LE BUBBLE USER ───────────────────
+
 function renderUrlPillsInBubble(bubbleEl) {
-  // Traiter uniquement les noeuds texte
+  URL_REGEX.lastIndex = 0;
   const walker = document.createTreeWalker(bubbleEl, NodeFilter.SHOW_TEXT);
-  const nodesToReplace = [];
-
+  const nodes = [];
   let node;
-  URL_REGEX.lastIndex = 0;
   while ((node = walker.nextNode())) {
-    if (URL_REGEX.test(node.textContent)) {
-      nodesToReplace.push(node);
-    }
+    URL_REGEX.lastIndex = 0;
+    if (URL_REGEX.test(node.textContent)) nodes.push(node);
   }
-
   URL_REGEX.lastIndex = 0;
-  nodesToReplace.forEach(textNode => {
+  nodes.forEach(textNode => {
     const frag = document.createDocumentFragment();
-    let last = 0;
-    let m;
+    let last = 0; let m;
     URL_REGEX.lastIndex = 0;
     const text = textNode.textContent;
     while ((m = URL_REGEX.exec(text)) !== null) {
       if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
-      const pill = document.createElement("a");
-      pill.className = "wm-url-pill";
-      pill.href = m[0];
-      pill.target = "_blank";
-      pill.rel = "noopener";
-      pill.title = m[0];
-      pill.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>${new URL(m[0]).hostname}`;
-      frag.appendChild(pill);
+      const a = document.createElement("a");
+      a.className = "wm-url-link";
+      a.href = m[0];
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.title = m[0];
+      try { a.textContent = new URL(m[0]).hostname; } catch { a.textContent = m[0]; }
+      frag.appendChild(a);
       last = m.index + m[0].length;
     }
     if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
@@ -419,14 +359,243 @@ function renderUrlPillsInBubble(bubbleEl) {
   });
 }
 
-// ── 13. EXPORTS GLOBAUX ──────────────────────────────────────────────────────
+// ── 13. PERSONNALITÉS — SOULIGNEMENT ET PANNEAU LATÉRAL ─────────────────────
 
-window.PROVIDER_SOURCES    = PROVIDER_SOURCES;
-window.buildSourcesBtn     = buildSourcesBtn;
-window.wmEnrichMessage     = wmEnrichMessage;
-window.resolveMsgSources   = resolveMsgSources;
-window.initUrlHighlight    = initUrlHighlight;
-window.renderUrlPillsInBubble = renderUrlPillsInBubble;
-window.isTavilyRequest     = isTavilyRequest;
-window.extractUrls         = extractUrls;
-window.OPENAI_MODEL_IDS    = OPENAI_MODEL_IDS;
+// Cache des résultats Wikipedia pour éviter les appels répétés
+const _wikiCache = {};
+
+// Appel API Wikipedia pour un nom
+async function fetchWikipediaSummary(name) {
+  if (_wikiCache[name]) return _wikiCache[name];
+  try {
+    const searchResp = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`, {
+      headers: { "Accept": "application/json" }
+    });
+    if (searchResp.ok) {
+      const data = await searchResp.json();
+      if (data.type !== "disambiguation" && data.extract) {
+        const result = {
+          title: data.title,
+          extract: data.extract,
+          thumbnail: data.thumbnail?.source || null,
+          pageUrl: data.content_urls?.desktop?.page || `https://fr.wikipedia.org/wiki/${encodeURIComponent(name)}`,
+          description: data.description || ""
+        };
+        _wikiCache[name] = result;
+        return result;
+      }
+    }
+    // Fallback: recherche
+    const srResp = await fetch(`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(name)}&format=json&origin=*&srlimit=1`);
+    if (srResp.ok) {
+      const srData = await srResp.json();
+      const title = srData.query?.search?.[0]?.title;
+      if (title) {
+        const sumResp = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+        if (sumResp.ok) {
+          const d = await sumResp.json();
+          const result = {
+            title: d.title,
+            extract: d.extract,
+            thumbnail: d.thumbnail?.source || null,
+            pageUrl: d.content_urls?.desktop?.page || `https://fr.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+            description: d.description || ""
+          };
+          _wikiCache[name] = result;
+          return result;
+        }
+      }
+    }
+    return null;
+  } catch (err) { console.warn("[Wiki]", err); return null; }
+}
+
+// Reformule l'extrait Wikipedia avec l'IA (mistral-small)
+async function reformulateWithAI(wikiData) {
+  if (!wikiData?.extract) return wikiData?.extract || "";
+  try {
+    const key = window.WM_API_KEYS?.mistral || window.KEY || "";
+    if (!key) return wikiData.extract;
+    const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: "mistral-small-latest",
+        max_tokens: 180,
+        temperature: 0.4,
+        messages: [{
+          role: "user",
+          content: `Reformule ce texte Wikipedia en 2-3 phrases claires et engageantes, en français, sans répéter le titre, sans guillemets :\n\n${wikiData.extract.slice(0, 600)}`
+        }]
+      })
+    });
+    if (!resp.ok) return wikiData.extract;
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content?.trim() || wikiData.extract;
+  } catch { return wikiData.extract; }
+}
+
+// ── Panneau latéral Wikipedia ─────────────────────────────────────────────────
+
+let _wikiPanel = null;
+let _wikiPanelCloseTimer = null;
+
+function _ensureWikiPanel() {
+  if (_wikiPanel) return _wikiPanel;
+  _wikiPanel = document.createElement("div");
+  _wikiPanel.id = "wm-wiki-panel";
+  _wikiPanel.className = "wm-wiki-panel";
+  _wikiPanel.innerHTML = `
+    <div class="wm-wiki-panel-header">
+      <div class="wm-wiki-panel-logo">
+        <img src="wikipedialogo.png" alt="Wikipedia" onerror="this.style.display='none'">
+        <span>Wikipedia</span>
+      </div>
+      <button class="wm-wiki-panel-close" id="wm-wiki-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="wm-wiki-panel-body" id="wm-wiki-body">
+      <div class="wm-wiki-loading">
+        <div class="wm-wiki-spinner"></div>
+        <span>Chargement…</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(_wikiPanel);
+
+  document.getElementById("wm-wiki-close").addEventListener("click", closeWikiPanel);
+  return _wikiPanel;
+}
+
+function openWikiPanel(name) {
+  const panel = _ensureWikiPanel();
+  // Reset body
+  document.getElementById("wm-wiki-body").innerHTML = `<div class="wm-wiki-loading"><div class="wm-wiki-spinner"></div><span>Recherche de "${name}"…</span></div>`;
+  panel.classList.add("open");
+
+  // Ferme si on clique ailleurs
+  setTimeout(() => {
+    document.addEventListener("click", _wikiOutsideClick, { once: true });
+  }, 50);
+
+  // Charge les données
+  _loadWikiData(name);
+}
+
+function closeWikiPanel() {
+  if (_wikiPanel) _wikiPanel.classList.remove("open");
+}
+
+function _wikiOutsideClick(e) {
+  if (_wikiPanel && !_wikiPanel.contains(e.target)) closeWikiPanel();
+}
+
+async function _loadWikiData(name) {
+  const body = document.getElementById("wm-wiki-body");
+  if (!body) return;
+
+  const wikiData = await fetchWikipediaSummary(name);
+  if (!wikiData) {
+    body.innerHTML = `<div class="wm-wiki-not-found">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p>Aucune information trouvée pour <strong>${name}</strong></p>
+      <a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(name)}" target="_blank" rel="noopener" class="wm-wiki-ext-link">Chercher sur Wikipedia →</a>
+    </div>`;
+    return;
+  }
+
+  // Afficher squelette immédiatement avec extract brut
+  body.innerHTML = `
+    ${wikiData.thumbnail ? `<div class="wm-wiki-img-wrap"><img src="${wikiData.thumbnail}" alt="${wikiData.title}" class="wm-wiki-img"></div>` : ''}
+    <div class="wm-wiki-content">
+      <h2 class="wm-wiki-title">${wikiData.title}</h2>
+      ${wikiData.description ? `<p class="wm-wiki-desc">${wikiData.description}</p>` : ''}
+      <p class="wm-wiki-extract" id="wm-wiki-extract-text">${wikiData.extract.slice(0, 300)}…</p>
+      <div class="wm-wiki-ai-badge" id="wm-wiki-ai-badge"><div class="wm-wiki-spinner-sm"></div> Reformulation IA…</div>
+      <a href="${wikiData.pageUrl}" target="_blank" rel="noopener" class="wm-wiki-ext-link">Lire sur Wikipedia →</a>
+    </div>
+  `;
+
+  // Reformulation IA en arrière-plan
+  const reformulated = await reformulateWithAI(wikiData);
+  const extractEl = document.getElementById("wm-wiki-extract-text");
+  const badgeEl = document.getElementById("wm-wiki-ai-badge");
+  if (extractEl) extractEl.textContent = reformulated;
+  if (badgeEl) badgeEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg> Reformulé par IA`;
+}
+
+// ── Injection des spans personnalités dans un bubble AI ──────────────────────
+
+// Regex pour détecter les noms propres connus (liens wiki, personnalités connues)
+// On cherche des séquences de mots capitalisés de 2-4 mots
+const PERSON_REGEX = /\b([A-ZÁÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-záàâäéèêëîïôùûüç]+(?:\s+(?:de\s+|d'|du\s+|le\s+|la\s+|les\s+|von\s+|van\s+|bin\s+)?[A-ZÁÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-záàâäéèêëîïôùûüç]+){1,3})\b/g;
+
+// Mots à exclure (pour ne pas souligner du texte commun)
+const PERSON_EXCLUDE = new Set([
+  "Le Grand","La Grande","En France","En Europe","Au Moyen","Les États","Les Temps","La Révolution",
+  "La Grèce","La Rome","La France","La Chine","La Terre","Du Nord","Du Sud","De l","Le Monde",
+  "Les Lumières","La Renaissance","La Réforme","Le Moyen","Les Nations","Le Conseil","Le Parlement",
+  "La Loi","La Constitution","La République","La Monarchie","La Science","La Philosophie",
+  "La Politique","La Logique","La Biologie","La Physique","La Médecine","La Musique","La Peinture",
+  "Premier Ministre","Vice Président","Chef État","Première Guerre","Deuxième Guerre","Grande Guerre"
+]);
+
+function injectPersonalityLinks(bubbleEl) {
+  // Seulement les bubble AI
+  if (!bubbleEl.classList.contains('ai')) return;
+
+  const walker = document.createTreeWalker(bubbleEl, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let node;
+  // Éviter de traiter les noeuds déjà dans des liens/spans
+  while ((node = walker.nextNode())) {
+    const parent = node.parentElement;
+    if (parent && (parent.tagName === 'A' || parent.tagName === 'CODE' || parent.tagName === 'PRE' || parent.classList.contains('wm-person'))) continue;
+    PERSON_REGEX.lastIndex = 0;
+    if (PERSON_REGEX.test(node.textContent)) nodes.push(node);
+  }
+
+  PERSON_REGEX.lastIndex = 0;
+  nodes.forEach(textNode => {
+    const text = textNode.textContent;
+    const frag = document.createDocumentFragment();
+    let last = 0; let m;
+    PERSON_REGEX.lastIndex = 0;
+    while ((m = PERSON_REGEX.exec(text)) !== null) {
+      const name = m[1];
+      if (PERSON_EXCLUDE.has(name) || name.split(' ').length < 2) continue;
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const span = document.createElement("span");
+      span.className = "wm-person";
+      span.textContent = name;
+      span.title = `Voir ${name} sur Wikipedia`;
+      span.dataset.person = name;
+      span.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openWikiPanel(name);
+      });
+      frag.appendChild(span);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    if (last > 0) textNode.parentNode.replaceChild(frag, textNode);
+  });
+}
+
+// ── 14. EXPORTS ──────────────────────────────────────────────────────────────
+
+window.PROVIDER_SOURCES          = PROVIDER_SOURCES;
+window.buildSourcesBtn           = buildSourcesBtn;
+window.rebuildSourcesBtnForMsg   = rebuildSourcesBtnForMsg;
+window.wmEnrichMessage           = wmEnrichMessage;
+window.resolveMsgSources         = resolveMsgSources;
+window.initUrlHighlight          = initUrlHighlight;
+window.renderUrlPillsInBubble    = renderUrlPillsInBubble;
+window.injectPersonalityLinks    = injectPersonalityLinks;
+window.isTavilyRequest           = isTavilyRequest;
+window.isWikipediaRequest        = isWikipediaRequest;
+window.extractUrls               = extractUrls;
+window.OPENAI_MODEL_IDS          = OPENAI_MODEL_IDS;
+window.openWikiPanel             = openWikiPanel;
+window.closeWikiPanel            = closeWikiPanel;
