@@ -24,23 +24,8 @@
   };
 
   // ── DOM ──────────────────────────────────────────────────────────────────────
-  function injectDOM() {
+  function _buildOverlay() {
     if (document.getElementById('stat-popup-overlay')) return;
-
-    // Bouton dans #topbar-right, à gauche du bouton paramètres
-    const tbSettings = document.getElementById('tb-settings');
-    if (tbSettings) {
-      const btn = document.createElement('button');
-      btn.id = 'tb-stats';
-      btn.className = 'tb-btn';
-      btn.title = 'Statistiques des modèles';
-      btn.innerHTML = '<img src="statlogo.png" alt="Stats" width="17" height="17" style="border-radius:3px;object-fit:contain;" onerror="this.style.display=\'none\'">';
-      tbSettings.parentNode.insertBefore(btn, tbSettings);
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        StatPopup.open();
-      });
-    }
 
     // Overlay + popup HTML
     const overlay = document.createElement('div');
@@ -356,7 +341,7 @@
   // ── API publique ─────────────────────────────────────────────────────────────
   const StatPopup = {
     open() {
-      injectDOM();
+      _buildOverlay();
       const overlay = document.getElementById('stat-popup-overlay');
       if (!overlay) return;
       overlay.classList.add('open');
@@ -371,10 +356,30 @@
 
   window.StatPopup = StatPopup;
 
-  // Init DOM dès que possible
+  // Injecter le bouton dès que le DOM est prêt
+  function injectButton() {
+    if (document.getElementById('tb-stats')) return; // déjà injecté
+
+    const tbSettings = document.getElementById('tb-settings');
+    if (!tbSettings) return; // topbar pas encore dans le DOM, retry
+
+    const btn = document.createElement('button');
+    btn.id = 'tb-stats';
+    btn.className = 'tb-btn';
+    btn.title = 'Statistiques des modèles';
+    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;';
+    btn.innerHTML = '<img src="statlogo.png" alt="Stats" width="17" height="17" style="border-radius:3px;object-fit:contain;" onerror="this.outerHTML='<svg width=15 height=15 viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><line x1=&quot;18&quot; y1=&quot;20&quot; x2=&quot;18&quot; y2=&quot;10&quot;/><line x1=&quot;12&quot; y1=&quot;20&quot; x2=&quot;12&quot; y2=&quot;4&quot;/><line x1=&quot;6&quot; y1=&quot;20&quot; x2=&quot;6&quot; y2=&quot;14&quot;/><line x1=&quot;3&quot; y1=&quot;20&quot; x2=&quot;21&quot; y2=&quot;20&quot;/></svg>'">';
+    // Insérer AVANT tb-settings dans #topbar-right
+    tbSettings.parentNode.insertBefore(btn, tbSettings);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      StatPopup.open();
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectDOM);
+    document.addEventListener('DOMContentLoaded', () => { injectButton(); _buildOverlay(); });
   } else {
-    injectDOM();
+    injectButton();
   }
 })();
