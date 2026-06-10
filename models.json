@@ -344,6 +344,34 @@
       "supportsStreaming": true,
       "maxTokens": 16384,
       "contextWindow": 131072
+    },
+    {
+      "id": "wm-compound-1.0",
+      "displayName": "Compound 1.0",
+      "apiModel": "compound",
+      "tier": "large",
+      "category": "more",
+      "description": "Groq Compound, recherche web intégrée",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072
+    },
+    {
+      "id": "wm-compound-mini-1.0",
+      "displayName": "Compound Mini",
+      "apiModel": "compound-mini",
+      "tier": "medium",
+      "category": "more",
+      "description": "Groq Compound Mini, léger avec web search",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072
     }
   ]
 }
