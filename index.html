@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="flashcards.css">
 <link rel="stylesheet" href="quiz.css">
 <link rel="stylesheet" href="pollination-popup.css">
+<link rel="stylesheet" href="sources.css">
 <script src="pollination-popup.js" defer></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -735,108 +736,7 @@ body:not(.chat-empty-state) #welcome-screen {
 .act-btn.liked { color: #4ade80; }
 .act-btn.disliked { color: #f87171; }
 
-/* ========== SOURCES BUTTON ========== */
-.sources-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 8px 3px 5px;
-  border-radius: 7px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text3);
-  cursor: pointer;
-  font-family: 'Geist', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 600;
-  transition: all 0.12s;
-  position: relative;
-}
-.sources-btn:hover {
-  background: var(--bg3);
-  color: var(--text2);
-  border-color: var(--border2);
-}
-.sources-btn-logos {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.sources-btn-logos img {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  object-fit: contain;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-}
-
-/* Sources dropdown */
-.sources-dropdown {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  background: #1a1a1a;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px;
-  overflow: hidden;
-  z-index: 500;
-  min-width: 220px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-  display: none;
-  animation: popupIn 0.13s ease;
-}
-.sources-dropdown.open { display: block; }
-.sources-dropdown-header {
-  padding: 8px 12px 6px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text3);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-.sources-dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.1s;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.sources-dropdown-item:last-child { border-bottom: none; }
-.sources-dropdown-item:hover { background: rgba(255,255,255,0.05); }
-.sources-dropdown-item img {
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  object-fit: contain;
-  flex-shrink: 0;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.sources-dropdown-item-info { flex: 1; min-width: 0; }
-.sources-dropdown-item-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text);
-}
-.sources-dropdown-item-url {
-  font-size: 0.68rem;
-  color: var(--text3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sources-dropdown-item svg {
-  width: 11px;
-  height: 11px;
-  color: var(--text3);
-  flex-shrink: 0;
-}
-
+/* Sources button styles → sources.css */
 
 /* ── WM Image Animation ── */
 .wm-img-anim-wrap {
@@ -2734,6 +2634,10 @@ const convList = $("conv-list");
 const chatArea = $("chat-area");
 const messagesEl = $("messages");
 const chatInput = $("chat-input");
+// Init highlight URLs dans le textarea (sources.js)
+setTimeout(() => {
+  if (window.initUrlHighlight && chatInput) window.initUrlHighlight(chatInput);
+}, 400);
 const sendBtn = $("send-btn");
 const stopBtn = $("stop-btn");
 const plusBtn = $("plus-btn");
@@ -4216,6 +4120,9 @@ function appendUserMsg(text, files = []) {
     <div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div>
   </div>`;
   messagesEl.appendChild(g);
+  // Rendre les URLs en pills cliquables dans la bubble user
+  const _userBubble = g.querySelector('.bubble.user');
+  if (_userBubble && window.renderUrlPillsInBubble) window.renderUrlPillsInBubble(_userBubble);
   scrollBottom();
 }
 
@@ -4434,10 +4341,11 @@ function appendAIMsg(msgObj, isStreaming = false) {
 
   actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
 
-  // Sources button — use stored provider first, fallback to WIKIMIND_MODELS lookup
-  const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
-  const providerForSrc = msgObj.provider || _mObjForSrc?.provider || 'mistral';
-  const sourcesBtn = buildSourcesBtn([PROVIDER_SOURCES[providerForSrc] ? providerForSrc : 'mistral']);
+  // Sources button — résolution dynamique via sources.js
+  const sourcesKeys = window.resolveMsgSources
+    ? window.resolveMsgSources(msgObj)
+    : [msgObj.provider || 'mistral'];
+  const sourcesBtn = buildSourcesBtn(sourcesKeys);
   if (sourcesBtn) actBar.appendChild(sourcesBtn);
 
   inner.append(bubble, meta, actBar);
@@ -4677,7 +4585,19 @@ async function sendMessage() {
   }
 
   try {
-    await doStream(fullContent, false, visionContent);
+    // ── Enrichissement Jina Reader + Tavily (URLs et actualités) ──
+    let _enrichedContent = fullContent;
+    let _extraSources = [];
+    if (window.wmEnrichMessage) {
+      try {
+        const _enrichResult = await window.wmEnrichMessage(fullContent);
+        _enrichedContent = _enrichResult.enrichedText;
+        _extraSources = _enrichResult.extraSources;
+      } catch (_enrichErr) {
+        console.warn("[Sources] Enrichissement échoué :", _enrichErr);
+      }
+    }
+    await doStream(_enrichedContent, false, visionContent, _extraSources);
   } catch (error) {
     console.error("Error in sendMessage:", error);
     removeThinking();
@@ -4707,77 +4627,7 @@ function incrementImageUsage(modelKey) {
   localStorage.setItem('wm_img_usage_' + modelKey, JSON.stringify(recent));
 }
 
-// ── SOURCES DATA ────────────────────────────────────────────────────────────
-const PROVIDER_SOURCES = {
-  pollinations: {
-    name: "Pollinations AI",
-    logo: "pollinationai.png",
-    url: "https://pollinations.ai/",
-    desc: "Génération d'images IA"
-  },
-  mistral: {
-    name: "Mistral AI",
-    logo: "mistrallogo.png",
-    url: "https://chat.mistral.ai/chat",
-    desc: "Modèles de langage"
-  },
-  groq: {
-    name: "Groq",
-    logo: "groqlogo.png",
-    url: "https://groq.com/",
-    desc: "Inférence ultra-rapide"
-  },
-  cerebras: {
-    name: "Cerebras",
-    logo: "cerebraslogo.png",
-    url: "https://cerebras.ai/",
-    desc: "Inférence wafer-scale"
-  }
-};
-
-function buildSourcesBtn(sources) {
-  // sources = array of provider keys like ['pollinations'] or ['mistral']
-  const validSources = sources.filter(s => PROVIDER_SOURCES[s]);
-  if (validSources.length === 0) return null;
-
-  const btn = document.createElement("button");
-  btn.className = "sources-btn";
-  btn.title = "Sources";
-
-  const logosHtml = validSources.map(s => {
-    const src = PROVIDER_SOURCES[s];
-    return `<img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">`;
-  }).join('');
-
-  btn.innerHTML = `
-    <div class="sources-btn-logos">${logosHtml}</div>
-    <span>Sources</span>
-    <div class="sources-dropdown" id="sources-dd-${Math.random().toString(36).slice(2)}">
-      <div class="sources-dropdown-header">Sources utilisées</div>
-      ${validSources.map(s => {
-        const src = PROVIDER_SOURCES[s];
-        return `<a href="${src.url}" target="_blank" rel="noopener" class="sources-dropdown-item">
-          <img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">
-          <div class="sources-dropdown-item-info">
-            <div class="sources-dropdown-item-name">${src.name}</div>
-            <div class="sources-dropdown-item-url">${src.url}</div>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        </a>`;
-      }).join('')}
-    </div>
-  `;
-
-  const dropdown = btn.querySelector('.sources-dropdown');
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.querySelectorAll('.sources-dropdown.open').forEach(d => { if (d !== dropdown) d.classList.remove('open'); });
-    dropdown.classList.toggle('open');
-  });
-  document.addEventListener('click', () => dropdown.classList.remove('open'));
-
-  return btn;
-}
+// ── SOURCES DATA + buildSourcesBtn → sources.js (chargé en différé) ──
 
 async function generateImage(prompt, modelObj) {
   const limit = modelObj.apiModel === 'gptimage-large' ? 10 : 100;
@@ -4962,7 +4812,7 @@ async function generateImage(prompt, modelObj) {
 // STREAM
 // =============================================
 
-async function doStream(userText, isRegen, visionContent = null) {
+async function doStream(userText, isRegen, visionContent = null, extraSources = []) {
   if (streaming) return;
 
   streaming = true;
@@ -4978,8 +4828,10 @@ async function doStream(userText, isRegen, visionContent = null) {
     content: "",
     msgId: aiMsgId,
     model: selectedModel,
+    modelId: _mObjStream?.id || "",
     modelName: selectedModelName,
     provider: _mObjStream?.provider || 'mistral',
+    extraSources: extraSources,
     ts: Date.now(),
     responseTime: null,
     liked: 0
@@ -6511,4 +6363,5 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="settings5.js" defer></script>
 <script src="flashcards.js" defer></script>
 <script src="quiz.js" defer></script>
+<script src="sources.js" defer></script>
 </html>
