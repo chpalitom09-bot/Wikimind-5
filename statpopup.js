@@ -27,15 +27,15 @@
   function injectDOM() {
     if (document.getElementById('stat-popup-overlay')) return;
 
-    // Bouton dans la sidebar (à gauche de Pollinations)
-    const polBtn = document.getElementById('pollinations-sidebar-btn');
-    if (polBtn) {
+    // Bouton dans #topbar-right, à gauche du bouton paramètres
+    const tbSettings = document.getElementById('tb-settings');
+    if (tbSettings) {
       const btn = document.createElement('button');
-      btn.id = 'stat-sidebar-btn';
+      btn.id = 'tb-stats';
+      btn.className = 'tb-btn';
       btn.title = 'Statistiques des modèles';
-      btn.innerHTML = `<img src="statlogo.png" alt="Stats" onerror="this.outerHTML='<svg width=16 height=16 viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><line x1=&quot;18&quot; y1=&quot;20&quot; x2=&quot;18&quot; y2=&quot;10&quot;/><line x1=&quot;12&quot; y1=&quot;20&quot; x2=&quot;12&quot; y2=&quot;4&quot;/><line x1=&quot;6&quot; y1=&quot;20&quot; x2=&quot;6&quot; y2=&quot;14&quot;/></svg>'">`;
-      // Insérer à GAUCHE de pollinations-sidebar-btn
-      polBtn.parentNode.insertBefore(btn, polBtn);
+      btn.innerHTML = '<img src="statlogo.png" alt="Stats" width="17" height="17" style="border-radius:3px;object-fit:contain;" onerror="this.style.display=\'none\'">';
+      tbSettings.parentNode.insertBefore(btn, tbSettings);
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         StatPopup.open();
