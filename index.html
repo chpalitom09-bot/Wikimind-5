@@ -5538,7 +5538,7 @@ async function loadPersonalizationFromDB() {
   } catch {}
 }
 
-const TONE_OPTIONS = [
+var TONE_OPTIONS = [
   { value: 'professional', label: 'Professionnel', desc: 'Idéal pour le travail, communications formelles.' },
   { value: 'casual', label: 'Décontracté', desc: 'Réponses conversationnelles et accessibles.' },
   { value: 'concise', label: 'Concis', desc: 'Court et direct, sans détails inutiles.' },
@@ -5547,7 +5547,7 @@ const TONE_OPTIONS = [
 ];
 
 // Chips avec leur phrase de prompt associée
-const CHIP_OPTIONS = [
+var CHIP_OPTIONS = [
   { label: 'Poli',         prompt: 'Utilise toujours un langage poli, courtois et respectueux.' },
   { label: 'Décontracté', prompt: 'Adopte un ton décontracté et naturel, comme une conversation entre amis.' },
   { label: 'Pragmatique', prompt: 'Privilégie les réponses concrètes, pratiques et directement applicables.' },
@@ -5557,7 +5557,7 @@ const CHIP_OPTIONS = [
   { label: 'Motivant',    prompt: 'Adopte un ton encourageant et motivant pour aider l\'utilisateur à aller de l\'avant.' },
 ];
 
-const PERS_SECTIONS = {
+var PERS_SECTIONS = {
   tonality: {
     title: 'Tonalité & Style',
     render: () => `
