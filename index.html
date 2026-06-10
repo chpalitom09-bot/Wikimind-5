@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="quiz.css">
 <link rel="stylesheet" href="pollination-popup.css">
 <link rel="stylesheet" href="sources.css">
+<link rel="stylesheet" href="statpopup.css">
 <script src="pollination-popup.js" defer></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -5016,12 +5017,32 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
                     smartEditInstruction +
                     systemExtra
           },
-          ...messages.filter(m => m.role !== "ai" || m.msgId !== aiMsgId).map(m => ({
-            role: m.role === "ai" ? "assistant" : m.role,
-            content: (m.visionContent && m.msgId === messages.filter(x => x.role === 'user').slice(-1)[0]?.msgId)
-              ? m.visionContent
-              : m.content
-          }))
+          ...messages
+            .filter(m => {
+              // Exclure le message en cours de génération
+              if (m.role === "ai" && m.msgId === aiMsgId) return false;
+              // Exclure les messages image (isImage) qui n'ont pas de contenu textuel
+              if (m.isImage) return false;
+              // Exclure tout message avec content vide (Mistral refuse content:"")
+              if (!m.content || m.content.trim() === '') return false;
+              return true;
+            })
+            .map(m => {
+              const role = m.role === "ai" ? "assistant" : m.role;
+              const isLastUser = m.msgId === messages.filter(x => x.role === 'user').slice(-1)[0]?.msgId;
+              // Format vision selon le provider
+              if (m.visionContent && isLastUser) {
+                const provider = _mObj?.provider || 'mistral';
+                if (provider === 'mistral') {
+                  // Format Mistral vision : array [{type:"text",...},{type:"image_url", image_url:{url:"data:..."}}]
+                  return { role, content: m.visionContent };
+                } else {
+                  // Format OpenAI compatible (Groq, Cerebras)
+                  return { role, content: m.visionContent };
+                }
+              }
+              return { role, content: m.content };
+            })
         ]
       })
     });
@@ -6676,4 +6697,5 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="flashcards.js" defer></script>
 <script src="quiz.js" defer></script>
 <script src="sources.js" defer></script>
+<script src="statpopup.js" defer></script>
 </html>
