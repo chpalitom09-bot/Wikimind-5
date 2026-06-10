@@ -25,22 +25,26 @@
 
   // ── DOM ──────────────────────────────────────────────────────────────────────
   function injectDOM() {
-    if (document.getElementById('stat-popup-overlay')) return;
+  if (document.getElementById('stat-popup-overlay')) return;
 
-    // Bouton dans #topbar-right, à gauche du bouton paramètres
-    const tbSettings = document.getElementById('tb-settings');
-    if (tbSettings) {
-      const btn = document.createElement('button');
-      btn.id = 'tb-stats';
-      btn.className = 'tb-btn';
-      btn.title = 'Statistiques des modèles';
-      btn.innerHTML = '<img src="statlogo.png" alt="Stats" width="17" height="17" style="border-radius:3px;object-fit:contain;" onerror="this.replaceWith((function(){var s=document.createElementNS(\'http://www.w3.org/2000/svg\',\'svg\');s.setAttribute(\'width\',\'15\');s.setAttribute(\'height\',\'15\');s.setAttribute(\'viewBox\',\'0 0 24 24\');s.setAttribute(\'fill\',\'none\');s.setAttribute(\'stroke\',\'currentColor\');s.setAttribute(\'stroke-width\',\'2\');s.innerHTML=\'<line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/><line x1=\"3\" y1=\"20\" x2=\"21\" y2=\"20\"/>\';return s;})())">';
-      tbSettings.parentNode.insertBefore(btn, tbSettings);
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        StatPopup.open();
-      });
-    }
+  const topbarRight = document.getElementById('topbar-right');
+  if (topbarRight) {
+    const btn = document.createElement('button');
+    btn.id = 'tb-stats';
+    btn.className = 'tb-btn';
+    btn.title = 'Statistiques des modèles';
+    
+    // CORRECTION : Utilisation de &quot; pour éviter que les guillemets cassent le HTML
+    btn.innerHTML = `<img src="statlogo.png" alt="Stats" width="17" height="17" style="border-radius:3px;object-fit:contain;" onerror="this.outerHTML='<svg width=&quot;15&quot; height=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot;><line x1=&quot;18&quot; y1=&quot;20&quot; x2=&quot;18&quot; y2=&quot;10&quot;/><line x1=&quot;12&quot; y1=&quot;20&quot; x2=&quot;12&quot; y2=&quot;4&quot;/><line x1=&quot;6&quot; y1=&quot;20&quot; x2=&quot;6&quot; y2=&quot;14&quot;/><line x1=&quot;3&quot; y1=&quot;20&quot; x2=&quot;21&quot; y2=&quot;20&quot;/></svg>'">`;
+    
+    // CORRECTION : Décalage tout à gauche en l'insérant avant le tout premier bouton
+    topbarRight.insertBefore(btn, topbarRight.firstChild);
+    
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      StatPopup.open();
+    });
+  }
 
     // Overlay + popup HTML
     const overlay = document.createElement('div');
