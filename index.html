@@ -3485,7 +3485,8 @@ async function loadModels() {
       WM_API_KEYS = { 
         mistral: data.apiKeys.mistral || "", 
         groq: gk,
-        pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp"
+        pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp",
+        cerebras: data.apiKeys.cerebras || ""
       };
     }
     const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
@@ -4295,6 +4296,8 @@ function appendAIMsg(msgObj, isStreaming = false) {
   } else if (msgObj.content) {
     bubble.innerHTML = renderContent(msgObj.content);
     addCodeButtons(bubble);
+    // Souligner les personnalités connues
+    if (window.injectPersonalityLinks) window.injectPersonalityLinks(bubble);
   }
 
   const meta = document.createElement("div");
@@ -4860,6 +4863,8 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
     const _apiEndpoint = _mObj.apiEndpoint || "https://api.mistral.ai/v1/chat/completions";
     const _apiKey = _mObj.provider === "groq"
       ? (_gk || WM_API_KEYS.groq || KEY)
+      : _mObj.provider === "cerebras"
+      ? (WM_API_KEYS.cerebras || "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55")
       : (WM_API_KEYS.mistral || KEY);
 
     // Détecter si la dernière requête concerne une modification de fichier volumineux
@@ -4967,6 +4972,10 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
       streamBubble.id = "";
       streamBubble.innerHTML = renderContent(aiMsgObj.content);
       addCodeButtons(streamBubble);
+      // Injecter les liens personnalités sur le contenu final
+      if (window.injectPersonalityLinks) window.injectPersonalityLinks(streamBubble);
+      // Reconstruire le bouton Sources avec les extras (Jina, Tavily, Wikipedia…)
+      if (window.rebuildSourcesBtnForMsg) window.rebuildSourcesBtnForMsg(aiMsgObj);
     } else {
       appendAIMsg(aiMsgObj);
     }
