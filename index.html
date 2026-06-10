@@ -5474,8 +5474,8 @@ sendBtn.addEventListener("click", () => {
 $("new-chat-btn").addEventListener("click", newConversation);
 
 // Topbar buttons
-$("tb-settings").addEventListener("click", () => { if (typeof window.openSettingsModal === 'function') window.openSettingsModal(); });
-$("tb-search").addEventListener("click", () => {
+$("tb-settings")?.addEventListener("click", () => { if (typeof window.openSettingsModal === 'function') window.openSettingsModal(); });
+$("tb-search")?.addEventListener("click", () => {
   openSidebar();
   setTimeout(() => {
     const wrap = $("sidebar-search-wrap");
@@ -5545,6 +5545,7 @@ var TONE_OPTIONS = [
   { value: 'detailed', label: 'Détaillé', desc: 'Approfondi avec explications complètes.' },
   { value: 'educational', label: 'Pédagogique', desc: 'Explique avec exemples et analogies.' },
 ];
+window.TONE_OPTIONS = TONE_OPTIONS;
 
 // Chips avec leur phrase de prompt associée
 var CHIP_OPTIONS = [
@@ -5685,7 +5686,8 @@ function rebuildExtraInstructions(manualText) {
 }
 
 function buildSystemPromptFromPersonalization() {
-  const tone = TONE_OPTIONS.find(t => t.value === personalization.tone);
+  const _TONE = window.TONE_OPTIONS || TONE_OPTIONS || [];
+  const tone = _TONE.find(t => t.value === personalization.tone);
   const toneStr = tone ? `Adopte un style ${tone.label.toLowerCase()}.` : '';
   const extraStr = personalization.extraInstructions ? personalization.extraInstructions.trim() : '';
   const nameStr = personalization.userName ? `L'utilisateur s'appelle ${personalization.userName}.` : '';
