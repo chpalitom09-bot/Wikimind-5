@@ -4434,10 +4434,10 @@ function appendAIMsg(msgObj, isStreaming = false) {
 
   actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
 
-  // Sources button — determine provider from model
+  // Sources button — use stored provider first, fallback to WIKIMIND_MODELS lookup
   const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
-  const providerForSrc = _mObjForSrc?.provider || 'mistral';
-  const sourcesBtn = buildSourcesBtn([providerForSrc === 'pollinations' ? 'pollinations' : ['groq','cerebras'].includes(providerForSrc) ? providerForSrc : 'mistral']);
+  const providerForSrc = msgObj.provider || _mObjForSrc?.provider || 'mistral';
+  const sourcesBtn = buildSourcesBtn([PROVIDER_SOURCES[providerForSrc] ? providerForSrc : 'mistral']);
   if (sourcesBtn) actBar.appendChild(sourcesBtn);
 
   inner.append(bubble, meta, actBar);
@@ -4893,7 +4893,32 @@ async function generateImage(prompt, modelObj) {
     // Sources
     const sourcesBtn = buildSourcesBtn(['pollinations']);
 
-    actBar.append(btnCopy, btnLike, btnDislike, btnDownload);
+    // Régénérer image
+    const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Régénérer");
+    btnRegen.addEventListener("click", () => {
+      const lastUser = [...messages].reverse().find(m => m.role === "user");
+      if (lastUser) {
+        const idx = messages.findIndex(m => m.msgId === aiMsgObj.msgId);
+        if (idx >= 0) messages.splice(idx, 1);
+        g.remove();
+        generateImage(lastUser.content, modelObj);
+      }
+    });
+
+    // Bouton info
+    const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
+    const popup = document.createElement("div");
+    popup.className = "msg-info-popup";
+    buildInfoPopup(popup, aiMsgObj);
+    btnInfo.style.position = "relative";
+    btnInfo.appendChild(popup);
+    btnInfo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".msg-info-popup.open").forEach(p => { if (p !== popup) p.classList.remove("open"); });
+      popup.classList.toggle("open");
+    });
+
+    actBar.append(btnCopy, btnLike, btnDislike, btnDownload, btnRegen, btnInfo);
     if (sourcesBtn) actBar.appendChild(sourcesBtn);
 
     inner.append(bubble, meta, actBar);
@@ -4947,12 +4972,14 @@ async function doStream(userText, isRegen, visionContent = null) {
   abortCtrl = new AbortController();
 
   const aiMsgId = genId();
+  const _mObjStream = window._wmSelectedModelObj || WIKIMIND_MODELS.find(m => m.apiModel === selectedModel);
   const aiMsgObj = {
     role: "ai",
     content: "",
     msgId: aiMsgId,
     model: selectedModel,
     modelName: selectedModelName,
+    provider: _mObjStream?.provider || 'mistral',
     ts: Date.now(),
     responseTime: null,
     liked: 0
@@ -5172,6 +5199,7 @@ async function saveConversation() {
       ts: msg.ts || Date.now(),
       model: msg.model || selectedModel,
       modelName: msg.modelName || selectedModelName,
+      provider: msg.provider || '',
       responseTime: msg.responseTime || null,
       liked: msg.liked || 0,
       isImage: msg.isImage || false
@@ -5366,6 +5394,7 @@ async function loadConversation(convId) {
           ts: msg.ts || Date.now(),
           model: msg.model || selectedModel,
           modelName: msg.modelName || selectedModelName,
+          provider: msg.provider || '',
           responseTime: msg.responseTime || null,
           liked: msg.liked || 0,
           isImage: msg.isImage || false
