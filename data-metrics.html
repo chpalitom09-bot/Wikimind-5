@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wikimind 5 — Statistiques publiques</title>
+  <title>WikiMind 5 — Statistiques et Performances</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
@@ -21,7 +21,6 @@
               500: '#6366f1',
               600: '#4f46e5',
               700: '#4338ca',
-              900: '#312e81',
               950: '#1e1b4b',
             }
           }
@@ -41,7 +40,7 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight">WikiMind <span class="text-brand-500">5</span></h1>
-          <p class="text-xs text-slate-400">Statistiques d'utilisation globales</p>
+          <p class="text-xs text-slate-400">Performances et retours utilisateurs</p>
         </div>
       </div>
       <div id="connection-badge" class="flex items-center space-x-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
@@ -54,7 +53,7 @@
   <!-- Main Content -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
     
-    <!-- Config Banner (Hidden by default once configured) -->
+    <!-- Config Banner -->
     <div id="config-warning" class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex items-start space-x-3">
         <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0"></i>
@@ -78,26 +77,54 @@
         </div>
       </div>
 
-      <!-- Active Models -->
+      <!-- Average Latency Global -->
       <div class="bg-slate-900/60 border border-slate-800 p-6 rounded-xl flex items-center justify-between shadow-sm">
         <div class="space-y-1">
-          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Modèles Uniques</p>
-          <p id="kpi-models" class="text-3xl font-bold tracking-tight text-white">-</p>
+          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Temps de réponse moyen</p>
+          <p id="kpi-latency" class="text-3xl font-bold tracking-tight text-white">-</p>
         </div>
-        <div class="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
-          <i data-lucide="cpu" class="w-6 h-6"></i>
+        <div class="p-3 bg-sky-500/10 rounded-xl border border-sky-500/20 text-sky-400">
+          <i data-lucide="gauge" class="w-6 h-6"></i>
         </div>
       </div>
 
-      <!-- Last Activity -->
+      <!-- Satisfaction Global -->
       <div class="bg-slate-900/60 border border-slate-800 p-6 rounded-xl flex items-center justify-between shadow-sm">
         <div class="space-y-1">
-          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Dernière activité</p>
-          <p id="kpi-last-active" class="text-sm font-semibold tracking-tight text-white mt-2">-</p>
+          <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Satisfaction Globale</p>
+          <p id="kpi-satisfaction" class="text-3xl font-bold tracking-tight text-white">-</p>
         </div>
-        <div class="p-3 bg-sky-500/10 rounded-xl border border-sky-500/20 text-sky-400">
-          <i data-lucide="clock" class="w-6 h-6"></i>
+        <div class="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
+          <i data-lucide="smile" class="w-6 h-6"></i>
         </div>
+      </div>
+    </div>
+
+    <!-- Model Stats Analytics (Analyse par Modèle) -->
+    <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden">
+      <div class="p-6 border-b border-slate-800/60">
+        <h2 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+          <i data-lucide="cpu" class="w-4 h-4 text-brand-500"></i>
+          Analyse de performance par modèle
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Indicateurs de latence moyenne et d'appréciation basés sur les retours réels.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800/60 bg-slate-900/20 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <th class="py-3 px-6">Modèle</th>
+              <th class="py-3 px-6 text-center">Appels</th>
+              <th class="py-3 px-6 text-center">Temps de réponse moy.</th>
+              <th class="py-3 px-6 text-right">Taux de Satisfaction</th>
+            </tr>
+          </thead>
+          <tbody id="model-stats-body" class="divide-y divide-slate-800/40 text-sm text-slate-300">
+            <tr>
+              <td colspan="4" class="py-8 text-center text-slate-500 text-xs">Aucune statistique disponible pour l'instant.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -140,9 +167,9 @@
         <div>
           <h2 class="text-base font-semibold text-slate-100 flex items-center gap-2">
             <i data-lucide="list" class="w-4 h-4 text-brand-500"></i>
-            Dernières requêtes enregistrées
+            Dernières requêtes anonymisées
           </h2>
-          <p class="text-xs text-slate-400 mt-1">Historique des 100 derniers appels anonymes.</p>
+          <p class="text-xs text-slate-400 mt-1">Flux des 100 derniers appels (aucune information personnelle n'est affichée).</p>
         </div>
         <span id="table-count" class="text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700 text-slate-300">0 requêtes</span>
       </div>
@@ -150,15 +177,16 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-800/60 bg-slate-900/20 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-              <th class="py-3 px-6">ID de la Stat</th>
-              <th class="py-3 px-6">Modèle d'IA utilisé</th>
+              <th class="py-3 px-6 w-12 text-center">#</th>
+              <th class="py-3 px-6">Modèle</th>
+              <th class="py-3 px-6 text-center">Temps de réponse</th>
+              <th class="py-3 px-6 text-center">Évaluation</th>
               <th class="py-3 px-6 text-right">Horodatage</th>
             </tr>
           </thead>
           <tbody id="stats-table-body" class="divide-y divide-slate-800/40 text-sm text-slate-300">
-            <!-- Rempli dynamiquement -->
             <tr>
-              <td colspan="3" class="py-8 text-center text-slate-500 text-xs">En attente de chargement...</td>
+              <td colspan="5" class="py-8 text-center text-slate-500 text-xs">En attente de chargement...</td>
             </tr>
           </tbody>
         </table>
@@ -183,7 +211,6 @@
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // ── CONFIGURATION FIREBASE ──────────────────────────────────────────────────
-    // REMPLACEZ LES VALEURS CI-DESSOUS PAR LES CONFIGURATIONS DE VOTRE PROJET :
     const firebaseConfig = {
     apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
     authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -194,21 +221,18 @@
     appId: "1:137479541640:web:4ed2510a9908055052e03d"
   };
 
-    // Vérification rapide de la configuration
     if (firebaseConfig.apiKey !== "VOTRE_API_KEY") {
       document.getElementById('config-warning').classList.add('hidden');
     }
 
-    // Initialisation
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const statsRef = ref(db, 'wikimind5_public_stats');
 
-    // Instances des graphiques
     let modelChartInstance = null;
     let timelineChartInstance = null;
 
-    // Décodage de la date à partir d'un Push ID Firebase (s'il est utilisé en $statId)
+    // Décodage du Push ID Firebase pour récupérer la date
     function getTimestampFromPushId(id) {
       if (typeof id !== 'string' || id.length < 8) return null;
       const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
@@ -216,7 +240,7 @@
       for (let i = 0; i < 8; i++) {
         const c = id.charAt(i);
         const val = PUSH_CHARS.indexOf(c);
-        if (val === -1) return null; // Structure non conforme à un push ID
+        if (val === -1) return null;
         time = (time * 64) + val;
       }
       return time;
@@ -232,26 +256,39 @@
         return;
       }
 
-      // Formatage des données en tableau exploitable
+      // Formatage et normalisation des objets de la base de données
       const rawList = Object.entries(data).map(([id, val]) => {
-        // Recherche de la date (décodage du Push ID, ou propriétés standards en secours)
         const deducedTime = getTimestampFromPushId(id) || val.timestamp || val.createdAt || val.ts || null;
+        
+        // Extraction du temps de réponse (supporte plusieurs clés courantes)
+        const responseTime = val.responseTime ?? val.latency ?? val.duration ?? val.durationMs ?? null;
+
+        // Normalisation de l'évaluation (Like/Dislike)
+        let feedback = null; 
+        if (val.like === true || val.rating === 1 || val.feedback === 'like' || val.rating === 'like') {
+          feedback = 'like';
+        } else if (val.like === false || val.rating === -1 || val.feedback === 'dislike' || val.rating === 'dislike') {
+          feedback = 'dislike';
+        }
+
         return {
-          id,
+          id, // Utilisé en interne uniquement pour le traitement de la date
           model: val.model || 'Inconnu',
-          timestamp: deducedTime
+          timestamp: deducedTime,
+          responseTime: responseTime ? parseFloat(responseTime) : null,
+          feedback
         };
       });
 
-      // Tri par date décroissante (les plus récentes en premier)
+      // Tri par date décroissante
       const sortedList = rawList.sort((a, b) => {
         if (!a.timestamp) return 1;
         if (!b.timestamp) return -1;
         return b.timestamp - a.timestamp;
       });
 
-      // Mise à jour de l'interface
       renderKPIs(sortedList);
+      renderModelStats(sortedList);
       renderCharts(sortedList);
       renderTable(sortedList);
 
@@ -275,11 +312,16 @@
 
     function showEmptyState() {
       document.getElementById('kpi-total').innerText = '0';
-      document.getElementById('kpi-models').innerText = '0';
-      document.getElementById('kpi-last-active').innerText = 'Aucune donnée';
+      document.getElementById('kpi-latency').innerText = '-';
+      document.getElementById('kpi-satisfaction').innerText = '-';
       document.getElementById('stats-table-body').innerHTML = `
         <tr>
-          <td colspan="3" class="py-8 text-center text-slate-500 text-xs">Aucune statistique enregistrée pour le moment.</td>
+          <td colspan="5" class="py-8 text-center text-slate-500 text-xs">Aucune statistique enregistrée.</td>
+        </tr>
+      `;
+      document.getElementById('model-stats-body').innerHTML = `
+        <tr>
+          <td colspan="4" class="py-8 text-center text-slate-500 text-xs">Aucune statistique disponible pour l'instant.</td>
         </tr>
       `;
       document.getElementById('no-data-pie').classList.remove('hidden');
@@ -289,28 +331,112 @@
     function renderKPIs(list) {
       document.getElementById('kpi-total').innerText = list.length;
       
-      const uniqueModels = [...new Set(list.map(item => item.model))];
-      document.getElementById('kpi-models').innerText = uniqueModels.length;
-
-      const baseItem = list[0];
-      if (baseItem && baseItem.timestamp) {
-        const dateObj = new Date(baseItem.timestamp);
-        document.getElementById('kpi-last-active').innerText = dateObj.toLocaleString('fr-FR', {
-          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
-      } else if (baseItem) {
-        document.getElementById('kpi-last-active').innerText = 'Id généré manuellement (sans timestamp)';
+      // Latence Moyenne Globale
+      const validLatencies = list.filter(item => item.responseTime !== null);
+      if (validLatencies.length > 0) {
+        const sum = validLatencies.reduce((acc, curr) => acc + curr.responseTime, 0);
+        const avg = sum / validLatencies.length;
+        // Détecte si la valeur est en millisecondes ou secondes
+        document.getElementById('kpi-latency').innerText = avg > 100 ? `${Math.round(avg)} ms` : `${avg.toFixed(2)} s`;
       } else {
-        document.getElementById('kpi-last-active').innerText = '-';
+        document.getElementById('kpi-latency').innerText = 'N/A';
+      }
+
+      // Satisfaction Globale (%)
+      const ratedItems = list.filter(item => item.feedback !== null);
+      if (ratedItems.length > 0) {
+        const likes = ratedItems.filter(item => item.feedback === 'like').length;
+        const percent = Math.round((likes / ratedItems.length) * 100);
+        document.getElementById('kpi-satisfaction').innerText = `${percent}%`;
+      } else {
+        document.getElementById('kpi-satisfaction').innerText = 'N/A';
       }
     }
 
+    // Agrégation et affichage par Modèle
+    function renderModelStats(list) {
+      const modelMap = {};
+
+      list.forEach(item => {
+        const name = item.model;
+        if (!modelMap[name]) {
+          modelMap[name] = {
+            name,
+            count: 0,
+            latencySum: 0,
+            latencyCount: 0,
+            likes: 0,
+            totalVotes: 0
+          };
+        }
+
+        const stats = modelMap[name];
+        stats.count++;
+
+        if (item.responseTime !== null) {
+          stats.latencySum += item.responseTime;
+          stats.latencyCount++;
+        }
+
+        if (item.feedback !== null) {
+          stats.totalVotes++;
+          if (item.feedback === 'like') {
+            stats.likes++;
+          }
+        }
+      });
+
+      const tbody = document.getElementById('model-stats-body');
+      const models = Object.values(modelMap);
+
+      if (models.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-500 text-xs">Aucune donnée disponible.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = models.map(m => {
+        const avgLatency = m.latencyCount > 0 ? (m.latencySum / m.latencyCount) : null;
+        let latencyStr = 'N/A';
+        if (avgLatency !== null) {
+          latencyStr = avgLatency > 100 ? `${Math.round(avgLatency)} ms` : `${avgLatency.toFixed(2)} s`;
+        }
+
+        // Taux de satisfaction
+        const hasVotes = m.totalVotes > 0;
+        const satisfPercent = hasVotes ? Math.round((m.likes / m.totalVotes) * 100) : null;
+        
+        let satisfHTML = '<span class="text-slate-500 text-xs">Aucun vote</span>';
+        if (satisfPercent !== null) {
+          let badgeColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+          if (satisfPercent < 40) badgeColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+          else if (satisfPercent < 75) badgeColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+
+          satisfHTML = `
+            <div class="flex items-center justify-end space-x-2">
+              <span class="px-2 py-0.5 rounded text-xs font-semibold border ${badgeColor}">${satisfPercent}%</span>
+              <div class="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
+                <div class="h-full ${satisfPercent < 40 ? 'bg-rose-500' : satisfPercent < 75 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: ${satisfPercent}%"></div>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-slate-900/40 transition-colors">
+            <td class="py-4 px-6 font-semibold text-slate-200">${m.name}</td>
+            <td class="py-4 px-6 text-center text-slate-400">${m.count}</td>
+            <td class="py-4 px-6 text-center text-slate-300 font-mono">${latencyStr}</td>
+            <td class="py-4 px-6 text-right">${satisfHTML}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     function renderCharts(list) {
-      // Masquer les messages d'état vide
       document.getElementById('no-data-pie').classList.add('hidden');
       document.getElementById('no-data-timeline').classList.add('hidden');
 
-      // 1. Distribution des Modèles (Doughnut)
+      // 1. Distribution
       const modelCounts = {};
       list.forEach(item => {
         modelCounts[item.model] = (modelCounts[item.model] || 0) + 1;
@@ -329,12 +455,12 @@
           datasets: [{
             data: modelValues,
             backgroundColor: [
-              'rgba(99, 102, 241, 0.8)',   // Indigo
-              'rgba(16, 185, 129, 0.8)',   // Emerald
-              'rgba(14, 165, 233, 0.8)',   // Sky
-              'rgba(245, 158, 11, 0.8)',   // Amber
-              'rgba(139, 92, 246, 0.8)',   // Violet
-              'rgba(236, 72, 153, 0.8)',   // Pink
+              'rgba(99, 102, 241, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(14, 165, 233, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(139, 92, 246, 0.8)',
+              'rgba(236, 72, 153, 0.8)',
             ],
             borderColor: '#0f172a',
             borderWidth: 2,
@@ -349,30 +475,17 @@
               position: 'bottom',
               labels: {
                 color: '#94a3b8',
-                font: { size: 11, family: 'system-ui' },
+                font: { size: 11 },
                 padding: 15,
                 usePointStyle: true,
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  let sum = context.dataset.data.reduce((a, b) => a + b, 0);
-                  let value = context.raw;
-                  let percentage = Math.round((value / sum) * 100);
-                  return ` ${context.label} : ${value} (${percentage}%)`;
-                }
               }
             }
           }
         }
       });
 
-      // 2. Évolution Temporelle (Area / Line)
-      // Grouper par date (JJ/MM)
+      // 2. Évolution Temporelle
       const timelineCounts = {};
-      
-      // On prend uniquement les entrées possédant un timestamp valide pour construire la ligne
       const validDates = list
         .filter(item => item.timestamp !== null)
         .map(item => {
@@ -390,15 +503,12 @@
         timelineCounts[dateStr] = (timelineCounts[dateStr] || 0) + 1;
       });
 
-      // Inverser pour afficher chronologiquement (de gauche à droite)
       const timelineLabels = Object.keys(timelineCounts).reverse();
       const timelineValues = Object.values(timelineCounts).reverse();
 
       if (timelineChartInstance) timelineChartInstance.destroy();
 
       const ctxLine = document.getElementById('timelineChart').getContext('2d');
-      
-      // Création d'un dégradé sous la courbe
       const gradient = ctxLine.createLinearGradient(0, 0, 0, 250);
       gradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
       gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
@@ -417,25 +527,15 @@
             tension: 0.3,
             pointBackgroundColor: '#6366f1',
             pointBorderColor: '#0f172a',
-            pointHoverRadius: 6,
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#64748b', font: { size: 10 } }
-            },
-            y: {
-              grid: { color: 'rgba(51, 65, 85, 0.2)' },
-              ticks: { color: '#64748b', font: { size: 10 } },
-              beginAtZero: true
-            }
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(51, 65, 85, 0.2)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true }
           }
         }
       });
@@ -446,34 +546,45 @@
       document.getElementById('table-count').innerText = `${list.length} requêtes`;
       
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500 text-xs">Aucune donnée disponible.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 text-xs">Aucune donnée disponible.</td></tr>`;
         return;
       }
 
-      // On limite l'affichage du tableau aux 100 requêtes les plus récentes
       const recentList = list.slice(0, 100);
 
-      tbody.innerHTML = recentList.map(item => {
+      tbody.innerHTML = recentList.map((item, index) => {
         const dateFormatted = item.timestamp 
           ? new Date(item.timestamp).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-          : '<span class="text-slate-500">Non spécifié</span>';
+          : '<span class="text-slate-500">N/A</span>';
+
+        let responseTimeHTML = '<span class="text-slate-500">-</span>';
+        if (item.responseTime !== null) {
+          responseTimeHTML = item.responseTime > 100 ? `${Math.round(item.responseTime)} ms` : `${item.responseTime.toFixed(2)} s`;
+        }
+
+        // Évaluation UI
+        let feedbackHTML = '<span class="text-slate-600">—</span>';
+        if (item.feedback === 'like') {
+          feedbackHTML = '<span class="text-emerald-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-up" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">100%</span></span>';
+        } else if (item.feedback === 'dislike') {
+          feedbackHTML = '<span class="text-rose-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-down" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">0%</span></span>';
+        }
 
         return `
           <tr class="hover:bg-slate-900/40 transition-colors">
-            <td class="py-3 px-6 font-mono text-xs text-indigo-400 select-all">${item.id}</td>
-            <td class="py-3 px-6">
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/10">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                ${item.model}
-              </span>
-            </td>
-            <td class="py-3 px-6 text-right text-xs text-slate-400">${dateFormatted}</td>
+            <td class="py-3 px-6 text-center text-xs text-slate-500 font-mono">${index + 1}</td>
+            <td class="py-3 px-6 font-medium text-slate-300">${item.model}</td>
+            <td class="py-3 px-6 text-center font-mono text-xs text-slate-300">${responseTimeHTML}</td>
+            <td class="py-3 px-6 text-center">${feedbackHTML}</td>
+            <td class="py-3 px-6 text-right text-xs text-slate-400 font-mono">${dateFormatted}</td>
           </tr>
         `;
       }).join('');
+
+      // Rafraîchir les icônes dynamiques Lucide
+      lucide.createIcons();
     }
 
-    // Initialisation des icônes
     lucide.createIcons();
   </script>
 </body>
