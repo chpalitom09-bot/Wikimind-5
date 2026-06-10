@@ -4794,12 +4794,27 @@ async function generateImage(prompt, modelObj) {
   } catch (err) {
     console.error("Erreur Image:", err);
     removeThinking();
-    // Afficher l'erreur directement dans le chat
-    const g = document.createElement("div");
-    g.className = "msg-group ai";
-    g.innerHTML = `<div class="msg-inner"><div class="bubble ai"><span style="color:#ff4444">Erreur lors de la génération. Le serveur est peut-être surchargé.</span></div></div>`;
-    messagesEl.appendChild(g);
+    const imgErrCode = err.message?.match(/\b([345]\d{2})\b/)?.[1] || null;
+    const imgErrLabel = imgErrCode === '401' ? 'Clé API invalide (401)'
+      : imgErrCode === '429' ? 'Limite de requêtes atteinte (429)'
+      : imgErrCode === '500' ? 'Erreur serveur (500)'
+      : imgErrCode === '503' ? 'Service indisponible (503)'
+      : (err.message?.slice(0, 80) || 'Erreur inconnue');
+    const imgErrMsg = {
+      role: "ai",
+      content: `Désolé, notre modèle n'est pas disponible pour le moment. Veuillez réessayer ou contactez-nous si cela persiste.\n\n*Erreur : ${imgErrLabel}*`,
+      msgId: genId(),
+      model: selectedModel,
+      modelName: selectedModelName,
+      ts: Date.now(),
+      responseTime: null,
+      liked: 0,
+      isError: true
+    };
     messages.pop();
+    messages.push(imgErrMsg);
+    appendAIMsg(imgErrMsg);
+    if (userId && currentConvId) await saveConversation();
   } finally {
     streaming = false;
     stopBtn.classList.remove("on");
@@ -4972,9 +4987,27 @@ async function doStream(userText, isRegen, visionContent = null) {
   } catch (error) {
     console.error("Stream error:", error);
     removeThinking();
-    messages.pop();
-    if (userId && currentConvId) await saveConversation();
-    if (error.name !== 'AbortError') toast("Une erreur est survenue. Veuillez réessayer.");
+    if (error.name === 'AbortError') {
+      // Annulation volontaire — on retire le message vide
+      messages.pop();
+      if (userId && currentConvId) await saveConversation();
+    } else {
+      // Extraire le code HTTP si présent dans le message
+      const codeMatch = error.message?.match(/\b([345]\d{2})\b/);
+      const errCode = codeMatch ? codeMatch[1] : null;
+      const errLabel = errCode === '401' ? 'Clé API invalide (401)'
+        : errCode === '403' ? 'Accès refusé (403)'
+        : errCode === '429' ? 'Limite de requêtes atteinte (429)'
+        : errCode === '500' ? 'Erreur serveur (500)'
+        : errCode === '503' ? 'Service indisponible (503)'
+        : (error.message?.slice(0, 80) || 'Erreur inconnue');
+      const errText = `Désolé, notre modèle n'est pas disponible pour le moment. Veuillez réessayer ou contactez-nous si cela persiste.\n\n*Erreur : ${errLabel}*`;
+      // Remplir le msgObj déjà dans messages[] au lieu d'en ajouter un nouveau
+      aiMsgObj.content = errText;
+      aiMsgObj.isError = true;
+      appendAIMsg(aiMsgObj);
+      if (userId && currentConvId) await saveConversation();
+    }
   } finally {
     streaming = false;
     stopBtn.classList.remove("on");
