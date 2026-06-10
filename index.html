@@ -4307,16 +4307,30 @@ function appendAIMsg(msgObj, isStreaming = false) {
   const bubble = document.createElement("div");
   bubble.className = "bubble ai";
   if (isStreaming) bubble.id = "stream-bubble";
-  if (msgObj.isImage && !msgObj.content) {
-    // Image génération sans résultat (erreur) → animation persistante
+
+  // ── Cas image erreur : animation persistante + message d'erreur ──
+  if (msgObj.isImage && msgObj.imageError) {
     const animObj = createWmAnim();
     bubble.appendChild(animObj.el);
-    // Stop anim after 60s to save battery if still showing
+    const errDiv = document.createElement("div");
+    errDiv.style.cssText = "margin-top:12px;padding:10px 14px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;font-size:0.82rem;color:#f87171;line-height:1.5;";
+    errDiv.innerHTML = `<div style="font-weight:600;margin-bottom:4px;">Désolé, notre service est indisponible pour le moment.</div>
+      <div style="color:var(--text3)">Si cela persiste, veuillez nous contacter.</div>
+      ${msgObj.imageErrorDetail ? `<div style="margin-top:6px;font-family:monospace;font-size:0.75rem;color:var(--text3);opacity:0.7">${escHtml(msgObj.imageErrorDetail)}</div>` : ''}`;
+    bubble.appendChild(errDiv);
     setTimeout(() => animObj.stop(), 60000);
+  // ── Cas image réussie ──
+  } else if (msgObj.isImage && msgObj.content) {
+    bubble.innerHTML = renderContent(msgObj.content);
+    const imgEl = bubble.querySelector("img");
+    if (imgEl && msgObj.imageUrl) {
+      imgEl.style.cursor = "zoom-in";
+      imgEl.addEventListener("click", () => window.open(msgObj.imageUrl, '_blank'));
+    }
+  // ── Cas texte normal ──
   } else if (msgObj.content) {
     bubble.innerHTML = renderContent(msgObj.content);
     addCodeButtons(bubble);
-    // Souligner les personnalités connues
     if (window.injectPersonalityLinks) window.injectPersonalityLinks(bubble);
   }
 
@@ -4327,49 +4341,113 @@ function appendAIMsg(msgObj, isStreaming = false) {
   const actBar = document.createElement("div");
   actBar.className = "msg-actions";
 
-  const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier");
-  btnCopy.addEventListener("click", () => {
-    navigator.clipboard.writeText(msgObj.content || bubble.innerText || "").then(() => {
-      btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
-      setTimeout(() => {
-        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
-      }, 1600);
+  // ── Barre d'actions adaptée selon le type de message ──
+  if (msgObj.isImage && !msgObj.imageError) {
+    // === BOUTONS IMAGE ===
+    const btnCopyImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier le lien");
+    btnCopyImg.addEventListener("click", () => {
+      const urlToCopy = msgObj.imageUrl || (msgObj.content?.match(/!\[.*?\]\((.*?)\)/)?.[1]) || "";
+      navigator.clipboard.writeText(urlToCopy).then(() => {
+        btnCopyImg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => { btnCopyImg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; }, 1600);
+      });
     });
-  });
 
-  const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
-  if (msgObj.liked === 1) btnLike.classList.add("liked");
+    const btnLikeImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
+    if (msgObj.liked === 1) btnLikeImg.classList.add("liked");
+    const btnDislikeImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
+    if (msgObj.liked === -1) btnDislikeImg.classList.add("disliked");
+    btnLikeImg.addEventListener("click", () => handleReaction(msgObj, 1, btnLikeImg, btnDislikeImg, g));
+    btnDislikeImg.addEventListener("click", () => handleReaction(msgObj, -1, btnLikeImg, btnDislikeImg, g));
 
-  const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
-  if (msgObj.liked === -1) btnDislike.classList.add("disliked");
+    const btnDownloadImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`, "Télécharger");
+    btnDownloadImg.addEventListener("click", async () => {
+      const dlUrl = msgObj.imageUrl || (msgObj.content?.match(/!\[.*?\]\((.*?)\)/)?.[1]) || "";
+      if (!dlUrl) return;
+      try {
+        const res = await fetch(dlUrl);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `wikimind-image.png`; a.click();
+        URL.revokeObjectURL(url);
+        toast("Image téléchargée !");
+      } catch { window.open(dlUrl, '_blank'); }
+    });
 
-  btnLike.addEventListener("click", () => handleReaction(msgObj, 1, btnLike, btnDislike, g));
-  btnDislike.addEventListener("click", () => handleReaction(msgObj, -1, btnLike, btnDislike, g));
+    const btnRegenImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Régénérer");
+    btnRegenImg.addEventListener("click", () => {
+      const lastUser = [...messages].reverse().find(m => m.role === "user");
+      if (lastUser) {
+        const idx = messages.findIndex(m => m.msgId === msgObj.msgId);
+        if (idx >= 0) messages.splice(idx, 1);
+        g.remove();
+        const _mObj = window._wmSelectedModelObj || WIKIMIND_MODELS.find(m => m.apiModel === selectedModel) || { apiModel: msgObj.model, displayName: msgObj.modelName };
+        generateImage(lastUser.content, _mObj);
+      }
+    });
 
-  const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Regénérer");
-  btnRegen.addEventListener("click", () => regenMsg(msgObj, g));
+    const btnInfoImg = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
+    const popupImg = document.createElement("div");
+    popupImg.className = "msg-info-popup";
+    buildInfoPopup(popupImg, msgObj);
+    btnInfoImg.style.position = "relative";
+    btnInfoImg.appendChild(popupImg);
+    btnInfoImg.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".msg-info-popup.open").forEach(p => { if (p !== popupImg) p.classList.remove("open"); });
+      popupImg.classList.toggle("open");
+    });
 
-  // Bouton info — FIX popup visible
-  const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
-  const popup = document.createElement("div");
-  popup.className = "msg-info-popup";
-  buildInfoPopup(popup, msgObj);
-  btnInfo.style.position = "relative";
-  btnInfo.appendChild(popup);
-  btnInfo.addEventListener("click", (e) => {
-    e.stopPropagation();
-    document.querySelectorAll(".msg-info-popup.open").forEach(p => { if (p !== popup) p.classList.remove("open"); });
-    popup.classList.toggle("open");
-  });
+    const sourcesBtnImg = buildSourcesBtn(['pollinations']);
+    actBar.append(btnCopyImg, btnLikeImg, btnDislikeImg, btnDownloadImg, btnRegenImg, btnInfoImg);
+    if (sourcesBtnImg) actBar.appendChild(sourcesBtnImg);
 
-  actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
+  } else {
+    // === BOUTONS TEXTE NORMAL ===
+    const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier");
+    btnCopy.addEventListener("click", () => {
+      navigator.clipboard.writeText(msgObj.content || bubble.innerText || "").then(() => {
+        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => {
+          btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+        }, 1600);
+      });
+    });
 
-  // Sources button — résolution dynamique via sources.js
-  const sourcesKeys = window.resolveMsgSources
-    ? window.resolveMsgSources(msgObj)
-    : [msgObj.provider || 'mistral'];
-  const sourcesBtn = buildSourcesBtn(sourcesKeys);
-  if (sourcesBtn) actBar.appendChild(sourcesBtn);
+    const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
+    if (msgObj.liked === 1) btnLike.classList.add("liked");
+
+    const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
+    if (msgObj.liked === -1) btnDislike.classList.add("disliked");
+
+    btnLike.addEventListener("click", () => handleReaction(msgObj, 1, btnLike, btnDislike, g));
+    btnDislike.addEventListener("click", () => handleReaction(msgObj, -1, btnLike, btnDislike, g));
+
+    const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Regénérer");
+    btnRegen.addEventListener("click", () => regenMsg(msgObj, g));
+
+    const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
+    const popup = document.createElement("div");
+    popup.className = "msg-info-popup";
+    buildInfoPopup(popup, msgObj);
+    btnInfo.style.position = "relative";
+    btnInfo.appendChild(popup);
+    btnInfo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".msg-info-popup.open").forEach(p => { if (p !== popup) p.classList.remove("open"); });
+      popup.classList.toggle("open");
+    });
+
+    actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
+
+    // Sources button — résolution dynamique via sources.js
+    const sourcesKeys = window.resolveMsgSources
+      ? window.resolveMsgSources(msgObj)
+      : [msgObj.provider || 'mistral'];
+    const sourcesBtn = buildSourcesBtn(sourcesKeys);
+    if (sourcesBtn) actBar.appendChild(sourcesBtn);
+  }
 
   inner.append(bubble, meta, actBar);
   g.appendChild(inner);
@@ -4704,6 +4782,7 @@ async function generateImage(prompt, modelObj) {
     removeThinking();
     aiMsgObj.responseTime = Date.now() - start;
     aiMsgObj.content = `![${escHtml(cleanPrompt)}](${imageUrl})`;
+    aiMsgObj.imageUrl = imageUrl;
 
     // Créer le groupe message avec image + barre d'actions complète
     const g = document.createElement("div");
@@ -4805,24 +4884,25 @@ async function generateImage(prompt, modelObj) {
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    // On error: stop animation RAF but keep the visual as placeholder
-    const thinkEl = document.getElementById("thinking-group");
-    if (thinkEl && thinkEl._wmAnim) thinkEl._wmAnim.stop();
-    // Remove thinking ID so it persists (not removed by removeThinking)
-    if (thinkEl) {
-      thinkEl.removeAttribute('id');
-      // Save anim as placeholder in localStorage for this conversation
-      const animKey = 'wm_img_anim_placeholder_' + (currentConvId || 'default');
-      try { localStorage.setItem(animKey, JSON.stringify({ msgId: aiMsgId, ts: Date.now() })); } catch {}
-    }
+    // Supprimer le thinking
+    removeThinking();
+
     const imgErrCode = err.message?.match(/\b([345]\d{2})\b/)?.[1] || null;
     const imgErrLabel = imgErrCode === '401' ? 'Clé API invalide (401)'
       : imgErrCode === '429' ? 'Limite de requêtes atteinte (429)'
       : imgErrCode === '500' ? 'Erreur serveur (500)'
       : imgErrCode === '503' ? 'Service indisponible (503)'
       : (err.message?.slice(0, 80) || 'Erreur inconnue');
+
+    // Mettre à jour le msgObj avec l'erreur (ne pas pop — on garde pour la sauvegarde)
+    aiMsgObj.imageError = true;
+    aiMsgObj.imageErrorDetail = imgErrLabel;
+    aiMsgObj.content = "";
+
+    // Afficher le message d'erreur dans le chat
+    appendAIMsg(aiMsgObj);
+
     toast(`Génération d'image : ${imgErrLabel}`);
-    messages.pop();
     if (userId && currentConvId) await saveConversation();
   } finally {
     streaming = false;
@@ -5244,7 +5324,10 @@ async function saveConversation() {
       provider: msg.provider || '',
       responseTime: msg.responseTime || null,
       liked: msg.liked || 0,
-      isImage: msg.isImage || false
+      isImage: msg.isImage || false,
+      imageUrl: msg.imageUrl || null,
+      imageError: msg.imageError || false,
+      imageErrorDetail: msg.imageErrorDetail || null
     }));
 
     const firstUserMsg = messages.find(m => m.role === "user");
@@ -5439,7 +5522,10 @@ async function loadConversation(convId) {
           provider: msg.provider || '',
           responseTime: msg.responseTime || null,
           liked: msg.liked || 0,
-          isImage: msg.isImage || false
+          isImage: msg.isImage || false,
+          imageUrl: msg.imageUrl || null,
+          imageError: msg.imageError || false,
+          imageErrorDetail: msg.imageErrorDetail || null
         });
       });
 
