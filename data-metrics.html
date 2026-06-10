@@ -52,17 +52,6 @@
 
   <!-- Main Content -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-    
-    <!-- Config Banner -->
-    <div id="config-warning" class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-start space-x-3">
-        <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0"></i>
-        <div>
-          <h3 class="font-semibold text-sm text-indigo-200">Configuration requise</h3>
-          <p class="text-xs text-slate-400 mt-1">Veuillez remplacer l'objet de configuration Firebase dans le code source de cette page pour vous connecter à votre base de données.</p>
-        </div>
-      </div>
-    </div>
 
     <!-- KPI Section -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -169,7 +158,7 @@
             <i data-lucide="list" class="w-4 h-4 text-brand-500"></i>
             Dernières requêtes anonymisées
           </h2>
-          <p class="text-xs text-slate-400 mt-1">Flux des 100 derniers appels (aucune information personnelle n'est affichée).</p>
+          <p class="text-xs text-slate-400 mt-1">Cliquez sur les en-têtes de colonne pour trier les données.</p>
         </div>
         <span id="table-count" class="text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700 text-slate-300">0 requêtes</span>
       </div>
@@ -177,11 +166,31 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-800/60 bg-slate-900/20 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-              <th class="py-3 px-6 w-12 text-center">#</th>
-              <th class="py-3 px-6">Modèle</th>
-              <th class="py-3 px-6 text-center">Temps de réponse</th>
-              <th class="py-3 px-6 text-center">Évaluation</th>
-              <th class="py-3 px-6 text-right">Horodatage</th>
+              <th class="py-3 px-6 w-16 text-center select-none">#</th>
+              <th onclick="toggleSort('model')" class="py-3 px-6 cursor-pointer hover:bg-slate-800/50 transition-colors select-none">
+                <div class="flex items-center space-x-1">
+                  <span>Modèle</span>
+                  <span id="sort-icon-model"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-40"></i></span>
+                </div>
+              </th>
+              <th onclick="toggleSort('responseTime')" class="py-3 px-6 text-center cursor-pointer hover:bg-slate-800/50 transition-colors select-none">
+                <div class="flex items-center justify-center space-x-1">
+                  <span>Temps de réponse</span>
+                  <span id="sort-icon-responseTime"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-40"></i></span>
+                </div>
+              </th>
+              <th onclick="toggleSort('liked')" class="py-3 px-6 text-center cursor-pointer hover:bg-slate-800/50 transition-colors select-none">
+                <div class="flex items-center justify-center space-x-1">
+                  <span>Évaluation</span>
+                  <span id="sort-icon-liked"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-40"></i></span>
+                </div>
+              </th>
+              <th onclick="toggleSort('timestamp')" class="py-3 px-6 text-right cursor-pointer hover:bg-slate-800/50 transition-colors select-none">
+                <div class="flex items-center justify-end space-x-1">
+                  <span>Horodatage</span>
+                  <span id="sort-icon-timestamp"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-40"></i></span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody id="stats-table-body" class="divide-y divide-slate-800/40 text-sm text-slate-300">
@@ -210,41 +219,27 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // ── CONFIGURATION FIREBASE ──────────────────────────────────────────────────
+    // ── CONFIGURATION FIREBASE INTÉGRÉE ─────────────────────────────────────────
     const firebaseConfig = {
-    apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
-    authDomain: "wikimind-3-comments.firebaseapp.com",
-    databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "wikimind-3-comments",
-    storageBucket: "wikimind-3-comments.firebasestorage.app",
-    messagingSenderId: "137479541640",
-    appId: "1:137479541640:web:4ed2510a9908055052e03d"
-  };
-
-    if (firebaseConfig.apiKey !== "VOTRE_API_KEY") {
-      document.getElementById('config-warning').classList.add('hidden');
-    }
+      apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+      authDomain: "wikimind-3-comments.firebaseapp.com",
+      databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "wikimind-3-comments",
+      storageBucket: "wikimind-3-comments.firebasestorage.app",
+      messagingSenderId: "137479541640",
+      appId: "1:137479541640:web:4ed2510a9908055052e03d"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const statsRef = ref(db, 'wikimind5_public_stats');
 
+    // États globaux pour l'application
+    let statsData = []; // Contiendra toutes les données formatées
+    let sortConfig = { key: 'timestamp', direction: 'desc' }; // Tri par défaut (plus récent d'abord)
+
     let modelChartInstance = null;
     let timelineChartInstance = null;
-
-    // Décodage du Push ID Firebase pour récupérer la date
-    function getTimestampFromPushId(id) {
-      if (typeof id !== 'string' || id.length < 8) return null;
-      const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
-      let time = 0;
-      for (let i = 0; i < 8; i++) {
-        const c = id.charAt(i);
-        const val = PUSH_CHARS.indexOf(c);
-        if (val === -1) return null;
-        time = (time * 64) + val;
-      }
-      return time;
-    }
 
     // Écoute des données
     onValue(statsRef, (snapshot) => {
@@ -256,48 +251,127 @@
         return;
       }
 
-      // Formatage et normalisation des objets de la base de données
-      const rawList = Object.entries(data).map(([id, val]) => {
-        const deducedTime = getTimestampFromPushId(id) || val.timestamp || val.createdAt || val.ts || null;
-        
-        // Extraction du temps de réponse (supporte plusieurs clés courantes)
-        const responseTime = val.responseTime ?? val.latency ?? val.duration ?? val.durationMs ?? null;
-
-        // Normalisation de l'évaluation (Like/Dislike)
-        let feedback = null; 
-        if (val.like === true || val.rating === 1 || val.feedback === 'like' || val.rating === 'like') {
-          feedback = 'like';
-        } else if (val.like === false || val.rating === -1 || val.feedback === 'dislike' || val.rating === 'dislike') {
-          feedback = 'dislike';
-        }
-
+      // Formatage des objets issus de Firebase
+      statsData = Object.entries(data).map(([id, val]) => {
         return {
-          id, // Utilisé en interne uniquement pour le traitement de la date
+          id, // Non affiché à l'écran, conservé uniquement en mémoire
           model: val.model || 'Inconnu',
-          timestamp: deducedTime,
-          responseTime: responseTime ? parseFloat(responseTime) : null,
-          feedback
+          timestamp: val.timestamp || null,
+          responseTime: val.responseTime !== undefined ? parseFloat(val.responseTime) : null,
+          liked: val.liked !== undefined ? parseInt(val.liked) : null
         };
       });
 
-      // Tri par date décroissante
-      const sortedList = rawList.sort((a, b) => {
-        if (!a.timestamp) return 1;
-        if (!b.timestamp) return -1;
-        return b.timestamp - a.timestamp;
-      });
-
-      renderKPIs(sortedList);
-      renderModelStats(sortedList);
-      renderCharts(sortedList);
-      renderTable(sortedList);
+      // Rendu initial (calculs globaux + graphiques + table triée)
+      renderKPIs(statsData);
+      renderModelStats(statsData);
+      renderCharts(statsData);
+      sortAndRenderTable();
 
     }, (error) => {
       console.error("Erreur Firebase :", error);
       updateBadgeState(false, error.message);
     });
 
-    // ── FONCTIONS DE RENDU DE L'INTERFACE ───────────────────────────────────────
+    // ── FONCTIONS DE TRI ET DE RENDU DU TABLEAU ─────────────────────────────────
+    
+    window.toggleSort = function(key) {
+      if (sortConfig.key === key) {
+        // Alterne l'ordre si on clique sur la même colonne
+        sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Définit une nouvelle colonne et réinitialise à décroissant
+        sortConfig.key = key;
+        sortConfig.direction = 'desc';
+      }
+      sortAndRenderTable();
+    };
+
+    function sortAndRenderTable() {
+      const sorted = [...statsData].sort((a, b) => {
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
+
+        // Gestion des valeurs null/undefined pour les placer à la fin
+        if (valA === null || valA === undefined) return 1;
+        if (valB === null || valB === undefined) return -1;
+
+        if (typeof valA === 'string') {
+          return sortConfig.direction === 'asc' 
+            ? valA.localeCompare(valB) 
+            : valB.localeCompare(valA);
+        } else {
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        }
+      });
+
+      renderTable(sorted);
+      updateSortIcons();
+    }
+
+    function updateSortIcons() {
+      const keys = ['model', 'responseTime', 'liked', 'timestamp'];
+      keys.forEach(key => {
+        const container = document.getElementById(`sort-icon-${key}`);
+        if (!container) return;
+
+        if (sortConfig.key === key) {
+          if (sortConfig.direction === 'asc') {
+            container.innerHTML = `<i data-lucide="chevron-up" class="w-3.5 h-3.5 text-brand-500"></i>`;
+          } else {
+            container.innerHTML = `<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-brand-500"></i>`;
+          }
+        } else {
+          container.innerHTML = `<i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 opacity-40"></i>`;
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('stats-table-body');
+      document.getElementById('table-count').innerText = `${list.length} requêtes`;
+      
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 text-xs">Aucune donnée disponible.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map((item, index) => {
+        const dateFormatted = item.timestamp 
+          ? new Date(item.timestamp).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          : '<span class="text-slate-500">N/A</span>';
+
+        let responseTimeHTML = '<span class="text-slate-500">-</span>';
+        if (item.responseTime !== null) {
+          responseTimeHTML = item.responseTime >= 1000 
+            ? `${(item.responseTime / 1000).toFixed(2)} s` 
+            : `${Math.round(item.responseTime)} ms`;
+        }
+
+        // Évaluation UI
+        let feedbackHTML = '<span class="text-slate-600">—</span>';
+        if (item.liked === 1) {
+          feedbackHTML = '<span class="text-emerald-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-up" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">100%</span></span>';
+        } else if (item.liked === 0) {
+          feedbackHTML = '<span class="text-rose-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-down" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">0%</span></span>';
+        }
+
+        return `
+          <tr class="hover:bg-slate-900/40 transition-colors">
+            <td class="py-3 px-6 text-center text-xs text-slate-500 font-mono">${index + 1}</td>
+            <td class="py-3 px-6 font-medium text-slate-300">${item.model}</td>
+            <td class="py-3 px-6 text-center font-mono text-xs text-slate-300">${responseTimeHTML}</td>
+            <td class="py-3 px-6 text-center">${feedbackHTML}</td>
+            <td class="py-3 px-6 text-right text-xs text-slate-400 font-mono">${dateFormatted}</td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // ── FONCTIONS D'AGRÉGATION ET DE STATISTIQUES ───────────────────────────────
 
     function updateBadgeState(connected, errorMsg = '') {
       const badge = document.getElementById('connection-badge');
@@ -336,16 +410,15 @@
       if (validLatencies.length > 0) {
         const sum = validLatencies.reduce((acc, curr) => acc + curr.responseTime, 0);
         const avg = sum / validLatencies.length;
-        // Détecte si la valeur est en millisecondes ou secondes
-        document.getElementById('kpi-latency').innerText = avg > 100 ? `${Math.round(avg)} ms` : `${avg.toFixed(2)} s`;
+        document.getElementById('kpi-latency').innerText = avg >= 1000 ? `${(avg / 1000).toFixed(2)} s` : `${Math.round(avg)} ms`;
       } else {
         document.getElementById('kpi-latency').innerText = 'N/A';
       }
 
       // Satisfaction Globale (%)
-      const ratedItems = list.filter(item => item.feedback !== null);
+      const ratedItems = list.filter(item => item.liked !== null);
       if (ratedItems.length > 0) {
-        const likes = ratedItems.filter(item => item.feedback === 'like').length;
+        const likes = ratedItems.filter(item => item.liked === 1).length;
         const percent = Math.round((likes / ratedItems.length) * 100);
         document.getElementById('kpi-satisfaction').innerText = `${percent}%`;
       } else {
@@ -353,7 +426,6 @@
       }
     }
 
-    // Agrégation et affichage par Modèle
     function renderModelStats(list) {
       const modelMap = {};
 
@@ -378,9 +450,9 @@
           stats.latencyCount++;
         }
 
-        if (item.feedback !== null) {
+        if (item.liked !== null) {
           stats.totalVotes++;
-          if (item.feedback === 'like') {
+          if (item.liked === 1) {
             stats.likes++;
           }
         }
@@ -398,10 +470,9 @@
         const avgLatency = m.latencyCount > 0 ? (m.latencySum / m.latencyCount) : null;
         let latencyStr = 'N/A';
         if (avgLatency !== null) {
-          latencyStr = avgLatency > 100 ? `${Math.round(avgLatency)} ms` : `${avgLatency.toFixed(2)} s`;
+          latencyStr = avgLatency >= 1000 ? `${(avgLatency / 1000).toFixed(2)} s` : `${Math.round(avgLatency)} ms`;
         }
 
-        // Taux de satisfaction
         const hasVotes = m.totalVotes > 0;
         const satisfPercent = hasVotes ? Math.round((m.likes / m.totalVotes) * 100) : null;
         
@@ -436,7 +507,7 @@
       document.getElementById('no-data-pie').classList.add('hidden');
       document.getElementById('no-data-timeline').classList.add('hidden');
 
-      // 1. Distribution
+      // 1. Chart Distribution
       const modelCounts = {};
       list.forEach(item => {
         modelCounts[item.model] = (modelCounts[item.model] || 0) + 1;
@@ -484,7 +555,7 @@
         }
       });
 
-      // 2. Évolution Temporelle
+      // 2. Chart Évolution
       const timelineCounts = {};
       const validDates = list
         .filter(item => item.timestamp !== null)
@@ -539,50 +610,6 @@
           }
         }
       });
-    }
-
-    function renderTable(list) {
-      const tbody = document.getElementById('stats-table-body');
-      document.getElementById('table-count').innerText = `${list.length} requêtes`;
-      
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 text-xs">Aucune donnée disponible.</td></tr>`;
-        return;
-      }
-
-      const recentList = list.slice(0, 100);
-
-      tbody.innerHTML = recentList.map((item, index) => {
-        const dateFormatted = item.timestamp 
-          ? new Date(item.timestamp).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-          : '<span class="text-slate-500">N/A</span>';
-
-        let responseTimeHTML = '<span class="text-slate-500">-</span>';
-        if (item.responseTime !== null) {
-          responseTimeHTML = item.responseTime > 100 ? `${Math.round(item.responseTime)} ms` : `${item.responseTime.toFixed(2)} s`;
-        }
-
-        // Évaluation UI
-        let feedbackHTML = '<span class="text-slate-600">—</span>';
-        if (item.feedback === 'like') {
-          feedbackHTML = '<span class="text-emerald-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-up" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">100%</span></span>';
-        } else if (item.feedback === 'dislike') {
-          feedbackHTML = '<span class="text-rose-400 flex items-center justify-center gap-1"><i data-lucide="thumbs-down" class="w-4 h-4"></i> <span class="text-[10px] font-semibold">0%</span></span>';
-        }
-
-        return `
-          <tr class="hover:bg-slate-900/40 transition-colors">
-            <td class="py-3 px-6 text-center text-xs text-slate-500 font-mono">${index + 1}</td>
-            <td class="py-3 px-6 font-medium text-slate-300">${item.model}</td>
-            <td class="py-3 px-6 text-center font-mono text-xs text-slate-300">${responseTimeHTML}</td>
-            <td class="py-3 px-6 text-center">${feedbackHTML}</td>
-            <td class="py-3 px-6 text-right text-xs text-slate-400 font-mono">${dateFormatted}</td>
-          </tr>
-        `;
-      }).join('');
-
-      // Rafraîchir les icônes dynamiques Lucide
-      lucide.createIcons();
     }
 
     lucide.createIcons();
