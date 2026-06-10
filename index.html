@@ -837,6 +837,25 @@ body:not(.chat-empty-state) #welcome-screen {
   flex-shrink: 0;
 }
 
+
+/* ── WM Image Animation ── */
+.wm-img-anim-wrap {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+.wm-img-anim-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Image generation thinking */
 .img-thinking-bubble {
   display: flex;
@@ -4228,6 +4247,80 @@ function appendFcFileCard(title, count, deckId) {
   scrollBottom();
 }
 
+
+// ── Wikimind Image Loading Animation ──────────────────────────────────────────
+function createWmAnim() {
+  const wrap = document.createElement('div');
+  wrap.className = 'wm-img-anim-wrap';
+  const canvas = document.createElement('canvas');
+  canvas.className = 'wm-img-anim-canvas';
+  wrap.appendChild(canvas);
+
+  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+  if (!gl) { wrap.style.background = '#111'; return { el: wrap, stop: () => {} }; }
+
+  const vert = `#version 300 es\nprecision highp float;\nin vec2 a_pos;\nvoid main(){gl_Position=vec4(a_pos,0,1);}`;
+  const frag = `#version 300 es
+precision highp float;
+uniform vec2 u_res;
+uniform float u_t;
+out vec4 fragColor;
+#define PI 3.141592653589793
+float hash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+19.19);return fract(p.x*p.y);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);}
+float fbm(vec2 p,int oct){float v=0.,a=.5;for(int i=0;i<8;i++){if(i>=oct)break;v+=a*noise(p);p=p*2.+.3;a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.-uv.y;
+  vec2 p=uv*2.8; float T=u_t*0.00038;
+  vec2 q=vec2(fbm(p+T*.7,6),fbm(p+vec2(1.3,.9)+T*.5,6));
+  vec2 r=vec2(fbm(p+2.2*q+vec2(.4,T*.3),6),fbm(p+2.2*q+vec2(8.2,T*.4),6));
+  float f=fbm(p+2.8*r+T*.2,7);
+  float band1=smoothstep(.0,.6,f+.15*sin(T*2.1+uv.x*3.));
+  float band2=smoothstep(.3,.9,f+.12*cos(T*1.7+uv.y*2.5));
+  vec3 col=mix(vec3(0.),vec3(.08,.08,.10),band1);
+  col=mix(col,vec3(.96,.96,.98),band2*band2);
+  float tint=f*.5+.5*sin(T*3.+f*6.);
+  vec3 irid=mix(vec3(.68,.78,.92),mix(vec3(.88,.80,.96),vec3(.76,.90,.82),sin(tint*PI)*.5+.5),cos(tint*PI*.7)*.5+.5);
+  col=mix(col,col*irid,0.22);
+  float d=length(uv-.5)*1.6;
+  col*=1.-smoothstep(.4,1.15,d);
+  col=mix(col,col*1.18,smoothstep(.3,.0,d));
+  fragColor=vec4(col,1.);
+}`;
+  function mkShader(type, src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); return s; }
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mkShader(gl.VERTEX_SHADER,vert));
+  gl.attachShader(prog,mkShader(gl.FRAGMENT_SHADER,frag));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(prog,'a_pos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  const uRes=gl.getUniformLocation(prog,'u_res');
+  const uT=gl.getUniformLocation(prog,'u_t');
+  const DPR=Math.min(window.devicePixelRatio||1,3);
+  let raf=null, start=null, stopped=false;
+  function resize(){
+    const r=wrap.getBoundingClientRect();
+    const w=r.width||400, h=r.height||400;
+    canvas.width=w*DPR; canvas.height=h*DPR;
+    gl.viewport(0,0,canvas.width,canvas.height);
+  }
+  function frame(ts){
+    if(stopped)return;
+    if(!start)start=ts;
+    resize();
+    gl.uniform2f(uRes,canvas.width,canvas.height);
+    gl.uniform1f(uT,ts-start);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    raf=requestAnimationFrame(frame);
+  }
+  raf=requestAnimationFrame(frame);
+  return { el: wrap, stop: ()=>{ stopped=true; if(raf)cancelAnimationFrame(raf); } };
+}
+
 function appendThinking(partnerInfo = null) {
   const g = document.createElement("div");
   g.className = "msg-group ai";
@@ -4235,16 +4328,15 @@ function appendThinking(partnerInfo = null) {
 
   let thinkingHTML = '';
 
-  // Si un partenaire image est actif (Pollinations, etc.)
+  // Si un partenaire image est actif (Pollinations, etc.) — animation WebGL
   if (partnerInfo) {
-    thinkingHTML = `<div class="img-thinking-bubble">
-      <div class="thinking-dots"><span></span><span></span><span></span></div>
-      <span>Wikimind AI réfléchit avec</span>
-      <div class="img-thinking-partner">
-        <img src="${partnerInfo.logo}" alt="${partnerInfo.name}" onerror="this.style.display='none'">
-        <span style="font-weight:600;color:var(--text2)">${partnerInfo.name}</span>
-      </div>
-    </div>`;
+    const animObj = createWmAnim();
+    g._wmAnim = animObj;
+    g.innerHTML = `<div class="msg-inner"></div>`;
+    g.querySelector('.msg-inner').appendChild(animObj.el);
+    messagesEl.appendChild(g);
+    scrollBottom();
+    return g;
   } else if (activeConnectors.length > 0) {
     // Si connecteur actif, afficher avec logo du connecteur
     const conn = CONNECTORS_LIST.find(c => c.id === activeConnectors[0]);
@@ -4270,7 +4362,10 @@ function appendThinking(partnerInfo = null) {
 
 function removeThinking() {
   const el = document.getElementById("thinking-group");
-  if (el) el.remove();
+  if (el) {
+    if (el._wmAnim) el._wmAnim.stop();
+    el.remove();
+  }
 }
 
 function appendAIMsg(msgObj, isStreaming = false) {
@@ -4284,7 +4379,13 @@ function appendAIMsg(msgObj, isStreaming = false) {
   const bubble = document.createElement("div");
   bubble.className = "bubble ai";
   if (isStreaming) bubble.id = "stream-bubble";
-  if (msgObj.content) {
+  if (msgObj.isImage && !msgObj.content) {
+    // Image génération sans résultat (erreur) → animation persistante
+    const animObj = createWmAnim();
+    bubble.appendChild(animObj.el);
+    // Stop anim after 60s to save battery if still showing
+    setTimeout(() => animObj.stop(), 60000);
+  } else if (msgObj.content) {
     bubble.innerHTML = renderContent(msgObj.content);
     addCodeButtons(bubble);
   }
@@ -4336,7 +4437,7 @@ function appendAIMsg(msgObj, isStreaming = false) {
   // Sources button — determine provider from model
   const _mObjForSrc = WIKIMIND_MODELS.find(m => m.apiModel === (msgObj.model || selectedModel));
   const providerForSrc = _mObjForSrc?.provider || 'mistral';
-  const sourcesBtn = buildSourcesBtn([['groq','cerebras'].includes(providerForSrc) ? providerForSrc : 'mistral']);
+  const sourcesBtn = buildSourcesBtn([providerForSrc === 'pollinations' ? 'pollinations' : ['groq','cerebras'].includes(providerForSrc) ? providerForSrc : 'mistral']);
   if (sourcesBtn) actBar.appendChild(sourcesBtn);
 
   inner.append(bubble, meta, actBar);
@@ -4805,27 +4906,24 @@ async function generateImage(prompt, modelObj) {
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    removeThinking();
+    // On error: stop animation RAF but keep the visual as placeholder
+    const thinkEl = document.getElementById("thinking-group");
+    if (thinkEl && thinkEl._wmAnim) thinkEl._wmAnim.stop();
+    // Remove thinking ID so it persists (not removed by removeThinking)
+    if (thinkEl) {
+      thinkEl.removeAttribute('id');
+      // Save anim as placeholder in localStorage for this conversation
+      const animKey = 'wm_img_anim_placeholder_' + (currentConvId || 'default');
+      try { localStorage.setItem(animKey, JSON.stringify({ msgId: aiMsgId, ts: Date.now() })); } catch {}
+    }
     const imgErrCode = err.message?.match(/\b([345]\d{2})\b/)?.[1] || null;
     const imgErrLabel = imgErrCode === '401' ? 'Clé API invalide (401)'
       : imgErrCode === '429' ? 'Limite de requêtes atteinte (429)'
       : imgErrCode === '500' ? 'Erreur serveur (500)'
       : imgErrCode === '503' ? 'Service indisponible (503)'
       : (err.message?.slice(0, 80) || 'Erreur inconnue');
-    const imgErrMsg = {
-      role: "ai",
-      content: `Désolé, notre modèle n'est pas disponible pour le moment. Veuillez réessayer ou contactez-nous si cela persiste.\n\n*Erreur : ${imgErrLabel}*`,
-      msgId: genId(),
-      model: selectedModel,
-      modelName: selectedModelName,
-      ts: Date.now(),
-      responseTime: null,
-      liked: 0,
-      isError: true
-    };
+    toast(`Génération d'image : ${imgErrLabel}`);
     messages.pop();
-    messages.push(imgErrMsg);
-    appendAIMsg(imgErrMsg);
     if (userId && currentConvId) await saveConversation();
   } finally {
     streaming = false;
@@ -5075,7 +5173,8 @@ async function saveConversation() {
       model: msg.model || selectedModel,
       modelName: msg.modelName || selectedModelName,
       responseTime: msg.responseTime || null,
-      liked: msg.liked || 0
+      liked: msg.liked || 0,
+      isImage: msg.isImage || false
     }));
 
     const firstUserMsg = messages.find(m => m.role === "user");
@@ -5268,7 +5367,8 @@ async function loadConversation(convId) {
           model: msg.model || selectedModel,
           modelName: msg.modelName || selectedModelName,
           responseTime: msg.responseTime || null,
-          liked: msg.liked || 0
+          liked: msg.liked || 0,
+          isImage: msg.isImage || false
         });
       });
 
