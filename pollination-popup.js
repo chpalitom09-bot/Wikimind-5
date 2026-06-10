@@ -8,7 +8,7 @@
   // ── Données des nouveautés ──────────────────────────────────────────────
   const UPDATES = [
     {
-      date: "09 juin 2025",
+      date: "09 juin 2026",
       title: "Deux nouveaux modèles de génération d'images",
       models: [
         {
@@ -111,7 +111,7 @@
         <img src="pollinationai.png" alt="Pollinations" onerror="this.style.display='none'">
       </div>
       <div id="wn-header-text">
-        <div id="wn-header-title">Quoi de neuf chez Wikimind ?</div>
+        <div id="wn-header-title">What's New with Wikimind ?</div>
         <div id="wn-header-subtitle">Dernière mise à jour · ${latestDate}</div>
       </div>
       <button id="wn-close" title="Fermer">
@@ -146,7 +146,7 @@
     </div>
 
     <div id="wn-footer">
-      <span id="wn-footer-label">wikimind.fr · Juin 2025</span>
+      <span id="wn-footer-label">Wikimind AI · Juin 2026</span>
       <button id="wn-got-it">J'ai compris ✓</button>
     </div>`;
   }
