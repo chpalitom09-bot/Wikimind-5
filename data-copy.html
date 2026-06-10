@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Migration des Stats WikiMind5</title>
+</head>
+<body>
+    <h1>🔄 Migration des anciennes données vers l'espace public</h1>
+    <div id="status">En attente...</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    // 🔴 TES CLÉS FIREBASE ICI
+    const firebaseConfig = { /* ... TA CONFIG ... */ };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const statusEl = document.getElementById('status');
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            statusEl.textContent = "Connecté ! Début de la copie des données...";
+            migrateData();
+        }
+    });
+
+    async function migrateData() {
+        try {
+            // 1. Lire toutes les données privées (nécessite d'être admin)
+            const usersRef = ref(db, 'wikimind5/users');
+            const snapshot = await get(usersRef);
+
+            if (!snapshot.exists()) return;
+
+            const data = snapshot.val();
+            let count = 0;
+
+            // 2. Préparer les données publiques
+            const publicStatsRef = ref(db, 'wikimind5_public_stats');
+
+            for (const uid in data) {
+                const conversations = data[uid].conversations || {};
+                
+                for (const convId in conversations) {
+                    const messages = conversations[convId].messages || {};
+                    
+                    for (const msgId in messages) {
+                        const msg = messages[msgId];
+
+                        // Si c'est une IA avec un modèle
+                        if (msg.role === 'ai' && msg.model) {
+                            
+                            // On crée un nouvel identifiant unique dans la base publique
+                            const newStatRef = push(publicStatsRef);
+                            
+                            // On pousse UNIQUEMENT les données non-confidentielles
+                            await set(newStatRef, {
+                                model: msg.model,
+                                liked: msg.liked !== undefined ? msg.liked : null,
+                                responseTime: msg.responseTime || null,
+                                timestamp: Date.now() // Date de la migration
+                            });
+                            
+                            count++;
+                        }
+                    }
+                }
+            }
+            statusEl.textContent = `✅ Terminé ! ${count} messages ont été copiés de manière anonyme dans l'espace public.`;
+            statusEl.style.color = "green";
+
+        } catch (error) {
+            console.error("Erreur :", error);
+            statusEl.textContent = "Erreur, regarde la console.";
+        }
+    }
+</script>
+</body>
+</html>
