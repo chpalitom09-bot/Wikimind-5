@@ -853,6 +853,112 @@ body:not(.chat-empty-state) #welcome-screen {
 }
 .act-btn.translating { color: #4d8fff; }
 
+/* ========== RETENTION SLIDER ========== */
+.pers-retention-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pers-retention-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pers-retention-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.pers-retention-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+.pers-retention-badge.ok {
+  background: rgba(77,255,149,0.1);
+  color: #4dff95;
+  border: 1px solid rgba(77,255,149,0.2);
+}
+.pers-retention-badge.warn {
+  background: rgba(251,191,36,0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(251,191,36,0.2);
+}
+.pers-retention-track {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pers-retention-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(to right, var(--ret-color, #4d8fff) 0%, var(--ret-color, #4d8fff) var(--ret-pct, 40%), rgba(255,255,255,0.1) var(--ret-pct, 40%), rgba(255,255,255,0.1) 100%);
+  transition: background 0.2s;
+  border: none;
+}
+.pers-retention-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ret-color, #4d8fff);
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+}
+.pers-retention-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.pers-retention-slider::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--ret-color, #4d8fff);
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+}
+.pers-retention-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.67rem;
+  color: rgba(255,255,255,0.25);
+  padding: 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+.pers-retention-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  background: rgba(251,191,36,0.07);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 9px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.5;
+  animation: fadeIn 0.2s ease;
+}
+.pers-retention-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #fbbf24;
+}
+.pers-retention-warning strong {
+  color: #fbbf24;
+}
+
 
 /* ── WM Image Animation ── */
 .wm-img-anim-wrap {
@@ -6060,6 +6166,7 @@ let personalization = {
   useEmoji: false,
   useBullets: true,
   memory: [], // RAG : tableau de strings
+  memoryRetention: 8, // % de rétention — 0 à 20
 };
 
 function loadPersonalization() {
@@ -6229,6 +6336,34 @@ var PERS_SECTIONS = {
           💡 Exemples utiles : préférences techniques, projets en cours, contraintes, langue préférée…
         </label>
       </div>
+      <div class="pers-field" style="margin-top:12px">
+        <label class="pers-label">Rétention d'informations</label>
+        <span class="pers-sublabel">Proportion des souvenirs injectés dans chaque conversation.</span>
+        <div class="pers-retention-wrap">
+          <div class="pers-retention-header">
+            <span class="pers-retention-value" id="pers-retention-display">${personalization.memoryRetention ?? 8}%</span>
+            <span class="pers-retention-badge ${(personalization.memoryRetention ?? 8) > 10 ? 'warn' : 'ok'}" id="pers-retention-badge">
+              ${(personalization.memoryRetention ?? 8) > 10 ? '⚠ Élevé' : '✓ Optimal'}
+            </span>
+          </div>
+          <div class="pers-retention-track">
+            <input type="range" id="pers-retention-slider" min="0" max="20" step="1" value="${personalization.memoryRetention ?? 8}" class="pers-retention-slider">
+            <div class="pers-retention-labels">
+              <span>0%</span>
+              <span>5%</span>
+              <span>10%</span>
+              <span>15%</span>
+              <span>20%</span>
+            </div>
+          </div>
+          <div class="pers-retention-warning" id="pers-retention-warning" style="display:${(personalization.memoryRetention ?? 8) > 10 ? 'flex' : 'none'}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <strong>Note :</strong> Au-delà de 12%, votre expérience pourrait être altérée. Un taux élevé surcharge le contexte système : l'IA reçoit trop d'informations à la fois, ce qui peut nuire à la cohérence des réponses, réduire la précision, et augmenter les hallucinations. Les souvenirs peu pertinents parasitent les échanges en cours.
+            </div>
+          </div>
+        </div>
+      </div>
     `;
     }
   },
@@ -6288,7 +6423,10 @@ function buildSystemPromptFromPersonalization() {
   const lengthStr = personalization.responseLength === 'short' ? 'Réponds de façon courte et directe.' : personalization.responseLength === 'long' ? 'Réponds de façon détaillée et complète.' : '';
   const emojiStr = personalization.useEmoji ? 'Tu peux utiliser des emojis.' : 'Évite les emojis.';
   const bulletStr = personalization.useBullets ? '' : 'Évite les listes à puces.';
-  const memStr = personalization.memory.length > 0 ? `Informations mémorisées sur l'utilisateur : ${personalization.memory.join(' | ')}.` : '';
+  const retentionPct = personalization.memoryRetention ?? 8;
+  const maxMemories = retentionPct === 0 ? 0 : Math.max(1, Math.round((retentionPct / 20) * (personalization.memory.length || 30)));
+  const memSlice = personalization.memory.slice(0, maxMemories);
+  const memStr = memSlice.length > 0 ? `Informations mémorisées sur l'utilisateur : ${memSlice.join(' | ')}.` : '';
   return [toneStr, extraStr, nameStr, roleStr, ageStr, locStr, goalsStr, interestsStr, lengthStr, emojiStr, bulletStr, memStr].filter(Boolean).join(' ');
 }
 
@@ -6411,6 +6549,33 @@ function renderPersSection() {
     };
     memAddBtn.addEventListener("click", doAdd);
     memInput.addEventListener("keydown", e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+  }
+
+  // — Rétention mémoire —
+  const retSlider = $("pers-retention-slider");
+  if (retSlider) {
+    retSlider.addEventListener("input", () => {
+      const val = parseInt(retSlider.value);
+      personalization.memoryRetention = val;
+      const display = $("pers-retention-display");
+      const badge = $("pers-retention-badge");
+      const warning = $("pers-retention-warning");
+      if (display) display.textContent = val + "%";
+      if (badge) {
+        badge.className = "pers-retention-badge " + (val > 10 ? "warn" : "ok");
+        badge.textContent = val > 10 ? "⚠ Élevé" : "✓ Optimal";
+      }
+      if (warning) warning.style.display = val > 10 ? "flex" : "none";
+      // Couleur dynamique du slider via CSS custom property
+      const pct = (val / 20) * 100;
+      retSlider.style.setProperty("--ret-pct", pct + "%");
+      retSlider.style.setProperty("--ret-color", val > 12 ? "#f87171" : val > 10 ? "#fbbf24" : "#4d8fff");
+    });
+    // Init couleur
+    const initPct = ((personalization.memoryRetention ?? 8) / 20) * 100;
+    const initVal = personalization.memoryRetention ?? 8;
+    retSlider.style.setProperty("--ret-pct", initPct + "%");
+    retSlider.style.setProperty("--ret-color", initVal > 12 ? "#f87171" : initVal > 10 ? "#fbbf24" : "#4d8fff");
   }
 
   // — Format —
