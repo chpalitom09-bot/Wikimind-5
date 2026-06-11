@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="settings5.css">
 <link rel="stylesheet" href="flashcards.css">
 <link rel="stylesheet" href="quiz.css">
-<link rel="stylesheet" href="schema.css">
 <link rel="stylesheet" href="pollination-popup.css">
 <link rel="stylesheet" href="sources.css">
 <link rel="stylesheet" href="statpopup.css">
@@ -3499,7 +3498,8 @@ async function loadModels() {
         mistral: data.apiKeys.mistral || "", 
         groq: gk,
         pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp",
-        cerebras: data.apiKeys.cerebras || ""
+        cerebras: data.apiKeys.cerebras || "",
+        aihorde: data.apiKeys.aihorde || ""
       };
     }
     const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
@@ -3549,12 +3549,13 @@ const PROVIDER_LOGOS = {
   pollinations: 'pollinationai.png',
   cerebras:     'cerebraslogo.png',
   openai:       'openailogo.png',
+  aihorde:      'aihorde.png',
 };
 
 function providerBadge(provider) {
   const src = PROVIDER_LOGOS[provider];
   if (!src) return "";
-  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras" };
+  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", aihorde:"AI Horde" };
   const logoImg = `<img src="${src}" alt="${provider}" width="12" height="12" style="flex-shrink:0;border-radius:2px;object-fit:contain;" onerror="this.style.display='none'">`;
   return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:600;letter-spacing:0.03em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:5px;padding:1px 5px 1px 3px;margin-left:4px;">${logoImg}${names[provider]||provider}</span>`;
 }
@@ -3599,26 +3600,46 @@ function buildMainDropdown() {
 
 // ── Build "Plus de modèles" sub-panel ───────────────────────────────────────
 function buildMorePanel() {
-  const moreModels = WIKIMIND_MODELS.filter(m => m.category === "more");
+  // Modèles image (catégorie dédiée)
+  const imageModels = WIKIMIND_MODELS.filter(m => m.category === "image");
+  const moreModels  = WIKIMIND_MODELS.filter(m => m.category === "more");
   const groups = { flash:[], small:[], medium:[], large:[] };
   moreModels.forEach(m => { if (groups[m.tier]) groups[m.tier].push(m); });
   const groupOrder = ["flash","small","medium","large"];
+
+  function modelRow(m) {
+    const sel = m.apiModel === selectedModel;
+    const mLogoHtml = m.logo ? `<img src="${m.logo}" alt="${m.provider}" width="14" height="14" style="flex-shrink:0;border-radius:3px;margin-right:4px;object-fit:contain;" onerror="this.replaceWith(document.createTextNode(''))">` : '';
+    return `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}" style="padding:10px 16px;">
+      <div class="model-opt-info">
+        <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
+          ${mLogoHtml}${m.displayName}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}
+        </div>
+        <div class="model-opt-desc" style="display:flex;align-items:center;gap:4px;">${providerBadge(m.provider)}${m.description}</div>
+      </div>${checkSVG()}</div>`;
+  }
+
   let html = `<div class="model-more-header">Plus de modèles</div>`;
+
+  // ── Section Images ──
+  if (imageModels.length) {
+    html += `<div style="padding:6px 16px 2px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Images IA
+      </span>
+    </div>`;
+    imageModels.forEach(m => { html += modelRow(m); });
+    html += `<div style="height:1px;background:var(--border);margin:6px 0;opacity:0.5;"></div>`;
+  }
+
+  // ── Section texte Flash→Large ──
   groupOrder.forEach(tier => {
     if (!groups[tier].length) return;
     html += `<div style="padding:6px 16px 2px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);">${TIER_LABELS[tier]||tier}</div>`;
-    groups[tier].forEach(m => {
-      const sel = m.apiModel === selectedModel;
-      const mLogoHtml = m.logo ? `<img src="${m.logo}" alt="${m.provider}" width="14" height="14" style="flex-shrink:0;border-radius:3px;margin-right:4px;object-fit:contain;" onerror="this.replaceWith(document.createTextNode(''))">` : '';
-      html += `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}" style="padding:10px 16px;">
-        <div class="model-opt-info">
-          <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
-            ${mLogoHtml}${m.displayName}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}
-          </div>
-          <div class="model-opt-desc" style="display:flex;align-items:center;gap:4px;">${providerBadge(m.provider)}${m.description}</div>
-        </div>${checkSVG()}</div>`;
-    });
+    groups[tier].forEach(m => { html += modelRow(m); });
   });
+
   modelMorePanel.innerHTML = html;
   modelMorePanel.querySelectorAll(".model-opt").forEach(opt => {
     opt.addEventListener("click", e => { e.stopPropagation(); applyModelById(opt.dataset.modelId); closeAllPopups(); });
@@ -4710,15 +4731,13 @@ async function sendMessage() {
 }
 
 // =============================================
-// IMAGE GENERATION (Pollinations AI)
+// IMAGE GENERATION (Pollinations + AI Horde)
 // =============================================
-// =============================================
-// IMAGE GENERATION (Pollinations AI)
-// =============================================
+
 function checkImageRateLimit(modelKey, limit) {
   const now = Date.now();
   const history = JSON.parse(localStorage.getItem('wm_img_usage_' + modelKey) || '[]');
-  const recent = history.filter(ts => now - ts < 3600000); // 1 heure
+  const recent = history.filter(ts => now - ts < 3600000);
   return recent.length < limit;
 }
 
@@ -4730,63 +4749,123 @@ function incrementImageUsage(modelKey) {
   localStorage.setItem('wm_img_usage_' + modelKey, JSON.stringify(recent));
 }
 
-// ── SOURCES DATA + buildSourcesBtn → sources.js (chargé en différé) ──
+// ── AI Horde : soumettre + poller jusqu'à terminé ──
+async function generateImageHorde(prompt, hordeModel) {
+  const apiKey = (WM_API_KEYS && WM_API_KEYS.aihorde) || "0000000000";
+  const payload = {
+    prompt: prompt,
+    params: {
+      sampler_name: "k_euler_a",
+      cfg_scale: 7,
+      steps: 30,
+      width: 512,
+      height: 512,
+      n: 1
+    },
+    models: [hordeModel],
+    r2: true,
+    nsfw: false,
+    censor_nsfw: true
+  };
+
+  // 1. Soumettre le job
+  const submitRes = await fetch("https://aihorde.net/api/v2/generate/async", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": apiKey, "Client-Agent": "Wikimind:1.0:contact" },
+    body: JSON.stringify(payload)
+  });
+  if (!submitRes.ok) {
+    const errText = await submitRes.text().catch(() => submitRes.status);
+    throw new Error(`AI Horde submit failed: ${submitRes.status} ${errText}`);
+  }
+  const { id: jobId } = await submitRes.json();
+  if (!jobId) throw new Error("AI Horde: pas d'ID de job retourné");
+
+  // 2. Poller le statut (max 3 min, toutes les 3s)
+  const deadline = Date.now() + 3 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 3000));
+    const statusRes = await fetch(`https://aihorde.net/api/v2/generate/check/${jobId}`, {
+      headers: { "Client-Agent": "Wikimind:1.0:contact" }
+    });
+    if (!statusRes.ok) continue;
+    const status = await statusRes.json();
+    if (status.done) {
+      // 3. Récupérer le résultat
+      const resultRes = await fetch(`https://aihorde.net/api/v2/generate/status/${jobId}`, {
+        headers: { "Client-Agent": "Wikimind:1.0:contact" }
+      });
+      if (!resultRes.ok) throw new Error(`AI Horde result fetch failed: ${resultRes.status}`);
+      const result = await resultRes.json();
+      const gen = result.generations?.[0];
+      if (!gen) throw new Error("AI Horde: aucune génération dans la réponse");
+      // L'URL est soit un lien R2, soit un webp base64
+      if (gen.img && gen.img.startsWith("http")) return gen.img;
+      if (gen.img) return "data:image/webp;base64," + gen.img;
+      throw new Error("AI Horde: format de réponse inattendu");
+    }
+    // Mettre à jour le message thinking avec le wait_time si dispo
+    if (status.wait_time > 0) {
+      const thinkEl = document.querySelector(".thinking-label");
+      if (thinkEl) thinkEl.textContent = `En attente (≈${status.wait_time}s restantes)…`;
+    }
+  }
+  throw new Error("AI Horde: timeout après 3 minutes");
+}
 
 async function generateImage(prompt, modelObj) {
-  const limit = modelObj.apiModel === 'gptimage-large' ? 10 : 100;
-  if (!checkImageRateLimit(modelObj.apiModel, limit)) {
-     toast(`Limite atteinte pour ce modèle (${limit} images / heure)`);
-     sendBtn.disabled = false;
-     return;
+  const rateKey  = modelObj.apiModel;
+  const rateLimit = modelObj.imageRateLimited ? 1 : (modelObj.apiModel === "gptimage-large" ? 10 : 100);
+  if (!checkImageRateLimit(rateKey, rateLimit)) {
+    toast(`Limite atteinte pour ce modèle (${rateLimit} image${rateLimit > 1 ? "s" : ""} / heure)`);
+    sendBtn.disabled = false;
+    return;
   }
 
   streaming = true;
   stopBtn.classList.add("on");
   sendBtn.disabled = true;
 
-  const aiMsgId = genId();
+  const aiMsgId  = genId();
   const aiMsgObj = {
-    role: "ai",
-    content: "",
-    msgId: aiMsgId,
-    model: selectedModel,
-    modelName: selectedModelName,
-    ts: Date.now(),
-    responseTime: null,
-    liked: 0,
-    isImage: true,
-    provider: "pollinations"
+    role: "ai", content: "", msgId: aiMsgId,
+    model: selectedModel, modelName: selectedModelName,
+    ts: Date.now(), responseTime: null, liked: 0,
+    isImage: true, provider: modelObj.provider || "pollinations"
   };
   messages.push(aiMsgObj);
 
-  // Afficher thinking bubble avec logo Pollinations
-  appendThinking({ name: "Pollinations AI", logo: "pollinationai.png" });
+  const providerLogo = modelObj.logo || (modelObj.provider === "aihorde" ? "aihorde.png" : "pollinationai.png");
+  const providerName = modelObj.provider === "aihorde" ? "AI Horde" : "Pollinations AI";
+  appendThinking({ name: providerName, logo: providerLogo });
 
   const start = Date.now();
-  const seed = Math.floor(Math.random() * 10000000);
-  
-  // Nettoyer le prompt
-  let cleanPrompt = prompt.split('### Fichier')[0].trim();
-  if(!cleanPrompt) cleanPrompt = "Une belle image créative";
-
-  // URL publique
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}`;
+  let cleanPrompt = prompt.split("### Fichier")[0].trim();
+  if (!cleanPrompt) cleanPrompt = "Une belle image créative";
 
   try {
-    // Précharger l'image
-    await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = resolve;
-      img.onerror = () => reject(new Error("Erreur chargement image"));
-      img.src = imageUrl;
-    });
+    let imageUrl;
+
+    if (modelObj.provider === "aihorde") {
+      // ── AI Horde (async polling) ──
+      imageUrl = await generateImageHorde(cleanPrompt, modelObj.hordeModel || modelObj.apiModel);
+    } else {
+      // ── Pollinations (URL directe) ──
+      const seed = Math.floor(Math.random() * 10000000);
+      imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}`;
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Erreur chargement image Pollinations"));
+        img.src = imageUrl;
+      });
+    }
 
     removeThinking();
     aiMsgObj.responseTime = Date.now() - start;
-    aiMsgObj.content = `![${escHtml(cleanPrompt)}](${imageUrl})`;
+    aiMsgObj.content  = `![${escHtml(cleanPrompt)}](${imageUrl})`;
     aiMsgObj.imageUrl = imageUrl;
 
-    // Créer le groupe message avec image + barre d'actions complète
     const g = document.createElement("div");
     g.className = "msg-group ai";
     g.dataset.msgId = aiMsgId;
@@ -4800,18 +4879,16 @@ async function generateImage(prompt, modelObj) {
     const imgEl = bubble.querySelector("img");
     if (imgEl) {
       imgEl.style.cursor = "zoom-in";
-      imgEl.addEventListener("click", () => window.open(imageUrl, '_blank'));
+      imgEl.addEventListener("click", () => window.open(imageUrl, "_blank"));
     }
 
     const meta = document.createElement("div");
     meta.className = "msg-meta";
     meta.innerHTML = `<span class="model-tag-sm">${selectedModelName}</span>`;
 
-    // Barre d'actions
     const actBar = document.createElement("div");
     actBar.className = "msg-actions";
 
-    // Copier
     const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier le lien");
     btnCopy.addEventListener("click", () => {
       navigator.clipboard.writeText(imageUrl).then(() => {
@@ -4820,34 +4897,26 @@ async function generateImage(prompt, modelObj) {
       });
     });
 
-    // Like
-    const btnLike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
+    const btnLike    = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`, "Utile");
     const btnDislike = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>`, "Pas utile");
-    btnLike.addEventListener("click", () => handleReaction(aiMsgObj, 1, btnLike, btnDislike, g));
+    btnLike.addEventListener("click",    () => handleReaction(aiMsgObj,  1, btnLike, btnDislike, g));
     btnDislike.addEventListener("click", () => handleReaction(aiMsgObj, -1, btnLike, btnDislike, g));
 
-    // Télécharger (bouton spécial pour les images)
     const btnDownload = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`, "Télécharger");
     btnDownload.addEventListener("click", async () => {
       try {
-        const res = await fetch(imageUrl);
+        const res  = await fetch(imageUrl);
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `wikimind-image-${seed}.png`;
-        a.click();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href = url; a.download = `wikimind-image-${Date.now()}.png`; a.click();
         URL.revokeObjectURL(url);
         toast("Image téléchargée !");
-      } catch {
-        window.open(imageUrl, '_blank');
-      }
+      } catch { window.open(imageUrl, "_blank"); }
     });
 
-    // Sources
-    const sourcesBtn = buildSourcesBtn(['pollinations']);
+    const sourcesBtn = buildSourcesBtn([modelObj.provider || "pollinations"]);
 
-    // Régénérer image
     const btnRegen = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`, "Régénérer");
     btnRegen.addEventListener("click", () => {
       const lastUser = [...messages].reverse().find(m => m.role === "user");
@@ -4859,7 +4928,6 @@ async function generateImage(prompt, modelObj) {
       }
     });
 
-    // Bouton info
     const btnInfo = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`, "Infos");
     const popup = document.createElement("div");
     popup.className = "msg-info-popup";
@@ -4880,30 +4948,23 @@ async function generateImage(prompt, modelObj) {
     messagesEl.appendChild(g);
     scrollBottom();
 
-    incrementImageUsage(modelObj.apiModel);
+    incrementImageUsage(rateKey);
     savePublicStat(aiMsgObj);
     if (userId && currentConvId) await saveConversation();
 
   } catch (err) {
     console.error("Erreur Image:", err);
-    // Supprimer le thinking
     removeThinking();
-
-    const imgErrCode = err.message?.match(/\b([345]\d{2})\b/)?.[1] || null;
-    const imgErrLabel = imgErrCode === '401' ? 'Clé API invalide (401)'
-      : imgErrCode === '429' ? 'Limite de requêtes atteinte (429)'
-      : imgErrCode === '500' ? 'Erreur serveur (500)'
-      : imgErrCode === '503' ? 'Service indisponible (503)'
-      : (err.message?.slice(0, 80) || 'Erreur inconnue');
-
-    // Mettre à jour le msgObj avec l'erreur (ne pas pop — on garde pour la sauvegarde)
-    aiMsgObj.imageError = true;
+    const imgErrCode  = err.message?.match(/\b([345]\d{2})\b/)?.[1] || null;
+    const imgErrLabel = imgErrCode === "401" ? "Clé API invalide (401)"
+      : imgErrCode === "429" ? "Limite de requêtes atteinte (429)"
+      : imgErrCode === "500" ? "Erreur serveur (500)"
+      : imgErrCode === "503" ? "Service indisponible (503)"
+      : (err.message?.slice(0, 80) || "Erreur inconnue");
+    aiMsgObj.imageError       = true;
     aiMsgObj.imageErrorDetail = imgErrLabel;
-    aiMsgObj.content = "";
-
-    // Afficher le message d'erreur dans le chat
+    aiMsgObj.content          = "";
     appendAIMsg(aiMsgObj);
-
     toast(`Génération d'image : ${imgErrLabel}`);
     if (userId && currentConvId) await saveConversation();
   } finally {
@@ -4913,7 +4974,6 @@ async function generateImage(prompt, modelObj) {
     scrollBottom();
   }
 }
-
 // =============================================
 // STREAM
 // =============================================
@@ -5016,8 +5076,7 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
                     (buildSystemPromptFromPersonalization() ? "INSTRUCTIONS PERSONNALISÉES: " + buildSystemPromptFromPersonalization() + "\n" : "") +
                     codeModeInstruction +
                     smartEditInstruction +
-                    systemExtra +
-                    (window._scSchemaEnabled && window._wmSchemaSystemPrompt ? window._wmSchemaSystemPrompt() : '')
+                    systemExtra
           },
           ...messages
             .filter(m => {
@@ -6625,9 +6684,6 @@ window.addEventListener('DOMContentLoaded', () => {
     <span id="pm-outils-badge" style="display:none;margin-left:6px;width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0"></span>
     <svg id="pm-outils-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="9 18 15 12 9 6"/></svg>
   </div>
-  <div id="pm-outils-sub" style="display:none;flex-direction:column;padding:4px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);animation:fadeDown 0.15s ease;">
-    <!-- Les outils s'injectent ici automatiquement -->
-  </div>
   <div class="pm-item" id="pm-workflows">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -6703,5 +6759,4 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="quiz.js" defer></script>
 <script src="sources.js" defer></script>
 <script src="statpopup.js" defer></script>
-<script src="schema.js" defer></script>
 </html>
