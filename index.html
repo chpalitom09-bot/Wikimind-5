@@ -12,6 +12,15 @@
 <link rel="stylesheet" href="pollination-popup.css">
 <link rel="stylesheet" href="sources.css">
 <link rel="stylesheet" href="statpopup.css">
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRFWS36RWJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RRFWS36RWJ');
+</script>
 <script src="pollination-popup.js" defer></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -5112,14 +5121,18 @@ async function generateImage(prompt, modelObj) {
   try {
     const seed  = Math.floor(Math.random() * 10000000);
     const token = (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&token=${token}`;
+    const apiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true`;
 
-    await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload  = resolve;
-      img.onerror = () => reject(new Error("Erreur chargement image Pollinations"));
-      img.src = imageUrl;
+    // Fetch avec Authorization header (Bearer token requis pour le tier Flower)
+    const resp = await fetch(apiUrl, {
+      headers: { "Authorization": `Bearer ${token}` }
     });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => resp.status);
+      throw new Error(`Pollinations error ${resp.status}: ${errText}`);
+    }
+    const blob = await resp.blob();
+    const imageUrl = URL.createObjectURL(blob);
 
     removeThinking();
     incrementImageUsage(rateKey);
