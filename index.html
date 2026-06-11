@@ -12,15 +12,6 @@
 <link rel="stylesheet" href="pollination-popup.css">
 <link rel="stylesheet" href="sources.css">
 <link rel="stylesheet" href="statpopup.css">
-  
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRFWS36RWJ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-RRFWS36RWJ');
-</script>
 <script src="pollination-popup.js" defer></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -3714,7 +3705,7 @@ let WM_API_KEYS = { mistral: "", groq: "", pollinations: "" };
 const IMAGE_RATE_LIMITS = {
   "flux":          222,   // ~0.4/0.0018 images Flux Schnell
   "gptimage-large": 5,    // 5 images GPT 1.5
-  "flux-kontext":  10     // 10 images Kontext
+  "kontext":       10     // 10 images Kontext
 };
 
 async function loadModels() {
@@ -5121,12 +5112,11 @@ async function generateImage(prompt, modelObj) {
   try {
     const seed  = Math.floor(Math.random() * 10000000);
     const token = (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
-    const apiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true`;
+    // Nouvel endpoint unifié gen.pollinations.ai — auth via ?key= (méthode browser recommandée)
+    const apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}`;
 
-    // Fetch avec Authorization header (Bearer token requis pour le tier Flower)
-    const resp = await fetch(apiUrl, {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
+    // fetch → blob → ObjectURL (évite les limites de new Image() et gère les erreurs HTTP)
+    const resp = await fetch(apiUrl);
     if (!resp.ok) {
       const errText = await resp.text().catch(() => resp.status);
       throw new Error(`Pollinations error ${resp.status}: ${errText}`);
