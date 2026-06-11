@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="settings5.css">
 <link rel="stylesheet" href="flashcards.css">
 <link rel="stylesheet" href="quiz.css">
+<link rel="stylesheet" href="schema.css">
 <link rel="stylesheet" href="pollination-popup.css">
 <link rel="stylesheet" href="sources.css">
 <link rel="stylesheet" href="statpopup.css">
@@ -5015,7 +5016,8 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
                     (buildSystemPromptFromPersonalization() ? "INSTRUCTIONS PERSONNALISÉES: " + buildSystemPromptFromPersonalization() + "\n" : "") +
                     codeModeInstruction +
                     smartEditInstruction +
-                    systemExtra
+                    systemExtra +
+                    (window._scSchemaEnabled && window._wmSchemaSystemPrompt ? window._wmSchemaSystemPrompt() : '')
           },
           ...messages
             .filter(m => {
@@ -6623,6 +6625,9 @@ window.addEventListener('DOMContentLoaded', () => {
     <span id="pm-outils-badge" style="display:none;margin-left:6px;width:7px;height:7px;border-radius:50%;background:#ec4899;flex-shrink:0"></span>
     <svg id="pm-outils-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;margin-left:auto;opacity:0.5;transition:transform 0.2s"><polyline points="9 18 15 12 9 6"/></svg>
   </div>
+  <div id="pm-outils-sub" style="display:none;flex-direction:column;padding:4px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);animation:fadeDown 0.15s ease;">
+    <!-- Les outils s'injectent ici automatiquement -->
+  </div>
   <div class="pm-item" id="pm-workflows">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -6698,4 +6703,5 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="quiz.js" defer></script>
 <script src="sources.js" defer></script>
 <script src="statpopup.js" defer></script>
+<script src="schema.js" defer></script>
 </html>
