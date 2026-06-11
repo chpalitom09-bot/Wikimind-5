@@ -3701,6 +3701,12 @@ function updateSendBtn() {
 // =============================================
 let WIKIMIND_MODELS = [];
 let WM_API_KEYS = { mistral: "", groq: "", pollinations: "" };
+// Rate limits par modèle image (images/heure)
+const IMAGE_RATE_LIMITS = {
+  "flux":          222,   // ~0.4/0.0018 images Flux Schnell
+  "gptimage-large": 5,    // 5 images GPT 1.5
+  "flux-kontext":  10     // 10 images Kontext
+};
 
 async function loadModels() {
   try {
@@ -3719,8 +3725,7 @@ async function loadModels() {
         mistral: data.apiKeys.mistral || "", 
         groq: gk,
         pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp",
-        cerebras: data.apiKeys.cerebras || "",
-        aihorde: data.apiKeys.aihorde || ""
+        cerebras: data.apiKeys.cerebras || ""
       };
     }
     const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
@@ -3770,13 +3775,12 @@ const PROVIDER_LOGOS = {
   pollinations: 'pollinationai.png',
   cerebras:     'cerebraslogo.png',
   openai:       'openailogo.png',
-  aihorde:      'aihorde.png',
 };
 
 function providerBadge(provider) {
   const src = PROVIDER_LOGOS[provider];
   if (!src) return "";
-  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", aihorde:"AI Horde" };
+  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras" };
   const logoImg = `<img src="${src}" alt="${provider}" width="12" height="12" style="flex-shrink:0;border-radius:2px;object-fit:contain;" onerror="this.style.display='none'">`;
   return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:600;letter-spacing:0.03em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:5px;padding:1px 5px 1px 3px;margin-left:4px;">${logoImg}${names[provider]||provider}</span>`;
 }
@@ -5051,7 +5055,7 @@ async function sendMessage() {
 }
 
 // =============================================
-// IMAGE GENERATION (Pollinations + AI Horde)
+// IMAGE GENERATION (Pollinations AI)
 // =============================================
 
 function checkImageRateLimit(modelKey, limit) {
@@ -5069,73 +5073,17 @@ function incrementImageUsage(modelKey) {
   localStorage.setItem('wm_img_usage_' + modelKey, JSON.stringify(recent));
 }
 
-// ── AI Horde : soumettre + poller jusqu'à terminé ──
-async function generateImageHorde(prompt, hordeModel) {
-  const apiKey = (WM_API_KEYS && WM_API_KEYS.aihorde) || "0000000000";
-  const payload = {
-    prompt: prompt,
-    params: {
-      sampler_name: "k_euler_a",
-      cfg_scale: 7,
-      steps: 30,
-      width: 512,
-      height: 512,
-      n: 1
-    },
-    models: [hordeModel],
-    r2: true,
-    nsfw: false,
-    censor_nsfw: true
-  };
-
-  // 1. Soumettre le job
-  const submitRes = await fetch("https://aihorde.net/api/v2/generate/async", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "apikey": apiKey, "Client-Agent": "Wikimind:1.0:contact" },
-    body: JSON.stringify(payload)
-  });
-  if (!submitRes.ok) {
-    const errText = await submitRes.text().catch(() => submitRes.status);
-    throw new Error(`AI Horde submit failed: ${submitRes.status} ${errText}`);
-  }
-  const { id: jobId } = await submitRes.json();
-  if (!jobId) throw new Error("AI Horde: pas d'ID de job retourné");
-
-  // 2. Poller le statut (max 3 min, toutes les 3s)
-  const deadline = Date.now() + 3 * 60 * 1000;
-  while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, 3000));
-    const statusRes = await fetch(`https://aihorde.net/api/v2/generate/check/${jobId}`, {
-      headers: { "Client-Agent": "Wikimind:1.0:contact" }
-    });
-    if (!statusRes.ok) continue;
-    const status = await statusRes.json();
-    if (status.done) {
-      // 3. Récupérer le résultat
-      const resultRes = await fetch(`https://aihorde.net/api/v2/generate/status/${jobId}`, {
-        headers: { "Client-Agent": "Wikimind:1.0:contact" }
-      });
-      if (!resultRes.ok) throw new Error(`AI Horde result fetch failed: ${resultRes.status}`);
-      const result = await resultRes.json();
-      const gen = result.generations?.[0];
-      if (!gen) throw new Error("AI Horde: aucune génération dans la réponse");
-      // L'URL est soit un lien R2, soit un webp base64
-      if (gen.img && gen.img.startsWith("http")) return gen.img;
-      if (gen.img) return "data:image/webp;base64," + gen.img;
-      throw new Error("AI Horde: format de réponse inattendu");
-    }
-    // Mettre à jour le message thinking avec le wait_time si dispo
-    if (status.wait_time > 0) {
-      const thinkEl = document.querySelector(".thinking-label");
-      if (thinkEl) thinkEl.textContent = `En attente (≈${status.wait_time}s restantes)…`;
-    }
-  }
-  throw new Error("AI Horde: timeout après 3 minutes");
+function getImageRateLimit(modelObj) {
+  // Priorité : hourlyLimit dans le modèle, sinon IMAGE_RATE_LIMITS, sinon fallback
+  if (modelObj.hourlyLimit) return modelObj.hourlyLimit;
+  if (IMAGE_RATE_LIMITS[modelObj.apiModel]) return IMAGE_RATE_LIMITS[modelObj.apiModel];
+  return 10; // fallback sécurisé
 }
 
 async function generateImage(prompt, modelObj) {
-  const rateKey  = modelObj.apiModel;
-  const rateLimit = modelObj.imageRateLimited ? 1 : (modelObj.apiModel === "gptimage-large" ? 10 : 100);
+  const rateKey   = modelObj.apiModel;
+  const rateLimit = getImageRateLimit(modelObj);
+
   if (!checkImageRateLimit(rateKey, rateLimit)) {
     toast(`Limite atteinte pour ce modèle (${rateLimit} image${rateLimit > 1 ? "s" : ""} / heure)`);
     sendBtn.disabled = false;
@@ -5151,37 +5099,30 @@ async function generateImage(prompt, modelObj) {
     role: "ai", content: "", msgId: aiMsgId,
     model: selectedModel, modelName: selectedModelName,
     ts: Date.now(), responseTime: null, liked: 0,
-    isImage: true, provider: modelObj.provider || "pollinations"
+    isImage: true, provider: "pollinations"
   };
   messages.push(aiMsgObj);
 
-  const providerLogo = modelObj.logo || (modelObj.provider === "aihorde" ? "aihorde.png" : "pollinationai.png");
-  const providerName = modelObj.provider === "aihorde" ? "AI Horde" : "Pollinations AI";
-  appendThinking({ name: providerName, logo: providerLogo });
+  appendThinking({ name: "Pollinations AI", logo: "pollinationai.png" });
 
   const start = Date.now();
   let cleanPrompt = prompt.split("### Fichier")[0].trim();
   if (!cleanPrompt) cleanPrompt = "Une belle image créative";
 
   try {
-    let imageUrl;
+    const seed  = Math.floor(Math.random() * 10000000);
+    const token = (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&token=${token}`;
 
-    if (modelObj.provider === "aihorde") {
-      // ── AI Horde (async polling) ──
-      imageUrl = await generateImageHorde(cleanPrompt, modelObj.hordeModel || modelObj.apiModel);
-    } else {
-      // ── Pollinations (URL directe) ──
-      const seed = Math.floor(Math.random() * 10000000);
-      imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}`;
-      await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("Erreur chargement image Pollinations"));
-        img.src = imageUrl;
-      });
-    }
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload  = resolve;
+      img.onerror = () => reject(new Error("Erreur chargement image Pollinations"));
+      img.src = imageUrl;
+    });
 
     removeThinking();
+    incrementImageUsage(rateKey);
     aiMsgObj.responseTime = Date.now() - start;
     aiMsgObj.content  = `![${escHtml(cleanPrompt)}](${imageUrl})`;
     aiMsgObj.imageUrl = imageUrl;
