@@ -1,18 +1,14 @@
 {
   "version": "5.2",
   "defaultModel": "wm-small-5.1",
-  "imageRateLimit": {
-    "maxPerHour": 1,
-    "scope": "ip",
-    "note": "1 image par IP par heure pour les modèles image"
-  },
   "apiKeys": {
     "mistral": "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj",
     "groq_p1": "gsk_wHXg87k3ELkt4D3b",
     "groq_p2": "DP73WGdyb3FYGPxjnic",
     "groq_p3": "bCl9eWCGO6aRhA8xs",
     "pollinations": "pk_1VvLXqXe93VF4x0M",
-    "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55"
+    "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55",
+    "aihorde": "pQFQp3W1MvTcIlKhOUoWvg"
   },
   "models": [
     {
@@ -46,21 +42,6 @@
       "logo": "mistrallogo.png"
     },
     {
-      "id": "wm-large-5.1",
-      "displayName": "Large 5.1",
-      "apiModel": "mistral-large-latest",
-      "tier": "large",
-      "category": "main",
-      "description": "Puissant, tâches complexes",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
       "id": "wm-code-5.1",
       "displayName": "Code 5.1",
       "apiModel": "codestral-latest",
@@ -77,19 +58,51 @@
       "logo": "mistrallogo.png"
     },
     {
+      "id": "wm-large-5.1",
+      "displayName": "Large 5.1",
+      "apiModel": "mistral-large-latest",
+      "tier": "large",
+      "category": "main",
+      "description": "Puissant, tâches complexes",
+      "provider": "mistral",
+      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 32768,
+      "contextWindow": 131072,
+      "logo": "mistrallogo.png"
+    },
+    {
       "id": "wm-image-flux",
       "displayName": "Flux Schnell",
       "apiModel": "flux",
       "tier": "flash",
       "category": "image",
-      "description": "Images ultra-rapides · Limite : 1/h par IP",
+      "description": "Images ultra-rapides (Limite: 100/h)",
       "provider": "pollinations",
       "apiEndpoint": "https://image.pollinations.ai/prompt/",
       "supportsVision": false,
       "supportsStreaming": false,
       "isImageModel": true,
+      "logo": "pollinationai.png",
+      "imageRateLimited": true
+    },
+    {
+      "id": "wm-image-horde-sdxl",
+      "displayName": "SDXL (AI Horde)",
+      "apiModel": "wm-image-horde-sdxl",
+      "hordeModel": "SDXL 1.0",
+      "tier": "medium",
+      "category": "image",
+      "description": "Stable Diffusion XL via AI Horde · Limite : 1/h par IP",
+      "provider": "aihorde",
+      "apiEndpoint": "https://aihorde.net/api/v2/generate/async",
+      "supportsVision": false,
+      "supportsStreaming": false,
+      "isImageModel": true,
       "imageRateLimited": true,
-      "logo": "pollinationai.png"
+      "asyncPolling": true,
+      "logo": "aihorde.png"
     },
     {
       "id": "wm-image-gpt-large",
@@ -97,29 +110,31 @@
       "apiModel": "gptimage-large",
       "tier": "large",
       "category": "image",
-      "description": "GPT Image large · Limite : 1/h par IP",
+      "description": "Génération d'images (Limite: 10/h)",
       "provider": "pollinations",
       "apiEndpoint": "https://image.pollinations.ai/prompt/",
       "supportsVision": false,
       "supportsStreaming": false,
       "isImageModel": true,
-      "imageRateLimited": true,
-      "logo": "pollinationai.png"
+      "logo": "pollinationai.png",
+      "imageRateLimited": true
     },
     {
-      "id": "wm-flash-groq-llama-instant",
-      "displayName": "Flash 1.0",
-      "apiModel": "llama-3.1-8b-instant",
-      "tier": "flash",
-      "category": "more",
-      "description": "Ultra-rapide, réponses instantanées",
-      "provider": "groq",
-      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "id": "wm-image-horde-flux",
+      "displayName": "Flux (AI Horde)",
+      "apiModel": "wm-image-horde-flux",
+      "hordeModel": "Flux.1-Dev",
+      "tier": "large",
+      "category": "image",
+      "description": "Flux.1-Dev via AI Horde · Limite : 1/h par IP",
+      "provider": "aihorde",
+      "apiEndpoint": "https://aihorde.net/api/v2/generate/async",
       "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 8192,
-      "contextWindow": 131072,
-      "logo": "groqlogo.png"
+      "supportsStreaming": false,
+      "isImageModel": true,
+      "imageRateLimited": true,
+      "asyncPolling": true,
+      "logo": "aihorde.png"
     },
     {
       "id": "wm-flash-1.1",
@@ -195,6 +210,21 @@
       "maxTokens": 32768,
       "contextWindow": 131072,
       "logo": "mistrallogo.png"
+    },
+    {
+      "id": "wm-flash-groq-llama-instant",
+      "displayName": "Flash 1.0",
+      "apiModel": "llama-3.1-8b-instant",
+      "tier": "flash",
+      "category": "more",
+      "description": "Ultra-rapide, réponses instantanées",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072,
+      "logo": "groqlogo.png"
     },
     {
       "id": "wm-small-4.7",
@@ -332,6 +362,21 @@
       "logo": "mistrallogo.png"
     },
     {
+      "id": "wm-compound-mini-1.0",
+      "displayName": "Compound Mini",
+      "apiModel": "compound-mini",
+      "tier": "medium",
+      "category": "more",
+      "description": "Groq Compound Mini, léger avec web search",
+      "provider": "groq",
+      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "supportsVision": false,
+      "supportsStreaming": true,
+      "maxTokens": 8192,
+      "contextWindow": 131072,
+      "logo": "groqlogo.png"
+    },
+    {
       "id": "wm-medium-4.9",
       "displayName": "Medium 4.9",
       "apiModel": "open-mixtral-8x7b",
@@ -437,12 +482,12 @@
       "logo": "mistrallogo.png"
     },
     {
-      "id": "wm-compound-mini-1.0",
-      "displayName": "Compound Mini",
-      "apiModel": "compound-mini",
-      "tier": "medium",
+      "id": "wm-compound-1.0",
+      "displayName": "Compound 1.0",
+      "apiModel": "compound",
+      "tier": "large",
       "category": "more",
-      "description": "Groq Compound Mini, léger avec web search",
+      "description": "Groq Compound, recherche web intégrée",
       "provider": "groq",
       "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
       "supportsVision": false,
@@ -472,14 +517,13 @@
       "apiModel": "codestral-latest",
       "tier": "large",
       "category": "more",
-      "description": "Codestral latest, 80+ langages",
+      "description": "Spécialisé code, 80+ langages",
       "provider": "mistral",
       "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
       "supportsVision": false,
       "supportsStreaming": true,
       "maxTokens": 32768,
       "contextWindow": 262144,
-      "isCodeModel": true,
       "logo": "mistrallogo.png"
     },
     {
@@ -588,21 +632,11 @@
       "contextWindow": 131072,
       "isCodeModel": true,
       "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-compound-1.0",
-      "displayName": "Compound 1.0",
-      "apiModel": "compound",
-      "tier": "large",
-      "category": "more",
-      "description": "Groq Compound, recherche web intégrée",
-      "provider": "groq",
-      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 8192,
-      "contextWindow": 131072,
-      "logo": "groqlogo.png"
     }
-  ]
+  ],
+  "imageRateLimit": {
+    "maxPerHour": 1,
+    "scope": "ip",
+    "note": "1 image par IP par heure pour les modèles image"
+  }
 }
