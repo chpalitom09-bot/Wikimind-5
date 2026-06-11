@@ -6,9 +6,8 @@
     "groq_p1": "gsk_wHXg87k3ELkt4D3b",
     "groq_p2": "DP73WGdyb3FYGPxjnic",
     "groq_p3": "bCl9eWCGO6aRhA8xs",
-    "pollinations": "pk_1VvLXqXe93VF4x0M",
-    "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55",
-    "aihorde": "pQFQp3W1MvTcIlKhOUoWvg"
+    "pollinations": "pk_w6wnuGBObh7FeHwp",
+    "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55"
   },
   "models": [
     {
@@ -78,31 +77,15 @@
       "apiModel": "flux",
       "tier": "flash",
       "category": "image",
-      "description": "Images ultra-rapides (Limite: 100/h)",
+      "description": "Images ultra-rapides (Limite: ~222/h)",
       "provider": "pollinations",
       "apiEndpoint": "https://image.pollinations.ai/prompt/",
       "supportsVision": false,
       "supportsStreaming": false,
       "isImageModel": true,
       "logo": "pollinationai.png",
-      "imageRateLimited": true
-    },
-    {
-      "id": "wm-image-horde-sdxl",
-      "displayName": "SDXL (AI Horde)",
-      "apiModel": "wm-image-horde-sdxl",
-      "hordeModel": "SDXL 1.0",
-      "tier": "medium",
-      "category": "image",
-      "description": "Stable Diffusion XL via AI Horde · Limite : 1/h par IP",
-      "provider": "aihorde",
-      "apiEndpoint": "https://aihorde.net/api/v2/generate/async",
-      "supportsVision": false,
-      "supportsStreaming": false,
-      "isImageModel": true,
-      "imageRateLimited": true,
-      "asyncPolling": true,
-      "logo": "aihorde.png"
+      "imageRateLimited": false,
+      "hourlyLimit": 222
     },
     {
       "id": "wm-image-gpt-large",
@@ -110,31 +93,31 @@
       "apiModel": "gptimage-large",
       "tier": "large",
       "category": "image",
-      "description": "Génération d'images (Limite: 10/h)",
+      "description": "Génération d'images haute qualité (Limite: 5/h)",
       "provider": "pollinations",
       "apiEndpoint": "https://image.pollinations.ai/prompt/",
       "supportsVision": false,
       "supportsStreaming": false,
       "isImageModel": true,
       "logo": "pollinationai.png",
-      "imageRateLimited": true
+      "imageRateLimited": false,
+      "hourlyLimit": 5
     },
     {
-      "id": "wm-image-horde-flux",
-      "displayName": "Flux (AI Horde)",
-      "apiModel": "wm-image-horde-flux",
-      "hordeModel": "Flux.1-Dev",
+      "id": "wm-image-kontext",
+      "displayName": "Kontext",
+      "apiModel": "flux-kontext",
       "tier": "large",
       "category": "image",
-      "description": "Flux.1-Dev via AI Horde · Limite : 1/h par IP",
-      "provider": "aihorde",
-      "apiEndpoint": "https://aihorde.net/api/v2/generate/async",
+      "description": "FLUX.1 Kontext · Édition contextuelle (Limite: 10/h)",
+      "provider": "pollinations",
+      "apiEndpoint": "https://image.pollinations.ai/prompt/",
       "supportsVision": false,
       "supportsStreaming": false,
       "isImageModel": true,
-      "imageRateLimited": true,
-      "asyncPolling": true,
-      "logo": "aihorde.png"
+      "hourlyLimit": 10,
+      "imageRateLimited": false,
+      "logo": "pollinationai.png"
     },
     {
       "id": "wm-flash-1.1",
@@ -635,8 +618,7 @@
     }
   ],
   "imageRateLimit": {
-    "maxPerHour": 1,
-    "scope": "ip",
-    "note": "1 image par IP par heure pour les modèles image"
+    "note": "Limites par modèle : flux ~222/h, gptimage 5/h, kontext 10/h",
+    "scope": "local"
   }
 }
