@@ -88,6 +88,26 @@
       "hourlyLimit": 222
     },
     {
+      "id": "wm-image-gpt",
+      "displayName": "GPT Image",
+      "apiModel": "gptimage",
+      "tier": "medium",
+      "category": "image",
+      "description": "Génération d'images GPT (Limite: 5/h)",
+      "provider": "pollinations",
+      "apiEndpoint": "https://gen.pollinations.ai/image/",
+      "supportsVision": false,
+      "supportsStreaming": false,
+      "isImageModel": true,
+      "hourlyLimit": 5,
+      "imageRateLimited": false,
+      "logo": "pollinationai.png",
+      "sourceProviders": [
+        "pollinations",
+        "openai"
+      ]
+    },
+    {
       "id": "wm-image-gpt-large",
       "displayName": "GPT 1.5 Image",
       "apiModel": "gptimage-large",
@@ -101,7 +121,11 @@
       "isImageModel": true,
       "logo": "pollinationai.png",
       "imageRateLimited": false,
-      "hourlyLimit": 5
+      "hourlyLimit": 5,
+      "sourceProviders": [
+        "pollinations",
+        "openai"
+      ]
     },
     {
       "id": "wm-image-kontext",
@@ -618,7 +642,7 @@
     }
   ],
   "imageRateLimit": {
-    "note": "Limites par modèle : flux ~222/h, gptimage 5/h, kontext 10/h",
+    "note": "Limites par modèle : flux ~222/h, gptimage 5/h, gptimage-large 5/h, kontext 10/h",
     "scope": "local"
   }
 }
