@@ -739,6 +739,121 @@ body:not(.chat-empty-state) #welcome-screen {
 
 /* Sources button styles → sources.css */
 
+/* ========== TRANSLATION POPUP ========== */
+.translate-lang-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  display: none;
+  min-width: 160px;
+  animation: fadeUp2 0.12s ease;
+}
+.translate-lang-popup.open {
+  display: block;
+}
+.translate-lang-header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.translate-lang-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text2);
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.translate-lang-item:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+.translate-lang-item .lang-flag {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+/* Translation result block */
+.translate-result-block {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(77,143,255,0.06);
+  border: 1px solid rgba(77,143,255,0.18);
+  border-radius: 10px;
+  font-size: 0.84rem;
+  color: var(--text2);
+  line-height: 1.6;
+  position: relative;
+}
+.translate-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.translate-result-lang-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4d8fff;
+  background: rgba(77,143,255,0.1);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.translate-result-close {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.translate-result-close:hover { background: var(--bg3); color: var(--text); }
+.translate-result-close svg { width: 10px; height: 10px; }
+.translate-result-text { color: var(--text); line-height: 1.6; }
+.translate-loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.translate-loading-dots span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #4d8fff;
+  opacity: 0.4;
+  animation: tld 1.2s ease-in-out infinite;
+}
+.translate-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.translate-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tld {
+  0%, 80%, 100% { opacity: 0.4; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+.act-btn.translating { color: #4d8fff; }
+
+
 /* ── WM Image Animation ── */
 .wm-img-anim-wrap {
   width: 100%;
@@ -4462,7 +4577,105 @@ function appendAIMsg(msgObj, isStreaming = false) {
       popup.classList.toggle("open");
     });
 
-    actBar.append(btnCopy, btnLike, btnDislike, btnRegen, btnInfo);
+    // ── Bouton Traduction ──
+    const btnTranslate = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>`, "Traduire");
+    const translatePopup = document.createElement("div");
+    translatePopup.className = "translate-lang-popup";
+    const LANG_OPTIONS = [
+      { code: "fr", label: "Français", flag: "🇫🇷" },
+      { code: "en", label: "Anglais", flag: "🇬🇧" },
+      { code: "es", label: "Espagnol", flag: "🇪🇸" },
+      { code: "it", label: "Italien", flag: "🇮🇹" },
+      { code: "de", label: "Allemand", flag: "🇩🇪" },
+    ];
+    translatePopup.innerHTML = `
+      <div class="translate-lang-header">Traduire en</div>
+      ${LANG_OPTIONS.map(l => `<div class="translate-lang-item" data-lang="${l.code}" data-label="${l.label}">
+        <span class="lang-flag">${l.flag}</span>${l.label}
+      </div>`).join("")}
+    `;
+    btnTranslate.style.position = "relative";
+    btnTranslate.appendChild(translatePopup);
+    btnTranslate.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".translate-lang-popup.open").forEach(p => { if (p !== translatePopup) p.classList.remove("open"); });
+      document.querySelectorAll(".msg-info-popup.open").forEach(p => p.classList.remove("open"));
+      translatePopup.classList.toggle("open");
+    });
+    translatePopup.querySelectorAll(".translate-lang-item").forEach(item => {
+      item.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        translatePopup.classList.remove("open");
+        const targetLang = item.dataset.label;
+        const targetCode = item.dataset.lang;
+        // Remove existing translation block if any
+        const existingBlock = inner.querySelector(".translate-result-block");
+        if (existingBlock) existingBlock.remove();
+        // Si langue = fr (langue source), juste supprimer la traduction
+        if (targetCode === "fr") return;
+        btnTranslate.classList.add("translating");
+        // Bloc de chargement
+        const resultBlock = document.createElement("div");
+        resultBlock.className = "translate-result-block";
+        resultBlock.innerHTML = `
+          <div class="translate-result-header">
+            <span class="translate-result-lang-badge">${item.querySelector('.lang-flag').textContent} ${targetLang}</span>
+          </div>
+          <div class="translate-loading-dots"><span></span><span></span><span></span></div>
+        `;
+        inner.insertBefore(resultBlock, actBar);
+        scrollBottom();
+        // Appel API
+        const sourceText = msgObj.content || bubble.innerText || "";
+        const translateModel = msgObj.model || selectedModel;
+        const translateProvider = msgObj.provider || "mistral";
+        try {
+          const systemPrompt = `Tu es un traducteur professionnel. Traduis le texte fourni en ${targetLang}. Réponds UNIQUEMENT avec la traduction, sans explication ni commentaire. Conserve le formatage Markdown si présent.`;
+          let translatedText = "";
+          if (translateProvider === "groq") {
+            const _groqKey = _gk || WM_API_KEYS.groq;
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${_groqKey}` },
+              body: JSON.stringify({ model: translateModel, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: sourceText }], max_tokens: 2048, temperature: 0.2 })
+            });
+            const groqData = await groqRes.json();
+            translatedText = groqData.choices?.[0]?.message?.content || "Erreur de traduction.";
+          } else {
+            const _mistralKey = WM_API_KEYS.mistral || KEY;
+            const mistralRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${_mistralKey}` },
+              body: JSON.stringify({ model: translateModel, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: sourceText }], max_tokens: 2048, temperature: 0.2 })
+            });
+            const mistralData = await mistralRes.json();
+            translatedText = mistralData.choices?.[0]?.message?.content || "Erreur de traduction.";
+          }
+          resultBlock.innerHTML = `
+            <div class="translate-result-header">
+              <span class="translate-result-lang-badge">${item.querySelector('.lang-flag').textContent} ${targetLang}</span>
+              <button class="translate-result-close" title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="translate-result-text">${renderContent(translatedText)}</div>
+          `;
+          resultBlock.querySelector(".translate-result-close").addEventListener("click", () => resultBlock.remove());
+          if (window.WMCharts) window.WMCharts.renderAll(resultBlock);
+        } catch(err) {
+          resultBlock.innerHTML = `
+            <div class="translate-result-header">
+              <span class="translate-result-lang-badge">${targetLang}</span>
+              <button class="translate-result-close" title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="color:#f87171;font-size:0.8rem">Erreur : ${escHtml(err.message)}</div>
+          `;
+          resultBlock.querySelector(".translate-result-close").addEventListener("click", () => resultBlock.remove());
+        }
+        btnTranslate.classList.remove("translating");
+        scrollBottom();
+      });
+    });
+
+    actBar.append(btnCopy, btnTranslate, btnLike, btnDislike, btnRegen, btnInfo);
 
     // Sources button — résolution dynamique via sources.js
     const sourcesKeys = window.resolveMsgSources
@@ -4499,6 +4712,7 @@ function buildInfoPopup(popup, msgObj) {
 
 document.addEventListener("click", () => {
   document.querySelectorAll(".msg-info-popup.open").forEach(p => p.classList.remove("open"));
+  document.querySelectorAll(".translate-lang-popup.open").forEach(p => p.classList.remove("open"));
 });
 
 // =============================================
