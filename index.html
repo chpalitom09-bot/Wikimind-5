@@ -5141,26 +5141,72 @@ async function generateImage(prompt, modelObj) {
   let cleanPrompt = prompt.split("### Fichier")[0].trim();
   if (!cleanPrompt) cleanPrompt = "Une belle image créative";
 
+  // ── Contexte conversationnel ──────────────────────────────────────────
+  // On remonte les N derniers échanges image pour enrichir le prompt
+  const MAX_CTX = 4;
+  const ctxMsgs = messages
+    .filter(m => m.msgId !== aiMsgId)            // exclure le message en cours
+    .slice(-MAX_CTX * 2);                         // user + ai alternés
+  const ctxLines = [];
+  for (const m of ctxMsgs) {
+    if (m.role === "user") ctxLines.push(`User: ${m.content}`);
+    else if (m.role === "ai" && m.isImage) ctxLines.push(`AI: [image générée]`);
+    else if (m.role === "ai" && m.content) ctxLines.push(`AI: ${m.content.slice(0, 120)}`);
+  }
+  // N'enrichir que s'il y a vraiment un historique pertinent
+  let finalPrompt = cleanPrompt;
+  if (ctxLines.length > 0) {
+    finalPrompt = `[Contexte: ${ctxLines.join(" | ")}] ${cleanPrompt}`;
+  }
+
   try {
     const seed  = Math.floor(Math.random() * 10000000);
     const token = (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
+    const baseParams = `model=${modelObj.apiModel}&seed=${seed}&private=true&key=${token}`;
 
-    // Kontext : support édition d'image via image_url param
+    // ── Kontext : édition d'image (upload → URL → &image=) ────────────
     let apiUrl;
     if (modelObj.isImageEditModel && attachedFiles && attachedFiles.length > 0) {
       const imgFile = attachedFiles.find(f => f.isImage && f.content && f.content._isImage);
       if (imgFile) {
-        const base64Url = imgFile.content.base64; // data:image/...;base64,...
-        apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}&image_url=${encodeURIComponent(base64Url)}`;
+        appendThinking({ name: "Upload en cours…", logo: "pollinationai.png" });
+        // 1. Convertir base64 → Blob et uploader sur Pollinations
+        const base64Data = imgFile.content.base64; // "data:image/...;base64,..."
+        const [header, b64] = base64Data.split(",");
+        const mime = header.match(/:(.*?);/)[1];
+        const byteChars = atob(b64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        const imgBlob = new Blob([byteArr], { type: mime });
+        const ext = mime.split("/")[1] || "png";
+
+        const formData = new FormData();
+        formData.append("file", imgBlob, `wikimind-edit.${ext}`);
+
+        const uploadResp = await fetch("https://gen.pollinations.ai/upload", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` },
+          body: formData
+        });
+        if (!uploadResp.ok) {
+          const errTxt = await uploadResp.text().catch(() => uploadResp.status);
+          throw new Error(`Upload image échoué (${uploadResp.status}): ${errTxt}`);
+        }
+        const uploadData = await uploadResp.json();
+        const remoteUrl = uploadData.url || uploadData.uri || uploadData.link;
+        if (!remoteUrl) throw new Error("Upload OK mais URL manquante dans la réponse");
+
+        // 2. Appel Kontext avec l'URL distante
+        apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?${baseParams}&image=${encodeURIComponent(remoteUrl)}`;
       } else {
-        apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}`;
+        // Kontext sans image jointe → génération normale
+        apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(finalPrompt)}?${baseParams}`;
       }
     } else {
-      // Nouvel endpoint unifié gen.pollinations.ai — auth via ?key= (méthode browser recommandée)
-      apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}`;
+      apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(finalPrompt)}?${baseParams}`;
     }
 
-    // fetch → blob → ObjectURL (évite les limites de new Image() et gère les erreurs HTTP)
+    // fetch → blob → ObjectURL
     const resp = await fetch(apiUrl);
     if (!resp.ok) {
       const errText = await resp.text().catch(() => resp.status);
@@ -5257,7 +5303,6 @@ async function generateImage(prompt, modelObj) {
     messagesEl.appendChild(g);
     scrollBottom();
 
-    incrementImageUsage(rateKey);
     savePublicStat(aiMsgObj);
     if (userId && currentConvId) await saveConversation();
 
@@ -7123,6 +7168,42 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="flashcards.js" defer></script>
 <script src="quiz.js" defer></script>
 <script src="sources.js" defer></script>
+<script defer>
+// ── Patch sources.js : ajout du provider Black Forest Labs ──────────────
+// Exécuté après sources.js (defer guarantees order)
+document.addEventListener('DOMContentLoaded', () => {
+  // Tenter d'injecter dans la map interne de buildSourcesBtn si exposée
+  if (window.WM_PROVIDER_MAP) {
+    window.WM_PROVIDER_MAP['blackforestlabs'] = {
+      name: 'Black Forest Labs',
+      logo: 'blackforestlabs.png',
+      url:  'https://blackforestlabs.ai'
+    };
+  }
+  // Patch de fallback : wrapper buildSourcesBtn pour ajouter le logo BFL
+  const _origBuildSourcesBtn = window.buildSourcesBtn;
+  if (typeof _origBuildSourcesBtn === 'function') {
+    window.buildSourcesBtn = function(providers) {
+      // Normaliser les noms pour que "blackforestlabs" soit reconnu
+      const btn = _origBuildSourcesBtn(providers);
+      if (!btn) return btn;
+      // Si BFL est dans la liste et pas encore rendu, l'ajouter manuellement
+      if (providers && providers.includes('blackforestlabs')) {
+        const alreadyHasBFL = btn.querySelector('[data-provider="blackforestlabs"]') ||
+                              btn.innerHTML.includes('blackforestlabs');
+        if (!alreadyHasBFL) {
+          const bflChip = document.createElement('span');
+          bflChip.setAttribute('data-provider', 'blackforestlabs');
+          bflChip.style.cssText = 'display:inline-flex;align-items:center;gap:3px;font-size:0.62rem;font-weight:600;letter-spacing:0.02em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.55);border-radius:5px;padding:1px 6px 1px 3px;margin-left:3px;';
+          bflChip.innerHTML = `<img src="blackforestlabs.png" alt="BFL" width="12" height="12" style="border-radius:2px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">Black Forest Labs`;
+          btn.appendChild(bflChip);
+        }
+      }
+      return btn;
+    };
+  }
+});
+</script>
 <script src="statpopup.js" defer></script>
 <link rel="stylesheet" href="forfait.css">
 <script src="forfait.js" defer></script>
