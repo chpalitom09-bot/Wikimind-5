@@ -5,11 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wikimind — Statistiques des modèles</title>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-
-<!-- Chart.js -->
+<!-- Chart.js (non-module, dispo globalement) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
 <style>
@@ -542,18 +538,21 @@
 
 </div>
 
-<script>
+<script type="module">
+import { initializeApp }                    from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getDatabase, ref, get }            from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+
 // ═══════════════════════════════════════════
 // CONFIG FIREBASE
 // ═══════════════════════════════════════════
 const FB_CONFIG = {
-  apiKey:            "AIzaSyCq50VVOEaGqz3LLt0rGG3RJQG23PVxrS0",
+  apiKey:            "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
   authDomain:        "wikimind-3-comments.firebaseapp.com",
-  databaseURL:       "https://wikimind-3-comments-default-rtdb.firebaseio.com",
+  databaseURL:       "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
   projectId:         "wikimind-3-comments",
-  storageBucket:     "wikimind-3-comments.appspot.com",
-  messagingSenderId: "823452217152",
-  appId:             "1:823452217152:web:b2e8bd9ae9d3b7f5a49bdc"
+  storageBucket:     "wikimind-3-comments.firebasestorage.app",
+  messagingSenderId: "137479541640",
+  appId:             "1:137479541640:web:4ed2510a9908055052e03d"
 };
 
 // Modèles connus (depuis models.json — texte uniquement pour cette page standalone)
@@ -613,15 +612,10 @@ let _stats     = [];
 let _charts    = {};
 
 // ═══════════════════════════════════════════
-// FIREBASE
+// FIREBASE (modular v12)
 // ═══════════════════════════════════════════
-let _db = null;
-function initFirebase() {
-  if (_db) return _db;
-  if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-  _db = firebase.database();
-  return _db;
-}
+const _app = initializeApp(FB_CONFIG);
+const _db  = getDatabase(_app);
 
 async function loadData() {
   const btn = document.getElementById('refresh-btn');
@@ -629,8 +623,7 @@ async function loadData() {
   setLoading(true);
 
   try {
-    const db = initFirebase();
-    const snap = await db.ref('wikimind5_public_stats').get();
+    const snap = await get(ref(_db, 'wikimind5_public_stats'));
     _rawData = snap.exists() ? snap.val() : {};
     _stats = computeStats(_rawData);
     renderAll();
@@ -643,6 +636,11 @@ async function loadData() {
     btn.classList.remove('loading');
   }
 }
+
+// Expose pour les onclick HTML
+window.loadData    = loadData;
+window.switchTab   = switchTab;
+window.renderComparator = renderComparator;
 
 // ═══════════════════════════════════════════
 // CALCUL
@@ -1179,6 +1177,6 @@ function switchTab(id) {
 // INIT
 // ═══════════════════════════════════════════
 loadData();
-</script>
+</script> <!-- end type="module" -->
 </body>
 </html>
