@@ -85,7 +85,8 @@
       "isImageModel": true,
       "logo": "pollinationai.png",
       "imageRateLimited": false,
-      "hourlyLimit": 222
+      "hourlyLimit": 222,
+      "sourceProviders": ["pollinations", "blackforestlabs"]
     },
     {
       "id": "wm-image-gpt",
@@ -139,9 +140,12 @@
       "supportsVision": false,
       "supportsStreaming": false,
       "isImageModel": true,
+      "isImageEditModel": true,
+      "supportsImageInput": true,
       "hourlyLimit": 10,
       "imageRateLimited": false,
-      "logo": "pollinationai.png"
+      "logo": "pollinationai.png",
+      "sourceProviders": ["pollinations", "blackforestlabs"]
     },
     {
       "id": "wm-flash-1.1",
