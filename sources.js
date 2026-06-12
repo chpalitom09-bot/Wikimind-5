@@ -55,6 +55,14 @@ const PROVIDER_SOURCES = {
     badge: "GPT",
     badgeClass: "sources-badge-openai"
   },
+  blackforestlabs: {
+    name: "Black Forest Labs",
+    logo: "blackforestlabs.png",
+    url: "https://blackforestlabs.ai/",
+    desc: "FLUX — modèles de génération d'images",
+    badge: "FLUX",
+    badgeClass: "sources-badge-bfl"
+  },
   wikipedia: {
     name: "Wikipedia",
     logo: "wikipedialogo.png",
@@ -67,6 +75,9 @@ const PROVIDER_SOURCES = {
 
 // Modèles qui ajoutent la source "openai"
 const OPENAI_MODEL_IDS = ["wm-image-gpt-large", "wm-large-5.6"];
+
+// Modèles qui ajoutent la source "blackforestlabs"
+const BFL_MODEL_IDS = ["wm-image-flux", "wm-image-kontext"];
 
 // ── 2. CLÉS API ──────────────────────────────────────────────────────────────
 
@@ -210,6 +221,7 @@ function resolveMsgSources(msgObj) {
 
   const modelId = msgObj.modelId || "";
   if (OPENAI_MODEL_IDS.includes(modelId) && !sources.includes("openai")) sources.push("openai");
+  if (BFL_MODEL_IDS.includes(modelId) && !sources.includes("blackforestlabs")) sources.push("blackforestlabs");
 
   if (msgObj.extraSources) {
     for (const s of msgObj.extraSources) {
@@ -597,5 +609,6 @@ window.isTavilyRequest           = isTavilyRequest;
 window.isWikipediaRequest        = isWikipediaRequest;
 window.extractUrls               = extractUrls;
 window.OPENAI_MODEL_IDS          = OPENAI_MODEL_IDS;
+window.BFL_MODEL_IDS             = BFL_MODEL_IDS;
 window.openWikiPanel             = openWikiPanel;
 window.closeWikiPanel            = closeWikiPanel;
