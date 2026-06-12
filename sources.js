@@ -61,7 +61,8 @@ const PROVIDER_SOURCES = {
     url: "https://blackforestlabs.ai/",
     desc: "FLUX — modèles de génération d'images",
     badge: "FLUX",
-    badgeClass: "sources-badge-bfl"
+    badgeClass: "sources-badge-bfl",
+    invertInDark: true
   },
   wikipedia: {
     name: "Wikipedia",
@@ -244,7 +245,8 @@ function buildSourcesBtn(sourceKeys) {
   // max 3 logos empilés
   const logosHtml = validSources.slice(0, 3).map(s => {
     const src = PROVIDER_SOURCES[s];
-    return `<img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">`;
+    const style = src.invertInDark ? ' style="filter:invert(1)"' : '';
+    return `<img src="${src.logo}" alt="${src.name}"${style} onerror="this.style.display='none'">`;
   }).join('');
 
   const ddId = `sources-dd-${Math.random().toString(36).slice(2)}`;
@@ -255,11 +257,12 @@ function buildSourcesBtn(sourceKeys) {
       <div class="sources-dropdown-header">Sources utilisées</div>
       ${validSources.map(s => {
         const src = PROVIDER_SOURCES[s];
+        const imgStyle = src.invertInDark ? ' style="filter:invert(1)"' : '';
         const badgeHtml = src.badge
           ? `<span class="sources-dropdown-item-badge ${src.badgeClass || ''}">${src.badge}</span>`
           : '';
         return `<a href="${src.url}" target="_blank" rel="noopener" class="sources-dropdown-item">
-          <img src="${src.logo}" alt="${src.name}" onerror="this.style.display='none'">
+          <img src="${src.logo}" alt="${src.name}"${imgStyle} onerror="this.style.display='none'">
           <div class="sources-dropdown-item-info">
             <div class="sources-dropdown-item-name">${src.name}</div>
             <div class="sources-dropdown-item-url">${src.desc}</div>
