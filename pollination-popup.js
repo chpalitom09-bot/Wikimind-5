@@ -3,50 +3,57 @@
    ══════════════════════════════════════════════ */
 
 (function () {
-  const STORAGE_KEY = "wm_whats_new_seen_v1";
+  const STORAGE_KEY = "wm_whats_new_seen_v2";
 
   // ── Données des nouveautés ──────────────────────────────────────────────
   const UPDATES = [
     {
-      date: "09 juin 2026",
-      title: "Deux nouveaux modèles de génération d'images",
+      date: "12 juin 2026",
+      title: "4 nouveaux modèles de génération d'images",
       models: [
         {
-          id: "gpt-1.5-image",
-          name: "GPT 1.5 Image",
-          apiModel: "gptimage-large",
-          logo: "pollinationai.png",
-          provider: "Pollinations AI",
-          providerUrl: "https://pollinations.ai/",
-          desc: "Génération d'images haute qualité propulsée par GPT Image Large. Résultats détaillés, fidèles au prompt.",
-          stats: [
-            { label: "Limite", value: "10 / heure", highlight: false },
-            { label: "Qualité", value: "Maximale", highlight: true },
-            { label: "Tier", value: "Large", highlight: false },
-          ],
-        },
-        {
-          id: "flux-schnell",
+          id: "wm-image-flux",
           name: "Flux Schnell",
           apiModel: "flux",
           logo: "pollinationai.png",
           provider: "Pollinations AI",
           providerUrl: "https://pollinations.ai/",
-          desc: "Génération ultra-rapide par le modèle Flux de Black Forest Labs. Idéal pour tester des idées visuelles.",
-          stats: [
-            { label: "Limite", value: "100 / heure", highlight: false },
-            { label: "Vitesse", value: "Ultra-rapide", highlight: true },
-            { label: "Tier", value: "Flash", highlight: false },
-          ],
+          desc: "Modèle Flux de Black Forest Labs. Génère des images en quelques secondes, parfait pour explorer des idées visuelles rapidement.",
+        },
+        {
+          id: "wm-image-gpt",
+          name: "GPT Image",
+          apiModel: "gptimage",
+          logo: "pollinationai.png",
+          provider: "Pollinations AI",
+          providerUrl: "https://pollinations.ai/",
+          desc: "Propulsé par GPT Image d'OpenAI. Résultats réalistes et fidèles au prompt, idéal pour des visuels soignés.",
+        },
+        {
+          id: "wm-image-gpt-large",
+          name: "GPT 1.5 Image",
+          apiModel: "gptimage-large",
+          logo: "pollinationai.png",
+          provider: "Pollinations AI",
+          providerUrl: "https://pollinations.ai/",
+          desc: "Version Large de GPT Image. Rendu haute définition avec une compréhension fine des détails et des compositions complexes.",
+        },
+        {
+          id: "wm-image-kontext",
+          name: "Kontext",
+          apiModel: "kontext",
+          logo: "pollinationai.png",
+          provider: "Pollinations AI",
+          providerUrl: "https://pollinations.ai/",
+          desc: "FLUX.1 Kontext par Black Forest Labs. Spécialisé dans l'édition contextuelle — modifiez une image existante en décrivant le changement souhaité.",
         },
       ],
-      note: "Les modèles image apparaissent dans le sélecteur de modèles. Sélectionnez-en un et décrivez votre image en français ou en anglais pour générer.",
+      note: "Les modèles image sont disponibles dans le sélecteur de modèles. Sélectionnez-en un et décrivez votre image pour générer.",
     },
   ];
 
   // ── Injection CSS + HTML ────────────────────────────────────────────────
   function inject() {
-    // CSS
     if (!document.querySelector('link[href="pollination-popup.css"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
@@ -54,56 +61,39 @@
       document.head.appendChild(link);
     }
 
-    // Overlay
     const overlay = document.createElement("div");
     overlay.id = "wn-overlay";
     document.body.appendChild(overlay);
 
-    // Popup
     const popup = document.createElement("div");
     popup.id = "wn-popup";
     popup.innerHTML = buildPopupHTML();
     document.body.appendChild(popup);
   }
 
-  // ── Construction du HTML de la popup ───────────────────────────────────
+  // ── Construction du HTML ────────────────────────────────────────────────
   function buildPopupHTML() {
-    let modelsHTML = "";
-    for (const update of UPDATES) {
-      for (const model of update.models) {
-        const statsHTML = model.stats
-          .map(
-            (s) =>
-              `<span class="wn-stat${s.highlight ? " highlight" : ""}">${s.label} : ${s.value}</span>`
-          )
-          .join("");
+    const update = UPDATES[0];
 
-        modelsHTML += `
-        <a class="wn-model-card" href="${model.providerUrl}" target="_blank" rel="noopener">
-          <div class="wn-model-logo">
-            <img src="${model.logo}" alt="${model.provider}" onerror="this.style.display='none'">
+    const modelsHTML = update.models.map((model) => `
+      <a class="wn-model-card" href="${model.providerUrl}" target="_blank" rel="noopener">
+        <div class="wn-model-logo">
+          <img src="${model.logo}" alt="${model.provider}" onerror="this.style.display='none'">
+        </div>
+        <div class="wn-model-info">
+          <div class="wn-model-name">
+            ${model.name}
+            <span class="wn-provider-badge pollinations">${model.provider}</span>
           </div>
-          <div class="wn-model-info">
-            <div class="wn-model-name">
-              ${model.name}
-              <span class="wn-provider-badge pollinations">${model.provider}</span>
-            </div>
-            <div class="wn-model-desc">${model.desc}</div>
-            <div class="wn-model-stats">${statsHTML}</div>
-          </div>
-          <div class="wn-model-link">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-          </div>
-        </a>`;
-      }
-    }
-
-    const latestDate = UPDATES[0].date;
-    const latestNote = UPDATES[0].note;
-    const latestTitle = UPDATES[0].title;
+          <div class="wn-model-desc">${model.desc}</div>
+        </div>
+        <div class="wn-model-link">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </div>
+      </a>`).join("");
 
     return `
     <div id="wn-header">
@@ -112,7 +102,7 @@
       </div>
       <div id="wn-header-text">
         <div id="wn-header-title">What's New with Wikimind ?</div>
-        <div id="wn-header-subtitle">Dernière mise à jour · ${latestDate}</div>
+        <div id="wn-header-subtitle">Dernière mise à jour · ${update.date}</div>
       </div>
       <button id="wn-close" title="Fermer">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -127,21 +117,21 @@
           <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
           <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-        À partir du ${latestDate}
+        À partir du ${update.date}
       </div>
 
-      <div class="wn-section-title">${latestTitle}</div>
+      <div class="wn-section-title">${update.title}</div>
 
       <div class="wn-models-grid">
         ${modelsHTML}
       </div>
 
       <div class="wn-note">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
           <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
-        <span>${latestNote}</span>
+        <span>${update.note}</span>
       </div>
     </div>
 
@@ -160,7 +150,6 @@
   function close() {
     document.getElementById("wn-overlay").classList.remove("open");
     document.getElementById("wn-popup").classList.remove("open");
-    // Marquer comme vu + cacher le point rouge
     localStorage.setItem(STORAGE_KEY, "1");
     hideDot();
   }
@@ -187,7 +176,6 @@
       <span class="wn-dot${seen ? " hidden" : ""}"></span>
     `;
 
-    // Remplacer tb-search par notre bouton
     tbSearch.replaceWith(btn);
 
     btn.addEventListener("click", () => {
@@ -202,25 +190,20 @@
     inject();
     injectTopbarBtn();
 
-    // Fermeture
     document.getElementById("wn-close").addEventListener("click", close);
     document.getElementById("wn-got-it").addEventListener("click", close);
     document.getElementById("wn-overlay").addEventListener("click", close);
 
-    // Échap
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") close();
     });
 
-    // Auto-ouvrir si jamais vu
     const seen = localStorage.getItem(STORAGE_KEY);
     if (!seen) {
-      // Petit délai pour laisser l'app se charger
       setTimeout(open, 900);
     }
   }
 
-  // Attendre le DOM
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
