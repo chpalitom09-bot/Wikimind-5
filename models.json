@@ -76,7 +76,7 @@
       "displayName": "Flux Schnell",
       "apiModel": "flux",
       "tier": "flash",
-      "category": "image",
+      "category": "main",
       "description": "Images ultra-rapides (Limite: ~222/h)",
       "provider": "pollinations",
       "apiEndpoint": "https://gen.pollinations.ai/image/",
