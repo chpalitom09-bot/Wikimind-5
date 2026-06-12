@@ -4679,7 +4679,9 @@ function appendAIMsg(msgObj, isStreaming = false) {
       popupImg.classList.toggle("open");
     });
 
-    const sourcesBtnImg = buildSourcesBtn(['pollinations']);
+    const sourcesBtnImg = buildSourcesBtn(
+      window.resolveMsgSources ? window.resolveMsgSources(msgObj) : ['pollinations']
+    );
     actBar.append(btnCopyImg, btnLikeImg, btnDislikeImg, btnDownloadImg, btnRegenImg, btnInfoImg);
     if (sourcesBtnImg) actBar.appendChild(sourcesBtnImg);
 
@@ -5130,6 +5132,7 @@ async function generateImage(prompt, modelObj) {
   const aiMsgObj = {
     role: "ai", content: "", msgId: aiMsgId,
     model: selectedModel, modelName: selectedModelName,
+    modelId: modelObj.id || "",
     ts: Date.now(), responseTime: null, liked: 0,
     isImage: true, provider: "pollinations"
   };
@@ -7168,42 +7171,6 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="flashcards.js" defer></script>
 <script src="quiz.js" defer></script>
 <script src="sources.js" defer></script>
-<script defer>
-// ── Patch sources.js : ajout du provider Black Forest Labs ──────────────
-// Exécuté après sources.js (defer guarantees order)
-document.addEventListener('DOMContentLoaded', () => {
-  // Tenter d'injecter dans la map interne de buildSourcesBtn si exposée
-  if (window.WM_PROVIDER_MAP) {
-    window.WM_PROVIDER_MAP['blackforestlabs'] = {
-      name: 'Black Forest Labs',
-      logo: 'blackforestlabs.png',
-      url:  'https://blackforestlabs.ai'
-    };
-  }
-  // Patch de fallback : wrapper buildSourcesBtn pour ajouter le logo BFL
-  const _origBuildSourcesBtn = window.buildSourcesBtn;
-  if (typeof _origBuildSourcesBtn === 'function') {
-    window.buildSourcesBtn = function(providers) {
-      // Normaliser les noms pour que "blackforestlabs" soit reconnu
-      const btn = _origBuildSourcesBtn(providers);
-      if (!btn) return btn;
-      // Si BFL est dans la liste et pas encore rendu, l'ajouter manuellement
-      if (providers && providers.includes('blackforestlabs')) {
-        const alreadyHasBFL = btn.querySelector('[data-provider="blackforestlabs"]') ||
-                              btn.innerHTML.includes('blackforestlabs');
-        if (!alreadyHasBFL) {
-          const bflChip = document.createElement('span');
-          bflChip.setAttribute('data-provider', 'blackforestlabs');
-          bflChip.style.cssText = 'display:inline-flex;align-items:center;gap:3px;font-size:0.62rem;font-weight:600;letter-spacing:0.02em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.55);border-radius:5px;padding:1px 6px 1px 3px;margin-left:3px;';
-          bflChip.innerHTML = `<img src="blackforestlabs.png" alt="BFL" width="12" height="12" style="border-radius:2px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">Black Forest Labs`;
-          btn.appendChild(bflChip);
-        }
-      }
-      return btn;
-    };
-  }
-});
-</script>
 <script src="statpopup.js" defer></script>
 <link rel="stylesheet" href="forfait.css">
 <script src="forfait.js" defer></script>
