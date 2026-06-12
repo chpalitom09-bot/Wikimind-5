@@ -968,14 +968,82 @@ body:not(.chat-empty-state) #welcome-screen {
   border-radius: 14px;
   overflow: hidden;
   position: relative;
-  background: #000;
+  background: #060606;
 }
-.wm-img-anim-canvas {
+.wm-anim-layer {
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  will-change: transform;
+}
+.wm-anim-l1 {
+  background: conic-gradient(from 0deg at 30% 35%, #000 0%, #111 12%, #555 24%, #fff 36%, #1a1a1a 50%, #080808 62%, #888 76%, #3a3a3a 88%, #000 100%);
+  filter: blur(40px);
+  animation: wmDrift1 6s ease-in-out infinite alternate;
+}
+.wm-anim-l2 {
+  background: conic-gradient(from 120deg at 68% 58%, #0a0a0a 0%, #eee 16%, #1c1c1c 32%, #c8b8d0 48%, #030303 63%, #4a3a52 78%, #0a0a0a 100%);
+  filter: blur(46px);
+  opacity: 0.8;
+  animation: wmDrift2 8s ease-in-out infinite alternate;
+}
+.wm-anim-l3 {
+  background: radial-gradient(ellipse 75% 45% at 55% 35%, rgba(220,210,235,0.6) 0%, transparent 65%),
+              radial-gradient(ellipse 45% 70% at 20% 75%, rgba(200,225,215,0.4) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 65%, rgba(180,180,200,0.45) 0%, transparent 70%);
+  filter: blur(28px);
+  animation: wmDrift3 5s ease-in-out infinite alternate;
+}
+.wm-anim-l4 {
+  background: conic-gradient(from 200deg at 50% 50%, #d0c8e0 0%, #050505 22%, #b0c0d0 44%, #000 66%, #e0d8e8 88%, #050505 100%);
+  filter: blur(55px);
+  opacity: 0.4;
+  animation: wmDrift4 9s ease-in-out infinite alternate;
+}
+.wm-anim-l5 {
+  background: radial-gradient(ellipse 50% 60% at 70% 30%, rgba(160,180,210,0.35) 0%, transparent 70%),
+              radial-gradient(ellipse 65% 40% at 25% 55%, rgba(190,170,200,0.3) 0%, transparent 65%);
+  filter: blur(35px);
+  animation: wmDrift5 7s ease-in-out infinite alternate;
+}
+@keyframes wmDrift1 {
+  0%   { transform: translate(0%, 0%) skew(0deg, 3deg) scale(1); }
+  20%  { transform: translate(12%, -9%) skew(5deg, -2deg) scale(1.06); }
+  50%  { transform: translate(-10%, 13%) skew(-4deg, 5deg) scale(0.92); }
+  75%  { transform: translate(8%, 6%) skew(2deg, -4deg) scale(1.1); }
+  100% { transform: translate(-14%, -7%) skew(-6deg, 2deg) scale(0.96); }
+}
+@keyframes wmDrift2 {
+  0%   { transform: translate(0%, 0%) skew(-2deg, 0deg) scale(1); }
+  25%  { transform: translate(-13%, 10%) skew(4deg, 3deg) scale(1.08); }
+  55%  { transform: translate(11%, -14%) skew(-5deg, 2deg) scale(0.9); }
+  80%  { transform: translate(-6%, 8%) skew(3deg, -5deg) scale(1.12); }
+  100% { transform: translate(15%, -5%) skew(-2deg, 4deg) scale(0.94); }
+}
+@keyframes wmDrift3 {
+  0%   { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+  30%  { transform: translate(14%, -10%) scale(1.12) rotate(4deg); }
+  65%  { transform: translate(-12%, 15%) scale(0.88) rotate(-5deg); }
+  100% { transform: translate(9%, -12%) scale(1.08) rotate(3deg); }
+}
+@keyframes wmDrift4 {
+  0%   { transform: translate(0%, 0%) rotate(0deg); }
+  40%  { transform: translate(-10%, 12%) rotate(18deg); }
+  70%  { transform: translate(13%, -8%) rotate(-12deg); }
+  100% { transform: translate(-7%, 10%) rotate(22deg); }
+}
+@keyframes wmDrift5 {
+  0%   { transform: translate(0%, 0%) skew(2deg, -1deg) scale(1); }
+  35%  { transform: translate(10%, 11%) skew(-3deg, 4deg) scale(1.07); }
+  70%  { transform: translate(-9%, -7%) skew(4deg, -3deg) scale(0.93); }
+  100% { transform: translate(6%, 13%) skew(-2deg, 2deg) scale(1.04); }
+}
+.wm-anim-vignette {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
+  background: radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.82) 100%);
+  pointer-events: none;
 }
 
 /* Image generation thinking */
@@ -4429,73 +4497,15 @@ function appendFcFileCard(title, count, deckId) {
 function createWmAnim() {
   const wrap = document.createElement('div');
   wrap.className = 'wm-img-anim-wrap';
-  const canvas = document.createElement('canvas');
-  canvas.className = 'wm-img-anim-canvas';
-  wrap.appendChild(canvas);
-
-  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-  if (!gl) { wrap.style.background = '#111'; return { el: wrap, stop: () => {} }; }
-
-  const vert = `#version 300 es\nprecision highp float;\nin vec2 a_pos;\nvoid main(){gl_Position=vec4(a_pos,0,1);}`;
-  const frag = `#version 300 es
-precision highp float;
-uniform vec2 u_res;
-uniform float u_t;
-out vec4 fragColor;
-#define PI 3.141592653589793
-float hash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+19.19);return fract(p.x*p.y);}
-float noise(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);}
-float fbm(vec2 p,int oct){float v=0.,a=.5;for(int i=0;i<8;i++){if(i>=oct)break;v+=a*noise(p);p=p*2.+.3;a*=.5;}return v;}
-void main(){
-  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.-uv.y;
-  vec2 p=uv*2.8; float T=u_t*0.00038;
-  vec2 q=vec2(fbm(p+T*.7,6),fbm(p+vec2(1.3,.9)+T*.5,6));
-  vec2 r=vec2(fbm(p+2.2*q+vec2(.4,T*.3),6),fbm(p+2.2*q+vec2(8.2,T*.4),6));
-  float f=fbm(p+2.8*r+T*.2,7);
-  float band1=smoothstep(.0,.6,f+.15*sin(T*2.1+uv.x*3.));
-  float band2=smoothstep(.3,.9,f+.12*cos(T*1.7+uv.y*2.5));
-  vec3 col=mix(vec3(0.),vec3(.08,.08,.10),band1);
-  col=mix(col,vec3(.96,.96,.98),band2*band2);
-  float tint=f*.5+.5*sin(T*3.+f*6.);
-  vec3 irid=mix(vec3(.68,.78,.92),mix(vec3(.88,.80,.96),vec3(.76,.90,.82),sin(tint*PI)*.5+.5),cos(tint*PI*.7)*.5+.5);
-  col=mix(col,col*irid,0.22);
-  float d=length(uv-.5)*1.6;
-  col*=1.-smoothstep(.4,1.15,d);
-  col=mix(col,col*1.18,smoothstep(.3,.0,d));
-  fragColor=vec4(col,1.);
-}`;
-  function mkShader(type, src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); return s; }
-  const prog=gl.createProgram();
-  gl.attachShader(prog,mkShader(gl.VERTEX_SHADER,vert));
-  gl.attachShader(prog,mkShader(gl.FRAGMENT_SHADER,frag));
-  gl.linkProgram(prog); gl.useProgram(prog);
-  const buf=gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-  const loc=gl.getAttribLocation(prog,'a_pos');
-  gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  const uRes=gl.getUniformLocation(prog,'u_res');
-  const uT=gl.getUniformLocation(prog,'u_t');
-  const DPR=Math.min(window.devicePixelRatio||1,3);
-  let raf=null, start=null, stopped=false;
-  function resize(){
-    const r=wrap.getBoundingClientRect();
-    const w=r.width||400, h=r.height||400;
-    canvas.width=w*DPR; canvas.height=h*DPR;
-    gl.viewport(0,0,canvas.width,canvas.height);
-  }
-  function frame(ts){
-    if(stopped)return;
-    if(!start)start=ts;
-    resize();
-    gl.uniform2f(uRes,canvas.width,canvas.height);
-    gl.uniform1f(uT,ts-start);
-    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-    raf=requestAnimationFrame(frame);
-  }
-  raf=requestAnimationFrame(frame);
-  return { el: wrap, stop: ()=>{ stopped=true; if(raf)cancelAnimationFrame(raf); } };
+  wrap.innerHTML = `
+    <div class="wm-anim-layer wm-anim-l1"></div>
+    <div class="wm-anim-layer wm-anim-l2"></div>
+    <div class="wm-anim-layer wm-anim-l3"></div>
+    <div class="wm-anim-layer wm-anim-l4"></div>
+    <div class="wm-anim-layer wm-anim-l5"></div>
+    <div class="wm-anim-vignette"></div>
+  `;
+  return { el: wrap, stop: () => {} };
 }
 
 function appendThinking(partnerInfo = null) {
