@@ -6057,10 +6057,7 @@ $("pp-help").addEventListener("click", () => {
   profilePopup.classList.remove("open");
   toast("Aide — Bientôt disponible");
 });
-$("pp-upgrade").addEventListener("click", () => {
-  profilePopup.classList.remove("open");
-  toast("Mettre à niveau — Bientôt disponible");
-});
+// pp-upgrade géré par forfait.js
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
@@ -7101,4 +7098,6 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="quiz.js" defer></script>
 <script src="sources.js" defer></script>
 <script src="statpopup.js" defer></script>
+<link rel="stylesheet" href="forfait.css">
+<script src="forfait.js" defer></script>
 </html>
