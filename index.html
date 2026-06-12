@@ -3847,17 +3847,18 @@ function tierBadge(tier) {
 
 // ── Provider logos & capability badges ──────────────────────────────────
 const PROVIDER_LOGOS = {
-  mistral:      'mistrallogo.png',
-  groq:         'groqlogo.png',
-  pollinations: 'pollinationai.png',
-  cerebras:     'cerebraslogo.png',
-  openai:       'openailogo.png',
+  mistral:         'mistrallogo.png',
+  groq:            'groqlogo.png',
+  pollinations:    'pollinationai.png',
+  cerebras:        'cerebraslogo.png',
+  openai:          'openailogo.png',
+  blackforestlabs: 'blackforestlabs.png',
 };
 
 function providerBadge(provider) {
   const src = PROVIDER_LOGOS[provider];
   if (!src) return "";
-  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras" };
+  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", blackforestlabs:"Black Forest Labs" };
   const logoImg = `<img src="${src}" alt="${provider}" width="12" height="12" style="flex-shrink:0;border-radius:2px;object-fit:contain;" onerror="this.style.display='none'">`;
   return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:600;letter-spacing:0.03em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:5px;padding:1px 5px 1px 3px;margin-left:4px;">${logoImg}${names[provider]||provider}</span>`;
 }
@@ -3957,6 +3958,18 @@ function applyModelById(id) {
   window._wmSelectedModelObj = m;
   bubbleModelLabel.textContent = m.displayName;
   bubbleModelBtn.dataset.tier  = m.tier;
+
+  // Hint Kontext : inviter à joindre une image
+  const existingHint = document.getElementById('wm-kontext-hint');
+  if (existingHint) existingHint.remove();
+  if (m.isImageEditModel) {
+    const hint = document.createElement('div');
+    hint.id = 'wm-kontext-hint';
+    hint.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 12px;margin:0 8px 6px;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.2);border-radius:10px;font-size:0.78rem;color:rgba(255,255,255,0.55);pointer-events:none;';
+    hint.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Kontext édite vos images — importez une image via <b style="color:rgba(255,255,255,0.7)">+</b> puis décrivez la modification</span>`;
+    const inputArea = document.getElementById('input-row') || document.getElementById('chat-input')?.parentElement;
+    if (inputArea) inputArea.insertBefore(hint, inputArea.firstChild);
+  }
 }
 
 // ── Positioning — calcul APRÈS affichage avec requestAnimationFrame ──────────
@@ -5131,8 +5144,21 @@ async function generateImage(prompt, modelObj) {
   try {
     const seed  = Math.floor(Math.random() * 10000000);
     const token = (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
-    // Nouvel endpoint unifié gen.pollinations.ai — auth via ?key= (méthode browser recommandée)
-    const apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}`;
+
+    // Kontext : support édition d'image via image_url param
+    let apiUrl;
+    if (modelObj.isImageEditModel && attachedFiles && attachedFiles.length > 0) {
+      const imgFile = attachedFiles.find(f => f.isImage && f.content && f.content._isImage);
+      if (imgFile) {
+        const base64Url = imgFile.content.base64; // data:image/...;base64,...
+        apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}&image_url=${encodeURIComponent(base64Url)}`;
+      } else {
+        apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}`;
+      }
+    } else {
+      // Nouvel endpoint unifié gen.pollinations.ai — auth via ?key= (méthode browser recommandée)
+      apiUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(cleanPrompt)}?model=${modelObj.apiModel}&nologo=true&seed=${seed}&private=true&key=${token}`;
+    }
 
     // fetch → blob → ObjectURL (évite les limites de new Image() et gère les erreurs HTTP)
     const resp = await fetch(apiUrl);
