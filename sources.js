@@ -606,6 +606,102 @@ const WIKI_KEYWORDS  = /\bwikip[eé]dia\b/i;
 function isTavilyRequest(text)    { return NEWS_KEYWORDS.test(text); }
 function isWikipediaRequest(text) { return WIKI_KEYWORDS.test(text); }
 
+// ── Table de mots-clés pour les nouvelles sources ────────────────────────────
+// Chaque entrée : [sourceKey, regex]
+// La source est ajoutée si le mot-clé apparaît dans le message user OU la réponse IA
+const KEYWORD_SOURCES = [
+  // IA internationale
+  ["anthropic",       /\b(anthropic|claude\s*(3|sonnet|opus|haiku)?)\b/i],
+  ["google",          /\b(google|gemini|deepmind|bard|palm)\b/i],
+  ["meta",            /\b(meta\s*ai|llama\s*[23]?|llama\.cpp|facebook\s*ai)\b/i],
+  ["xai",             /\b(grok|x\.?ai|elon\s*musk.*ia|ia.*elon)\b/i],
+  ["cohere",          /\b(cohere|command[\s-]r|aya\s*model)\b/i],
+  ["nvidia",          /\b(nvidia|nim\b|cuda|nemotron)\b/i],
+  ["together",        /\b(together\s*ai|together\.xyz)\b/i],
+  ["fireworks",       /\b(fireworks\s*ai|fireworks\.ai)\b/i],
+  ["deepseek",        /\b(deepseek|deep\s*seek)\b/i],
+  ["qwen",            /\b(qwen|alibaba\s*(cloud|ai))\b/i],
+  ["perplexity",      /\b(perplexity|pplx)\b/i],
+  ["huggingface",     /\b(hugging\s*face|huggingface|hf\s+hub|transformers\s+library)\b/i],
+  ["stability",       /\b(stability\s*ai|stable\s*diffusion|sdxl|sd[- ]?\d)\b/i],
+  ["runway",          /\b(runway\s*(ml|gen)?|gen[- ]?[23]\b)\b/i],
+  ["elevenlabs",      /\b(eleven\s*labs?|elevenlabs|voix\s*ia|tts\s*ia|synthèse\s*vocale)\b/i],
+  ["openrouter",      /\b(open\s*router|openrouter)\b/i],
+  ["replicate",       /\b(replicate\.com|replicate\s*api)\b/i],
+  ["suno",            /\b(suno\s*(ai)?|musique\s*(ia|générée)|génération\s*musicale)\b/i],
+  ["udio",            /\b(udio\s*(ai)?)\b/i],
+  ["ideogram",        /\b(ideogram)\b/i],
+  ["midjourney",      /\b(midjourney|mj\s*v\d)\b/i],
+  ["leonardo",        /\b(leonardo\s*ai|leonardo\.ai)\b/i],
+  ["kling",           /\b(kling\s*(ai|video)?)\b/i],
+  ["hailuo",          /\b(hailuo|minimax\s*(video|ai))\b/i],
+  ["sambanova",       /\b(sambanova|samba\s*nova)\b/i],
+  ["hyperbolic",      /\b(hyperbolic\s*(ai|labs)?)\b/i],
+
+  // IA française & européenne
+  ["scaleway",        /\b(scaleway)\b/i],
+  ["aleph_alpha",     /\b(aleph\s*alpha|luminous)\b/i],
+  ["vigogne",         /\b(vigogne)\b/i],
+  ["camembert",       /\b(camembert[\s-]?(bert)?|inria\s*nlp)\b/i],
+  ["bloom",           /\b(bloom\s*llm|bigscience)\b/i],
+  ["lefebvre",        /\b(lefebvre\s*dalloz|dalloz)\b/i],
+  ["doctrine",        /\b(doctrine\.fr|doctrine\s*juridique)\b/i],
+  ["nabla",           /\b(nabla\s*(copilot)?|assistant\s*médical\s*ia)\b/i],
+  ["craft_ai",        /\b(craft\s*ai)\b/i],
+  ["holistic_ai",     /\b(holistic\s*ai|gouvernance\s*ia|audit\s*ia)\b/i],
+
+  // Recherche & données
+  ["arxiv",           /\b(arxiv|ar[xχ]iv|prépublication|preprint|papier\s*scientifique|paper\s*ia)\b/i],
+  ["semanticscholar", /\b(semantic\s*scholar|s2\s*research)\b/i],
+  ["wolframalpha",    /\b(wolfram(\s*alpha)?|calcul\s*symbolique|mathematica)\b/i],
+  ["pubmed",          /\b(pubmed|ncbi|étude\s*médicale|étude\s*clinique|méta[- ]?analyse)\b/i],
+  ["insee",           /\b(insee|statistiques?\s*(françaises?|france)|données?\s*démographiques?)\b/i],
+  ["data_gouv",       /\b(data\.gouv|open\s*data\s*(france|français))\b/i],
+  ["bnf",             /\b(gallica|bnf\b|bibliothèque\s*(nationale|numérique)\s*france)\b/i],
+  ["europe_pmc",      /\b(europe\s*pmc|littérature\s*scientifique\s*europ)\b/i],
+  ["youcom",          /\b(you\.com|you\s*search)\b/i],
+  ["brave_search",    /\b(brave\s*(search|browser)|recherche\s*brave)\b/i],
+  ["duckduckgo",      /\b(duckduckgo|ddg\b|duck\s*duck\s*go)\b/i],
+
+  // Outils dev & infra IA
+  ["langchain",       /\b(langchain|lang\s*chain)\b/i],
+  ["llamaindex",      /\b(llama[\s-]?index|llamaindex)\b/i],
+  ["ollama",          /\b(ollama)\b/i],
+  ["lmstudio",        /\b(lm[\s-]?studio)\b/i],
+  ["qdrant",          /\b(qdrant)\b/i],
+  ["pinecone",        /\b(pinecone)\b/i],
+  ["weaviate",        /\b(weaviate)\b/i],
+  ["vercel_ai",       /\b(vercel\s*(ai|sdk)|next\.js\s*ai|ai\s*sdk)\b/i],
+  ["supabase",        /\b(supabase|pgvector)\b/i],
+  ["firebase",        /\b(firebase|firestore|realtime\s*database)\b/i],
+
+  // Médias français
+  ["lemonde",         /\b(le\s*monde\.fr|journal\s*le\s*monde)\b/i],
+  ["lefigaro",        /\b(le\s*figaro|lefigaro\.fr)\b/i],
+  ["liberation",      /\b(libération|liberation\.fr)\b/i],
+  ["bfmtv",           /\b(bfm\s*(tv|business)?|bfmtv)\b/i],
+  ["france_info",     /\b(france\s*info|francetvinfo|france\s*24)\b/i],
+  ["lesechos",        /\b(les\s*échos|lesechos\.fr)\b/i],
+  ["numerama",        /\b(numerama)\b/i],
+  ["frandroid",       /\b(frandroid)\b/i],
+  ["next_inpact",     /\b(next\.(ink|inpact)|nextinpact)\b/i],
+  ["lepoint",         /\b(le\s*point\b(?!\s*de\s*(vue|départ|vente)))\b/i],
+];
+
+/**
+ * Détecte les sources pertinentes à partir d'un texte (message user ou réponse IA).
+ * Retourne un tableau de clés de sources.
+ */
+function detectKeywordSources(text) {
+  if (!text) return [];
+  const found = [];
+  for (const [key, regex] of KEYWORD_SOURCES) {
+    regex.lastIndex = 0;
+    if (regex.test(text) && PROVIDER_SOURCES[key]) found.push(key);
+  }
+  return found;
+}
+
 const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/g;
 function extractUrls(text) {
   const matches = [];
@@ -717,18 +813,25 @@ async function wmEnrichMessage(userText) {
 
 function resolveMsgSources(msgObj) {
   const sources = [];
-  const provider = msgObj.provider || 'mistral';
-  if (PROVIDER_SOURCES[provider]) sources.push(provider);
+  const add = (key) => { if (PROVIDER_SOURCES[key] && !sources.includes(key)) sources.push(key); };
 
+  // Provider principal (mistral, groq, cerebras…)
+  add(msgObj.provider || 'mistral');
+
+  // Model IDs spéciaux
   const modelId = msgObj.modelId || "";
-  if (OPENAI_MODEL_IDS.includes(modelId) && !sources.includes("openai")) sources.push("openai");
-  if (BFL_MODEL_IDS.includes(modelId) && !sources.includes("blackforestlabs")) sources.push("blackforestlabs");
+  if (OPENAI_MODEL_IDS.includes(modelId)) add("openai");
+  if (BFL_MODEL_IDS.includes(modelId)) add("blackforestlabs");
 
+  // Sources explicites (jina, tavily, wikipedia…)
   if (msgObj.extraSources) {
-    for (const s of msgObj.extraSources) {
-      if (PROVIDER_SOURCES[s] && !sources.includes(s)) sources.push(s);
-    }
+    for (const s of msgObj.extraSources) add(s);
   }
+
+  // Détection par mots-clés sur le message user + la réponse IA
+  const textToScan = [msgObj.userText || "", msgObj.content || "", msgObj.text || ""].join(" ");
+  for (const key of detectKeywordSources(textToScan)) add(key);
+
   return sources;
 }
 
