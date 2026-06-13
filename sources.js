@@ -7,6 +7,8 @@
 // ── 1. REGISTRE DES SOURCES ──────────────────────────────────────────────────
 
 const PROVIDER_SOURCES = {
+
+  // ── PROVIDERS IA EXISTANTS ────────────────────────────────────────────────
   pollinations: {
     name: "Pollinations AI",
     logo: "pollinationai.png",
@@ -71,6 +73,504 @@ const PROVIDER_SOURCES = {
     desc: "Encyclopédie libre",
     badge: "WIKI",
     badgeClass: "sources-badge-wikipedia"
+  },
+
+  // ── NOUVEAUX — IA INTERNATIONALE ─────────────────────────────────────────
+  anthropic: {
+    name: "Anthropic",
+    logo: "anthropiclogo.png",
+    url: "https://www.anthropic.com/",
+    desc: "Modèles Claude",
+    badge: "CLAUDE",
+    badgeClass: "sources-badge-anthropic"
+  },
+  google: {
+    name: "Google DeepMind",
+    logo: "googlelogo.png",
+    url: "https://deepmind.google/",
+    desc: "Gemini & modèles Google",
+    badge: "GEMINI",
+    badgeClass: "sources-badge-google"
+  },
+  meta: {
+    name: "Meta AI",
+    logo: "metalogo.png",
+    url: "https://ai.meta.com/",
+    desc: "Llama — modèles open source",
+    badge: "LLAMA",
+    badgeClass: "sources-badge-meta"
+  },
+  xai: {
+    name: "xAI",
+    logo: "xailogo.png",
+    url: "https://x.ai/",
+    desc: "Grok — IA par Elon Musk",
+    badge: "GROK",
+    badgeClass: "sources-badge-xai"
+  },
+  cohere: {
+    name: "Cohere",
+    logo: "coherelogo.png",
+    url: "https://cohere.com/",
+    desc: "Command — modèles d'entreprise",
+    badge: "CMD",
+    badgeClass: "sources-badge-cohere"
+  },
+  nvidia: {
+    name: "NVIDIA NIM",
+    logo: "nvidialogo.png",
+    url: "https://build.nvidia.com/",
+    desc: "Inférence GPU optimisée",
+    badge: "NIM",
+    badgeClass: "sources-badge-nvidia"
+  },
+  together: {
+    name: "Together AI",
+    logo: "togetherlogo.png",
+    url: "https://www.together.ai/",
+    desc: "Cloud d'inférence open source"
+  },
+  fireworks: {
+    name: "Fireworks AI",
+    logo: "fireworkslogo.png",
+    url: "https://fireworks.ai/",
+    desc: "Inférence rapide multi-modèles"
+  },
+  deepseek: {
+    name: "DeepSeek",
+    logo: "deepseeklogo.png",
+    url: "https://www.deepseek.com/",
+    desc: "Modèles IA chinois open source",
+    badge: "R1",
+    badgeClass: "sources-badge-deepseek"
+  },
+  qwen: {
+    name: "Qwen / Alibaba",
+    logo: "qwenlogo.png",
+    url: "https://qwenlm.github.io/",
+    desc: "Modèles Qwen d'Alibaba Cloud"
+  },
+  perplexity: {
+    name: "Perplexity AI",
+    logo: "perplexitylogo.png",
+    url: "https://www.perplexity.ai/",
+    desc: "Moteur de recherche IA",
+    badge: "SEARCH",
+    badgeClass: "sources-badge-perplexity"
+  },
+  huggingface: {
+    name: "Hugging Face",
+    logo: "huggingfacelogo.png",
+    url: "https://huggingface.co/",
+    desc: "Hub de modèles open source",
+    badge: "HF",
+    badgeClass: "sources-badge-hf"
+  },
+  stability: {
+    name: "Stability AI",
+    logo: "stabilitylogo.png",
+    url: "https://stability.ai/",
+    desc: "Stable Diffusion — images IA"
+  },
+  runway: {
+    name: "Runway",
+    logo: "runwaylogo.png",
+    url: "https://runwayml.com/",
+    desc: "Génération vidéo IA"
+  },
+  elevenlabs: {
+    name: "ElevenLabs",
+    logo: "elevenlabslogo.png",
+    url: "https://elevenlabs.io/",
+    desc: "Synthèse vocale IA",
+    badge: "TTS",
+    badgeClass: "sources-badge-elevenlabs"
+  },
+  openrouter: {
+    name: "OpenRouter",
+    logo: "openrouterlogo.png",
+    url: "https://openrouter.ai/",
+    desc: "Routage multi-modèles IA"
+  },
+  replicate: {
+    name: "Replicate",
+    logo: "replicatelogo.png",
+    url: "https://replicate.com/",
+    desc: "Hébergement de modèles IA"
+  },
+  suno: {
+    name: "Suno",
+    logo: "sunologo.png",
+    url: "https://suno.com/",
+    desc: "Génération musicale IA"
+  },
+  udio: {
+    name: "Udio",
+    logo: "udiologo.png",
+    url: "https://www.udio.com/",
+    desc: "Génération musicale IA"
+  },
+  ideogram: {
+    name: "Ideogram",
+    logo: "ideogramlogo.png",
+    url: "https://ideogram.ai/",
+    desc: "Génération d'images avec texte"
+  },
+  midjourney: {
+    name: "Midjourney",
+    logo: "midjourneylogo.png",
+    url: "https://www.midjourney.com/",
+    desc: "Génération d'images artistiques"
+  },
+  leonardo: {
+    name: "Leonardo AI",
+    logo: "leonardologo.png",
+    url: "https://leonardo.ai/",
+    desc: "Génération d'images IA"
+  },
+  kling: {
+    name: "Kling AI",
+    logo: "klinglogo.png",
+    url: "https://klingai.com/",
+    desc: "Génération vidéo IA"
+  },
+  hailuo: {
+    name: "Hailuo AI",
+    logo: "hailuologo.png",
+    url: "https://hailuoai.video/",
+    desc: "Génération vidéo IA (MiniMax)"
+  },
+  sambanova: {
+    name: "SambaNova",
+    logo: "sambanovalogo.png",
+    url: "https://sambanova.ai/",
+    desc: "Inférence RDU ultra-rapide"
+  },
+  hyperbolic: {
+    name: "Hyperbolic",
+    logo: "hyperboliclogo.png",
+    url: "https://hyperbolic.xyz/",
+    desc: "GPU cloud pour l'inférence IA"
+  },
+
+  // ── NOUVEAUX — IA FRANÇAISE & EUROPÉENNE ──────────────────────────────────
+  scaleway: {
+    name: "Scaleway AI",
+    logo: "scalewaylogo.png",
+    url: "https://www.scaleway.com/fr/ia/",
+    desc: "Inférence IA souveraine française",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  aleph_alpha: {
+    name: "Aleph Alpha",
+    logo: "alephalogo.png",
+    url: "https://www.aleph-alpha.com/",
+    desc: "IA souveraine européenne (Allemagne)",
+    badge: "🇪🇺",
+    badgeClass: "sources-badge-eu"
+  },
+  vigogne: {
+    name: "Vigogne",
+    logo: "vigognelogo.png",
+    url: "https://huggingface.co/bofenghuang/vigogne-2-70b-chat",
+    desc: "LLM open source français (Bofeng Huang)",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  camembert: {
+    name: "CamemBERT",
+    logo: "camembertlogo.png",
+    url: "https://camembert-model.fr/",
+    desc: "Modèle NLP français (Inria / FAIR)",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  bloom: {
+    name: "BLOOM",
+    logo: "bloomlogo.png",
+    url: "https://huggingface.co/bigscience/bloom",
+    desc: "LLM multilingue (BigScience / Inria)",
+    badge: "🌍",
+    badgeClass: "sources-badge-hf"
+  },
+  lefebvre: {
+    name: "Lefebvre Dalloz IA",
+    logo: "lefebvrelogo.png",
+    url: "https://www.lefebvre-dalloz.fr/",
+    desc: "IA juridique française",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  doctrine: {
+    name: "Doctrine.fr",
+    logo: "doctrinelogo.png",
+    url: "https://www.doctrine.fr/",
+    desc: "Recherche juridique IA en France",
+    badge: "⚖️",
+    badgeClass: "sources-badge-fr"
+  },
+  nabla: {
+    name: "Nabla",
+    logo: "nablalogo.png",
+    url: "https://www.nabla.com/",
+    desc: "Assistant IA médical français",
+    badge: "🏥",
+    badgeClass: "sources-badge-fr"
+  },
+  craft_ai: {
+    name: "craft ai",
+    logo: "craftailogo.png",
+    url: "https://www.craft.ai/",
+    desc: "IA industrielle française",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  holistic_ai: {
+    name: "Holistic AI",
+    logo: "holisticailogo.png",
+    url: "https://www.holisticai.com/",
+    desc: "Audit & gouvernance IA",
+    badge: "🇪🇺",
+    badgeClass: "sources-badge-eu"
+  },
+
+  // ── NOUVEAUX — RECHERCHE & DONNÉES ───────────────────────────────────────
+  arxiv: {
+    name: "arXiv",
+    logo: "arxivlogo.png",
+    url: "https://arxiv.org/",
+    desc: "Prépublications scientifiques",
+    badge: "PREPRINT",
+    badgeClass: "sources-badge-arxiv"
+  },
+  semanticscholar: {
+    name: "Semantic Scholar",
+    logo: "semanticscholarlogo.png",
+    url: "https://www.semanticscholar.org/",
+    desc: "Recherche académique IA",
+    badge: "S2",
+    badgeClass: "sources-badge-s2"
+  },
+  wolframalpha: {
+    name: "Wolfram Alpha",
+    logo: "wolframlogo.png",
+    url: "https://www.wolframalpha.com/",
+    desc: "Moteur de calcul symbolique",
+    badge: "CALC",
+    badgeClass: "sources-badge-wolfram"
+  },
+  pubmed: {
+    name: "PubMed",
+    logo: "pubmedlogo.png",
+    url: "https://pubmed.ncbi.nlm.nih.gov/",
+    desc: "Articles médicaux et biomédicaux",
+    badge: "MED",
+    badgeClass: "sources-badge-pubmed"
+  },
+  insee: {
+    name: "INSEE",
+    logo: "inseelogo.png",
+    url: "https://www.insee.fr/",
+    desc: "Statistiques officielles françaises",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  data_gouv: {
+    name: "data.gouv.fr",
+    logo: "datagouvlogo.png",
+    url: "https://www.data.gouv.fr/",
+    desc: "Open data du gouvernement français",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  bnf: {
+    name: "Gallica / BnF",
+    logo: "bnflogo.png",
+    url: "https://gallica.bnf.fr/",
+    desc: "Bibliothèque numérique nationale française",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  europe_pmc: {
+    name: "Europe PMC",
+    logo: "europemclogo.png",
+    url: "https://europepmc.org/",
+    desc: "Littérature scientifique européenne",
+    badge: "🇪🇺",
+    badgeClass: "sources-badge-eu"
+  },
+  youcom: {
+    name: "You.com Search",
+    logo: "youcomlogo.png",
+    url: "https://you.com/",
+    desc: "Moteur de recherche IA",
+    badge: "SEARCH",
+    badgeClass: "sources-badge-perplexity"
+  },
+  brave_search: {
+    name: "Brave Search",
+    logo: "bravesearchlogo.png",
+    url: "https://search.brave.com/",
+    desc: "Moteur de recherche privé",
+    badge: "SEARCH",
+    badgeClass: "sources-badge-perplexity"
+  },
+  duckduckgo: {
+    name: "DuckDuckGo",
+    logo: "duckduckgologo.png",
+    url: "https://duckduckgo.com/",
+    desc: "Recherche sans tracking",
+    badge: "SEARCH",
+    badgeClass: "sources-badge-perplexity"
+  },
+
+  // ── NOUVEAUX — OUTILS DEV & INFRA IA ─────────────────────────────────────
+  langchain: {
+    name: "LangChain",
+    logo: "langchainlogo.png",
+    url: "https://www.langchain.com/",
+    desc: "Framework d'agents et RAG"
+  },
+  llamaindex: {
+    name: "LlamaIndex",
+    logo: "llamaindexlogo.png",
+    url: "https://www.llamaindex.ai/",
+    desc: "Indexation et RAG pour LLM"
+  },
+  ollama: {
+    name: "Ollama",
+    logo: "ollamamlogo.png",
+    url: "https://ollama.com/",
+    desc: "LLM en local sur machine",
+    badge: "LOCAL",
+    badgeClass: "sources-badge-local"
+  },
+  lmstudio: {
+    name: "LM Studio",
+    logo: "lmstudiologo.png",
+    url: "https://lmstudio.ai/",
+    desc: "Interface locale pour LLM",
+    badge: "LOCAL",
+    badgeClass: "sources-badge-local"
+  },
+  qdrant: {
+    name: "Qdrant",
+    logo: "qdrantlogo.png",
+    url: "https://qdrant.tech/",
+    desc: "Base vectorielle pour RAG"
+  },
+  pinecone: {
+    name: "Pinecone",
+    logo: "pineconelogo.png",
+    url: "https://www.pinecone.io/",
+    desc: "Base de données vectorielle"
+  },
+  weaviate: {
+    name: "Weaviate",
+    logo: "weaviatelogo.png",
+    url: "https://weaviate.io/",
+    desc: "Base vectorielle open source"
+  },
+  vercel_ai: {
+    name: "Vercel AI SDK",
+    logo: "vercellogo.png",
+    url: "https://sdk.vercel.ai/",
+    desc: "SDK IA pour Next.js & React"
+  },
+  supabase: {
+    name: "Supabase",
+    logo: "supabaselogo.png",
+    url: "https://supabase.com/",
+    desc: "Backend open source + pgvector"
+  },
+  firebase: {
+    name: "Firebase",
+    logo: "firebaselogo.png",
+    url: "https://firebase.google.com/",
+    desc: "Base de données temps réel Google"
+  },
+
+  // ── NOUVEAUX — MÉDIAS FRANÇAIS ────────────────────────────────────────────
+  lemonde: {
+    name: "Le Monde",
+    logo: "lemondelogo.png",
+    url: "https://www.lemonde.fr/",
+    desc: "Journal de référence français",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  lefigaro: {
+    name: "Le Figaro",
+    logo: "lefigarologo.png",
+    url: "https://www.lefigaro.fr/",
+    desc: "Quotidien français",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  liberation: {
+    name: "Libération",
+    logo: "liberationlogo.png",
+    url: "https://www.liberation.fr/",
+    desc: "Quotidien français",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  bfmtv: {
+    name: "BFM TV",
+    logo: "bfmtvlogo.png",
+    url: "https://www.bfmtv.com/",
+    desc: "Info en continu française",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  france_info: {
+    name: "France Info",
+    logo: "franceinfologo.png",
+    url: "https://www.francetvinfo.fr/",
+    desc: "Actualités radio & TV France",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  lesechos: {
+    name: "Les Échos",
+    logo: "lesechoslogo.png",
+    url: "https://www.lesechos.fr/",
+    desc: "Presse économique française",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  numerama: {
+    name: "Numerama",
+    logo: "numeramalogo.png",
+    url: "https://www.numerama.com/",
+    desc: "Tech & numérique en France",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  frandroid: {
+    name: "Frandroid",
+    logo: "frandroidlogo.png",
+    url: "https://www.frandroid.com/",
+    desc: "Tech & Android en français",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  next_inpact: {
+    name: "Next.ink",
+    logo: "nextinklogo.png",
+    url: "https://next.ink/",
+    desc: "Tech & vie privée numérique",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
+  },
+  lepoint: {
+    name: "Le Point Tech",
+    logo: "lepointlogo.png",
+    url: "https://www.lepoint.fr/high-tech-internet/",
+    desc: "High-tech & IA — Le Point",
+    badge: "🇫🇷",
+    badgeClass: "sources-badge-fr"
   }
 };
 
