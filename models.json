@@ -1,5 +1,5 @@
 {
-  "version": "5.2",
+  "version": "5.3",
   "defaultModel": "wm-small-5.1",
   "apiKeys": {
     "mistral": "5lnrIIlTIjlETLxr4Xqv0lkZdk8tPigj",
@@ -8,6 +8,16 @@
     "groq_p3": "bCl9eWCGO6aRhA8xs",
     "pollinations": "pk_w6wnuGBObh7FeHwp",
     "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55"
+  },
+  "aiTokens": {
+    "videoCost": 500,
+    "dailyByForfait": {
+      "1": 0,
+      "2": 500,
+      "3": 1500,
+      "4": 3000,
+      "5": 9999
+    }
   },
   "models": [
     {
@@ -103,10 +113,7 @@
       "hourlyLimit": 5,
       "imageRateLimited": false,
       "logo": "pollinationai.png",
-      "sourceProviders": [
-        "pollinations",
-        "openai"
-      ]
+      "sourceProviders": ["pollinations", "openai"]
     },
     {
       "id": "wm-image-gpt-large",
@@ -123,10 +130,7 @@
       "logo": "pollinationai.png",
       "imageRateLimited": false,
       "hourlyLimit": 5,
-      "sourceProviders": [
-        "pollinations",
-        "openai"
-      ]
+      "sourceProviders": ["pollinations", "openai"]
     },
     {
       "id": "wm-image-kontext",
@@ -146,6 +150,28 @@
       "imageRateLimited": false,
       "logo": "pollinationai.png",
       "sourceProviders": ["pollinations", "blackforestlabs"]
+    },
+    {
+      "id": "wm-video-ltx2",
+      "displayName": "LTX-2 Vidéo",
+      "apiModel": "ltx-2",
+      "tier": "plus",
+      "category": "video",
+      "description": "Génération vidéo IA · 500 AI Tokens / vidéo",
+      "provider": "pollinations",
+      "apiEndpoint": "https://gen.pollinations.ai/v1/videos/generations",
+      "supportsVision": false,
+      "supportsStreaming": false,
+      "isVideoModel": true,
+      "tokenCost": 500,
+      "minForfait": 2,
+      "logo": "pollinationai.png",
+      "sourceProviders": ["pollinations", "lightricks"],
+      "videoCapabilities": {
+        "maxDuration": 8,
+        "aspectRatios": ["16:9", "9:16", "1:1"],
+        "outputFormat": "mp4"
+      }
     },
     {
       "id": "wm-flash-1.1",
@@ -250,156 +276,6 @@
       "supportsStreaming": true,
       "maxTokens": 32768,
       "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-4.8",
-      "displayName": "Small 4.8",
-      "apiModel": "open-mistral-7b",
-      "tier": "small",
-      "category": "more",
-      "description": "Open-source 7B de Mistral",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 32768,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-5.0",
-      "displayName": "Small 5.0",
-      "apiModel": "ministral-8b-latest",
-      "tier": "small",
-      "category": "more",
-      "description": "Compact et efficace, open-source",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-5.1b",
-      "displayName": "Small 5.1b",
-      "apiModel": "open-mistral-nemo",
-      "tier": "small",
-      "category": "more",
-      "description": "Multilingue, fenêtre de contexte 128k",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-5.2",
-      "displayName": "Small 5.2",
-      "apiModel": "llama-3.1-70b-versatile",
-      "tier": "small",
-      "category": "more",
-      "description": "Llama 3.1 70B via Groq, très polyvalent",
-      "provider": "groq",
-      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "groqlogo.png"
-    },
-    {
-      "id": "wm-small-5.3",
-      "displayName": "Small 5.3",
-      "apiModel": "ministral-8b-2512",
-      "tier": "small",
-      "category": "more",
-      "description": "Ministral 8B v2512, compact et précis",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-5.4",
-      "displayName": "Small 5.4",
-      "apiModel": "mistral-small-2506",
-      "tier": "small",
-      "category": "more",
-      "description": "Mistral Small 2506, mise à jour récente",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-5.5",
-      "displayName": "Small 5.5",
-      "apiModel": "mistral-small-2603",
-      "tier": "small",
-      "category": "more",
-      "description": "Mistral Small 2603, dernière version",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-small-5.6",
-      "displayName": "Small 5.6",
-      "apiModel": "magistral-small-2509",
-      "tier": "small",
-      "category": "more",
-      "description": "Magistral Small, raisonnement léger",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 131072,
-      "logo": "mistrallogo.png"
-    },
-    {
-      "id": "wm-compound-mini-1.0",
-      "displayName": "Compound Mini",
-      "apiModel": "compound-mini",
-      "tier": "medium",
-      "category": "more",
-      "description": "Groq Compound Mini, léger avec web search",
-      "provider": "groq",
-      "apiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 8192,
-      "contextWindow": 131072,
-      "logo": "groqlogo.png"
-    },
-    {
-      "id": "wm-medium-4.9",
-      "displayName": "Medium 4.9",
-      "apiModel": "open-mixtral-8x7b",
-      "tier": "medium",
-      "category": "more",
-      "description": "MoE 8×7B open-source Mistral",
-      "provider": "mistral",
-      "apiEndpoint": "https://api.mistral.ai/v1/chat/completions",
-      "supportsVision": false,
-      "supportsStreaming": true,
-      "maxTokens": 32768,
-      "contextWindow": 32768,
       "logo": "mistrallogo.png"
     },
     {
