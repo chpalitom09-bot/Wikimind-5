@@ -759,6 +759,131 @@ body:not(.chat-empty-state) #welcome-screen {
 .act-btn.liked { color: #4ade80; }
 .act-btn.disliked { color: #f87171; }
 
+/* ── Actions pour messages utilisateur ── */
+.msg-actions.user {
+  justify-content: flex-end;
+}
+.bubble.user.editing {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+.user-edit-textarea {
+  width: 100%;
+  min-width: 220px;
+  box-sizing: border-box;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  border-bottom-right-radius: 5px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: 'Geist', sans-serif;
+  font-size: 1rem;
+  line-height: 1.7;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.user-edit-textarea:focus { border-color: var(--text3); }
+.user-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.user-edit-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  font-family: 'Geist', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.user-edit-btn:hover { background: var(--bg3); color: var(--text); }
+.user-edit-btn.primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+.user-edit-btn.primary:hover { opacity: 0.88; }
+
+/* ── Icône de modération ── */
+.act-btn.flag-warning {
+  color: #fbbf24;
+}
+.act-btn.flag-warning:hover {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+/* ── Popup d'avertissement de modération ── */
+#mod-warning-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#mod-warning-overlay.open { display: flex; }
+#mod-warning-box {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 26px 24px;
+  width: 380px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: boxIn 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+#mod-warning-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  display: flex; align-items: center; justify-content: center;
+}
+#mod-warning-box h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+#mod-warning-box p {
+  font-size: 0.83rem;
+  color: var(--text2);
+  line-height: 1.65;
+}
+#mod-warning-box a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+#mod-warning-close {
+  align-self: flex-end;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--text);
+  color: var(--bg);
+  font-family: 'Geist', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+#mod-warning-close:hover { opacity: 0.88; }
+
 /* Sources button styles → sources.css */
 
 /* ========== TRANSLATION POPUP ========== */
@@ -2817,6 +2942,22 @@ body.chat-empty-state #input-container {
   </div>
 </div>
 
+<!-- MODERATION WARNING POPUP -->
+<div id="mod-warning-overlay">
+  <div id="mod-warning-box">
+    <div id="mod-warning-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h3>Message en cours de vérification</h3>
+    <p>Ce message est susceptible d'enfreindre les règles de Wikimind. Il est donc en phase de vérification — cela peut prendre un certain temps.</p>
+    <p>Si vous ne comprenez pas pourquoi ce message est signalé, il peut s'agir d'une erreur de détection automatique. Consultez nos <a id="mod-warning-cgu-link">conditions d'utilisation et la transparence sur la modération</a> pour en savoir plus.</p>
+    <button id="mod-warning-close">Compris</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="byok.js"></script>
@@ -4555,10 +4696,11 @@ function scrollBottom() {
 // =============================================
 // MESSAGES
 // =============================================
-function appendUserMsg(text, files = []) {
+function appendUserMsg(text, files = [], msgId = null) {
   const g = document.createElement("div");
   g.className = "msg-group user";
-  
+  if (msgId) g.dataset.msgId = msgId;
+
   let filesHtml = "";
   if (files && files.length > 0) {
     filesHtml = files.map(f => {
@@ -4585,17 +4727,172 @@ function appendUserMsg(text, files = []) {
       </div>`;
     }).join("");
   }
-  
+
   g.innerHTML = `<div class="msg-inner">
     ${filesHtml}
     ${text ? `<div class="bubble user">${renderContent(text)}</div>` : ""}
     <div class="msg-meta user">${new Date().toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}</div>
+    <div class="msg-actions user"></div>
   </div>`;
   messagesEl.appendChild(g);
   // Rendre les URLs en pills cliquables dans la bubble user
   const _userBubble = g.querySelector('.bubble.user');
   if (_userBubble && window.renderUrlPillsInBubble) window.renderUrlPillsInBubble(_userBubble);
+
+  // ── Action bar : copier + modifier ──────────────────────────────────────
+  if (text) {
+    const actBar = g.querySelector('.msg-actions.user');
+
+    const btnCopy = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`, "Copier");
+    btnCopy.addEventListener("click", () => {
+      navigator.clipboard.writeText(text).then(() => {
+        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => { btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; }, 1600);
+      });
+    });
+
+    const btnEdit = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`, "Modifier");
+    btnEdit.addEventListener("click", () => startEditUserMsg(g, text, msgId));
+
+    actBar.append(btnCopy, btnEdit);
+
+    // Slot pour l'icône de modération — sera ajouté par WMModeration si flaggé
+    if (msgId) {
+      actBar.dataset.slotFor = msgId;
+    }
+  }
+
   scrollBottom();
+  return g;
+}
+
+// ── Ajouter l'icône d'avertissement de modération sur un message ──────────
+function flagUserMsg(msgId) {
+  const g = messagesEl.querySelector(`.msg-group.user[data-msg-id="${msgId}"]`);
+  if (!g) return;
+  const actBar = g.querySelector('.msg-actions.user');
+  if (!actBar || actBar.querySelector('.flag-warning')) return;
+
+  const btnFlag = mkActBtn(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`, "Message en cours de vérification");
+  btnFlag.classList.add("flag-warning");
+  btnFlag.addEventListener("click", () => { if (window.openModWarning) openModWarning(); });
+  actBar.appendChild(btnFlag);
+}
+window.flagUserMsg = flagUserMsg;
+
+// ── Édition d'un message utilisateur ────────────────────────────────────
+function startEditUserMsg(groupEl, currentText, msgId) {
+  if (streaming) { toast("Veuillez attendre la fin de la réponse en cours."); return; }
+
+  const inner = groupEl.querySelector('.msg-inner');
+  const bubble = groupEl.querySelector('.bubble.user');
+  const meta = groupEl.querySelector('.msg-meta.user');
+  const actBar = groupEl.querySelector('.msg-actions.user');
+  if (!bubble) return;
+
+  bubble.classList.add('editing');
+  const originalHTML = bubble.innerHTML;
+  if (meta) meta.style.display = 'none';
+  if (actBar) actBar.style.display = 'none';
+
+  const textarea = document.createElement('textarea');
+  textarea.className = 'user-edit-textarea';
+  textarea.value = currentText;
+  bubble.innerHTML = '';
+  bubble.appendChild(textarea);
+
+  const editActions = document.createElement('div');
+  editActions.className = 'user-edit-actions';
+  editActions.innerHTML = `
+    <button class="user-edit-btn" id="user-edit-cancel">Annuler</button>
+    <button class="user-edit-btn primary" id="user-edit-send">Envoyer</button>
+  `;
+  inner.insertBefore(editActions, meta);
+
+  // Auto-resize + focus
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+  textarea.addEventListener('input', () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  });
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  function cancel() {
+    bubble.classList.remove('editing');
+    bubble.innerHTML = originalHTML;
+    if (meta) meta.style.display = '';
+    if (actBar) actBar.style.display = '';
+    editActions.remove();
+  }
+
+  document.getElementById('user-edit-cancel').addEventListener('click', cancel);
+  document.getElementById('user-edit-send').addEventListener('click', () => {
+    const newText = textarea.value.trim();
+    if (!newText) { cancel(); return; }
+    editActions.remove();
+    submitEditedUserMsg(groupEl, msgId, newText);
+  });
+
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById('user-edit-send')?.click();
+    } else if (e.key === 'Escape') {
+      cancel();
+    }
+  });
+}
+
+// ── Soumettre le message édité : supprime les messages suivants et relance ──
+async function submitEditedUserMsg(groupEl, msgId, newText) {
+  if (streaming) return;
+
+  const idx = messages.findIndex(m => m.msgId === msgId);
+  if (idx === -1) return;
+
+  // Supprimer tous les messages à partir de celui-ci (inclus) du DOM et du tableau
+  let nextEl = groupEl;
+  while (nextEl) {
+    const toRemove = nextEl;
+    nextEl = nextEl.nextElementSibling;
+    toRemove.remove();
+  }
+  messages.splice(idx);
+
+  // ── Modération automatique sur le nouveau contenu ──────────────────────
+  const newMsgId = genId();
+  if (newText && window.WMModeration) {
+    window.WMModeration.checkMessage({
+      uid: userId,
+      userEmail: currentUser?.email || null,
+      convId: currentConvId,
+      msgId: newMsgId,
+      content: newText,
+    }).then(result => {
+      if (result?.flagged) flagUserMsg(newMsgId);
+    }).catch(() => {});
+  }
+
+  // Réafficher le message édité
+  appendUserMsg(newText, [], newMsgId);
+  messages.push({
+    role: "user",
+    content: newText,
+    displayContent: newText,
+    msgId: newMsgId,
+    ts: Date.now(),
+    model: selectedModel,
+    modelName: selectedModelName,
+    files: [],
+    visionContent: null
+  });
+
+  if (userId && currentConvId) await saveConversation();
+
+  // Relancer la génération de réponse
+  await doStream(newText, false);
 }
 
 // ── FILE CARD FLASHCARDS dans le chat ──
@@ -5061,7 +5358,7 @@ async function sendMessage() {
     visionContent: visionContent || null
   };
   messages.push(userMsg);
-  appendUserMsg(text, filesForDisplay);
+  appendUserMsg(text, filesForDisplay, userMsgId);
 
   // ── Modération automatique (arrière-plan, non bloquant) ──────────────
   if (text && window.WMModeration) {
@@ -5071,6 +5368,8 @@ async function sendMessage() {
       convId: currentConvId,
       msgId: userMsgId,
       content: text,
+    }).then(result => {
+      if (result?.flagged) flagUserMsg(userMsgId);
     }).catch(() => {});
   }
 
@@ -6451,6 +6750,10 @@ $("stg-byok-row")?.addEventListener("click", () => {
 if (window.WMBYOK) WMBYOK.onChange(refreshByokStatus);
 refreshByokStatus();
 
+$("stg-legal-row")?.addEventListener("click", () => {
+  if (window.WMLegal) WMLegal.open('cgu');
+});
+
 $("tb-search")?.addEventListener("click", () => {
   openSidebar();
   setTimeout(() => {
@@ -7239,6 +7542,18 @@ window.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
 
+    <!-- LEGAL -->
+    <div class="stg-section-label">Légal & Confidentialité</div>
+    <div class="stg-group">
+      <div class="stg-row" id="stg-legal-row">
+        <div class="stg-row-icon" style="background:rgba(148,163,184,0.15);color:#94a3b8;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Conditions & transparence des données</div><div class="stg-row-sub">CGU, modération automatique, données collectées</div></div>
+        <div class="stg-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+
     <!-- APPLICATION -->
     <div class="stg-section-label">Application</div>
     <div class="stg-group">
@@ -7466,4 +7781,25 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="aitokens.js" defer></script>
 <script src="videogen.js" defer></script>
 <script src="moderation.js" defer></script>
+<script src="legal.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('mod-warning-close')?.addEventListener('click', () => {
+    document.getElementById('mod-warning-overlay').classList.remove('open');
+  });
+  document.getElementById('mod-warning-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'mod-warning-overlay') {
+      document.getElementById('mod-warning-overlay').classList.remove('open');
+    }
+  });
+  document.getElementById('mod-warning-cgu-link')?.addEventListener('click', () => {
+    document.getElementById('mod-warning-overlay').classList.remove('open');
+    if (window.WMLegal) WMLegal.open('moderation');
+  });
+});
+function openModWarning() {
+  document.getElementById('mod-warning-overlay')?.classList.add('open');
+}
+window.openModWarning = openModWarning;
+</script>
 </html>
