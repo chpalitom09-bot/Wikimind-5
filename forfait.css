@@ -195,12 +195,12 @@
 /* ── Plans grid ── */
 #fp-plans {
   display: grid;
-  grid-template-columns: repeat(3, 280px);
+  grid-template-columns: repeat(4, 260px);
   gap: 16px;
   margin-bottom: 64px;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1180px) {
   #fp-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
@@ -257,6 +257,25 @@
   color: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-top: none;
+}
+.fp-plan-badge.badge-enterprise {
+  background: rgba(167, 139, 250, 0.1);
+  color: #a78bfa;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-top: none;
+}
+
+/* Carte Entreprise */
+.fp-plan.enterprise {
+  border-color: rgba(167, 139, 250, 0.18);
+  background: #0b0a0d;
+}
+.fp-plan.enterprise:hover {
+  border-color: rgba(167, 139, 250, 0.35);
+}
+.fp-price-onrequest {
+  font-size: 1.6rem !important;
+  letter-spacing: -0.01em;
 }
 
 /* Plan header */
@@ -373,6 +392,15 @@
 }
 .fp-cta.featured-cta:hover {
   background: rgba(255, 255, 255, 0.9);
+}
+.fp-cta.enterprise-cta {
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #a78bfa;
+}
+.fp-cta.enterprise-cta:hover {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.5);
+  color: #c4b5fd;
 }
 
 /* ── FAQ / note bas ── */
