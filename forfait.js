@@ -4,18 +4,20 @@
 
 (function () {
 
+  const CONTACT_EMAIL = "wikimind.ai@gmail.com";
+
   // ── Données des plans ───────────────────────────────────────────────────
+  // FORFAIT : 1 = Free, 2 = Plus, 3 = Pro, 4 = Entreprise (sur demande)
   const PLANS = [
     {
       id: "free",
+      forfait: 1,
       name: "Free",
       monthly: 0,
       annual: 0,
       desc: "Pour découvrir Wikimind et ses fonctionnalités essentielles.",
-      badge: { text: "Actuel", cls: "badge-current" },
       cta: { text: "Forfait actuel", cls: "current-cta", disabled: true },
       featured: false,
-      current: true,
       features: [
         { text: "Accès aux modèles Small et Flash", active: true },
         { text: "20 messages / jour", active: true },
@@ -23,11 +25,12 @@
         { text: "Historique des conversations", active: true },
         { text: "Stockage cloud des images", active: false },
         { text: "Modèles Large et Medium", active: false },
-        { text: "Mind Tokens bonus", active: false },
+        { text: "AI Tokens (génération vidéo)", active: false },
       ],
     },
     {
       id: "plus",
+      forfait: 2,
       name: "Plus",
       monthly: 7,
       annual: 5,
@@ -35,19 +38,19 @@
       badge: { text: "Populaire", cls: "badge-popular" },
       cta: { text: "Passer à Plus →", cls: "featured-cta", disabled: false },
       featured: true,
-      current: false,
       features: [
         { text: "Accès à tous les modèles", active: true },
         { text: "Messages illimités", active: true },
         { text: "Tous les modèles image (GPT Image, Kontext…)", active: true },
         { text: "Stockage cloud des images — 5 Go", active: true },
         { text: "Historique illimité", active: true },
-        { text: "500 Mind Tokens offerts / mois", active: true },
+        { text: "500 AI Tokens / jour · Génération vidéo", active: true },
         { text: "Support prioritaire", active: false },
       ],
     },
     {
       id: "pro",
+      forfait: 3,
       name: "Pro",
       monthly: 18,
       annual: 14,
@@ -55,15 +58,33 @@
       badge: null,
       cta: { text: "Passer à Pro →", cls: "", disabled: false },
       featured: false,
-      current: false,
       features: [
         { text: "Tout ce qui est inclus dans Plus", active: true },
         { text: "Stockage cloud des images — 50 Go", active: true },
         { text: "Limites de génération augmentées ×5", active: true },
         { text: "Accès anticipé aux nouveaux modèles", active: true },
-        { text: "2 000 Mind Tokens offerts / mois", active: true },
+        { text: "1 500 AI Tokens / jour · Vidéo haute qualité", active: true },
         { text: "Support prioritaire 24h", active: true },
         { text: "API Wikimind en accès direct", active: true },
+      ],
+    },
+    {
+      id: "enterprise",
+      forfait: 4,
+      name: "Entreprise",
+      monthly: null,
+      annual: null,
+      onRequest: true,
+      desc: "Pour les écoles, organisations et équipes avec des besoins sur-mesure.",
+      badge: { text: "Sur demande", cls: "badge-enterprise" },
+      cta: { text: "Nous contacter →", cls: "enterprise-cta", disabled: false },
+      featured: false,
+      features: [
+        { text: "Tout ce qui est inclus dans Pro", active: true },
+        { text: "Quotas et AI Tokens personnalisés", active: true },
+        { text: "Comptes multi-utilisateurs / organisation", active: true },
+        { text: "Facturation adaptée à vos besoins", active: true },
+        { text: "Accompagnement dédié", active: true },
       ],
     },
   ];
@@ -78,6 +99,13 @@
       link.href = "forfait.css";
       document.head.appendChild(link);
     }
+  }
+
+  // ── Récupérer le forfait actuel de l'utilisateur ─────────────────────────
+  function getCurrentForfait() {
+    const f = window._userForfait;
+    if (typeof f === "number" && f >= 1 && f <= 4) return f;
+    return 1; // Free par défaut
   }
 
   // ── Build HTML ───────────────────────────────────────────────────────────
@@ -127,8 +155,8 @@
         </div>
 
         <p id="fp-note">
-          Paiement sécurisé. Annulation à tout moment, sans engagement.<br>
-          Les Mind Tokens sont une monnaie virtuelle utilisable sur toute la plateforme.<br>
+          Le forfait Entreprise est attribué manuellement après contact — aucun paiement automatique.<br>
+          Les AI Tokens sont une monnaie virtuelle utilisable pour la génération vidéo sur la plateforme.<br>
           <a id="fp-faq-link">Voir la FAQ →</a>
         </p>
       </div>
@@ -137,20 +165,27 @@
   }
 
   function buildPlanCard(plan) {
+    const currentForfait = getCurrentForfait();
+    const isCurrent = plan.forfait === currentForfait;
+
     const price = isAnnual ? plan.annual : plan.monthly;
-    const annualNote = plan.monthly === 0
+    const annualNote = plan.onRequest || plan.monthly === 0
       ? ""
       : isAnnual
         ? `<span class="saving">soit ${plan.annual * 12} € / an</span>`
         : `${plan.annual} € / mois facturé annuellement`;
 
-    const badgeHTML = plan.badge
-      ? `<div class="fp-plan-badge ${plan.badge.cls}">${plan.badge.text}</div>`
-      : "";
+    // Badge : priorité au badge "Actuel" si c'est le forfait actif
+    let badgeHTML = "";
+    if (isCurrent) {
+      badgeHTML = `<div class="fp-plan-badge badge-current">Actuel</div>`;
+    } else if (plan.badge) {
+      badgeHTML = `<div class="fp-plan-badge ${plan.badge.cls}">${plan.badge.text}</div>`;
+    }
 
     const featuresHTML = plan.features.map(f => `
       <li class="fp-feature${f.active ? "" : " dim"}">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${f.active ? "currentColor" : "currentColor"}" stroke-width="2.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           ${f.active
             ? `<polyline points="20 6 9 17 4 12"/>`
             : `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`
@@ -159,22 +194,46 @@
         ${f.text}
       </li>`).join("");
 
-    const priceDisplay = plan.monthly === 0
-      ? `<span class="fp-price-amount">0</span><span class="fp-price-currency">€</span>`
-      : `<span class="fp-price-currency">€</span><span class="fp-price-amount" data-monthly="${plan.monthly}" data-annual="${plan.annual}">${price}</span>`;
+    let priceDisplay;
+    if (plan.onRequest) {
+      priceDisplay = `<span class="fp-price-amount fp-price-onrequest">Sur devis</span>`;
+    } else if (plan.monthly === 0) {
+      priceDisplay = `<span class="fp-price-amount">0</span><span class="fp-price-currency">€</span>`;
+    } else {
+      priceDisplay = `<span class="fp-price-currency">€</span><span class="fp-price-amount" data-monthly="${plan.monthly}" data-annual="${plan.annual}">${price}</span>`;
+    }
+
+    let periodHTML;
+    if (plan.onRequest) {
+      periodHTML = `<span class="fp-price-period">forfait personnalisé</span>`;
+    } else if (plan.monthly > 0) {
+      periodHTML = `<span class="fp-price-period">/ mois</span>`;
+    } else {
+      periodHTML = `<span class="fp-price-period">pour toujours</span>`;
+    }
+
+    // CTA : si c'est le forfait actuel, on désactive même si ce n'était pas "free"
+    let ctaCls = plan.cta.cls;
+    let ctaText = plan.cta.text;
+    let ctaDisabled = plan.cta.disabled;
+    if (isCurrent) {
+      ctaCls = "current-cta";
+      ctaText = "Forfait actuel";
+      ctaDisabled = true;
+    }
 
     return `
-      <div class="fp-plan${plan.featured ? " featured" : ""}${plan.current ? " current" : ""}" data-plan="${plan.id}">
+      <div class="fp-plan${plan.featured ? " featured" : ""}${isCurrent ? " current" : ""}${plan.onRequest ? " enterprise" : ""}" data-plan="${plan.id}">
         ${badgeHTML}
         <div class="fp-plan-name">${plan.name}</div>
         <div class="fp-plan-price">
           ${priceDisplay}
-          ${plan.monthly > 0 ? `<span class="fp-price-period">/ mois</span>` : `<span class="fp-price-period">pour toujours</span>`}
+          ${periodHTML}
         </div>
         <div class="fp-price-annual-note" id="fp-note-${plan.id}">${annualNote}</div>
         <p class="fp-plan-desc">${plan.desc}</p>
         <ul class="fp-features">${featuresHTML}</ul>
-        <button class="fp-cta ${plan.cta.cls}" data-plan="${plan.id}" ${plan.cta.disabled ? "disabled" : ""}>${plan.cta.text}</button>
+        <button class="fp-cta ${ctaCls}" data-plan="${plan.id}" ${ctaDisabled ? "disabled" : ""}>${ctaText}</button>
       </div>`;
   }
 
@@ -190,7 +249,7 @@
     optAnnual.classList.toggle("active", annual);
 
     PLANS.forEach(plan => {
-      if (plan.monthly === 0) return;
+      if (plan.onRequest || plan.monthly === 0) return;
       const amountEl = document.querySelector(`.fp-plan[data-plan="${plan.id}"] .fp-price-amount`);
       const noteEl = document.getElementById(`fp-note-${plan.id}`);
       if (amountEl) amountEl.textContent = annual ? plan.annual : plan.monthly;
@@ -205,6 +264,8 @@
 
   // ── Ouvrir / Fermer ──────────────────────────────────────────────────────
   function open() {
+    // Reconstruire le panneau pour refléter le forfait actuel à chaque ouverture
+    rebuildPlans();
     document.getElementById("forfait-overlay").classList.add("open");
     document.getElementById("forfait-panel").classList.add("open");
     document.body.style.overflow = "hidden";
@@ -216,10 +277,46 @@
     document.body.style.overflow = "";
   }
 
+  function rebuildPlans() {
+    const plansEl = document.getElementById("fp-plans");
+    if (!plansEl) return;
+    plansEl.innerHTML = PLANS.map(buildPlanCard).join("");
+    bindCtaEvents();
+  }
+
   // ── Bind events ──────────────────────────────────────────────────────────
+  function bindCtaEvents() {
+    document.querySelectorAll(".fp-cta:not([disabled])").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const planId = btn.dataset.plan;
+        const plan = PLANS.find(p => p.id === planId);
+
+        if (plan && plan.onRequest) {
+          // Forfait Entreprise — contact par e-mail
+          const subject = encodeURIComponent("Demande de forfait Entreprise — Wikimind");
+          const userEmail = window.currentUser?.email || "";
+          const body = encodeURIComponent(
+            `Bonjour,\n\nJe souhaite obtenir plus d'informations sur le forfait Entreprise de Wikimind (forfait sur mesure).\n\n` +
+            (userEmail ? `Mon adresse de compte Wikimind : ${userEmail}\n` : "") +
+            (window.userId ? `Mon identifiant Wikimind : ${window.userId}\n` : "") +
+            `\nMerci !`
+          );
+          window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+          return;
+        }
+
+        // Hook à brancher plus tard sur le système de paiement
+        console.log("[Wikimind Forfait] Upgrade vers :", planId, "| Annuel :", isAnnual);
+        if (window.toast) window.toast("Paiement — Bientôt disponible");
+      });
+    });
+  }
+
   function bindEvents() {
     document.getElementById("fp-close").addEventListener("click", close);
-    document.getElementById("forfait-overlay").addEventListener("click", close);
+    document.getElementById("forfait-overlay").addEventListener("click", (e) => {
+      if (e.target.id === "forfait-overlay") close();
+    });
 
     // Toggle
     const toggleSwitch = document.getElementById("fp-toggle-switch");
@@ -229,16 +326,7 @@
     optMonthly.addEventListener("click", () => updatePrices(false));
     optAnnual.addEventListener("click", () => updatePrices(true));
 
-    // CTA buttons
-    document.querySelectorAll(".fp-cta:not([disabled])").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const planId = btn.dataset.plan;
-        // Hook à brancher plus tard sur le système de paiement
-        console.log("[Wikimind Forfait] Upgrade vers :", planId, "| Annuel :", isAnnual);
-        // Placeholder toast
-        if (window.toast) window.toast("Paiement — Bientôt disponible");
-      });
-    });
+    bindCtaEvents();
 
     // Échap
     document.addEventListener("keydown", (e) => {
@@ -275,7 +363,7 @@
   }
 
   // Exposer pour usage externe si besoin
-  window.WMForfait = { open, close };
+  window.WMForfait = { open, close, PLANS, getCurrentForfait };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
