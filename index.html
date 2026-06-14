@@ -2763,6 +2763,7 @@ body.chat-empty-state #input-container {
 
 <div id="toast"></div>
 
+<script src="byok.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -3848,6 +3849,22 @@ async function loadModels() {
 // Chargement au démarrage
 loadModels();
 
+// ── BYOK : si retour de connexion réussie, sélectionner automatiquement le modèle BYOK ──
+if (window.WMBYOK) {
+  WMBYOK.onChange(({ connected }) => {
+    if (connected) {
+      const byok = WIKIMIND_MODELS.find(m => m.isBYOK);
+      if (byok) {
+        selectedModel     = byok.apiModel;
+        selectedModelName = byok.displayName;
+        window._wmSelectedModelObj = byok;
+        if (bubbleModelLabel) bubbleModelLabel.textContent = byok.displayName;
+        if (bubbleModelBtn) bubbleModelBtn.dataset.tier = byok.tier;
+      }
+    }
+  });
+}
+
 // =============================================
 // MODEL SELECTOR
 // =============================================
@@ -3889,6 +3906,14 @@ function visionBadge() {
 
 function imgBadge() {
   return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:0.58rem;font-weight:600;background:rgba(236,72,153,0.1);color:#f472b6;border-radius:5px;padding:1px 5px;margin-left:3px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Image</span>`;
+}
+
+function byokBadge() {
+  const connected = window.WMBYOK?.isConnected();
+  const color = connected ? "#4ade80" : "rgba(255,255,255,0.4)";
+  const bg = connected ? "rgba(74,222,128,0.1)" : "rgba(255,255,255,0.06)";
+  const text = connected ? "Connecté" : "Non connecté";
+  return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:0.58rem;font-weight:600;background:${bg};color:${color};border-radius:5px;padding:1px 5px;margin-left:3px;">${text}</span>`;
 }
 
 function checkSVG() {
@@ -3936,7 +3961,7 @@ function buildMorePanel() {
     return `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}" style="padding:10px 16px;">
       <div class="model-opt-info">
         <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
-          ${mLogoHtml}${m.displayName}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}
+          ${mLogoHtml}${m.displayName}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}${m.isBYOK?byokBadge():""}
         </div>
         <div class="model-opt-desc" style="display:flex;align-items:center;gap:4px;">${providerBadge(m.provider)}${m.description}</div>
       </div>${checkSVG()}</div>`;
@@ -3973,6 +3998,18 @@ function buildMorePanel() {
 function applyModelById(id) {
   const m = WIKIMIND_MODELS.find(x => x.id === id);
   if (!m) return;
+
+  // BYOK : si pas encore connecté, lancer le flow OAuth tout de suite
+  if (m.isBYOK && (!window.WMBYOK || !WMBYOK.isConnected())) {
+    if (window.WMBYOK) {
+      toast("Connexion à votre compte Pollinations…");
+      WMBYOK.connect();
+    } else {
+      toast("Module BYOK indisponible");
+    }
+    return; // on ne change pas le modèle sélectionné avant la connexion
+  }
+
   selectedModel     = m.apiModel;
   selectedModelName = m.displayName;
   window._wmSelectedModelObj = m;
@@ -5146,10 +5183,30 @@ function getImageRateLimit(modelObj) {
 }
 
 async function generateImage(prompt, modelObj) {
+  // ── BYOK : modèle spécial "Bring Your Own Key" ──────────────────────────
+  if (modelObj.isBYOK) {
+    if (!window.WMBYOK || !WMBYOK.isConnected()) {
+      sendBtn.disabled = false;
+      streaming = false;
+      stopBtn.classList.remove("on");
+      if (window.WMBYOK) {
+        toast("Connexion à votre compte Pollinations…");
+        WMBYOK.connect();
+      } else {
+        toast("Module BYOK indisponible");
+      }
+      return;
+    }
+    // Connecté : on génère avec le modèle Flux par défaut sur SA clé,
+    // sans limite de débit (c'est son propre quota Pollinations)
+    const byokModel = { ...modelObj, apiModel: "flux", isImageModel: true, isBYOK: true };
+    return generateImage(prompt, byokModel);
+  }
+
   const rateKey   = modelObj.apiModel;
   const rateLimit = getImageRateLimit(modelObj);
 
-  if (!checkImageRateLimit(rateKey, rateLimit)) {
+  if (!modelObj.isBYOK && !checkImageRateLimit(rateKey, rateLimit)) {
     toast(`Limite atteinte pour ce modèle (${rateLimit} image${rateLimit > 1 ? "s" : ""} / heure)`);
     sendBtn.disabled = false;
     return;
@@ -5195,7 +5252,9 @@ async function generateImage(prompt, modelObj) {
 
   try {
     const seed  = Math.floor(Math.random() * 10000000);
-    const token = (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
+    const token = modelObj.isBYOK && window.WMBYOK?.getUserKey()
+      ? WMBYOK.getUserKey()
+      : (WM_API_KEYS && WM_API_KEYS.pollinations) || "pk_w6wnuGBObh7FeHwp";
     const baseParams = `model=${modelObj.apiModel}&seed=${seed}&private=true&key=${token}`;
 
     // ── Kontext : édition d'image (upload → URL → &image=) ────────────
@@ -6211,6 +6270,31 @@ $("new-chat-btn").addEventListener("click", newConversation);
 // Topbar buttons
 $("tb-settings")?.addEventListener("click", () => { if (typeof window.openSettingsModal === 'function') window.openSettingsModal(); });
 $("tb-videogen")?.addEventListener("click", () => { if (window.WMVideoGen) WMVideoGen.open(); });
+
+// ── BYOK settings row ──────────────────────────────────────────────────────
+function refreshByokStatus() {
+  const statusEl = $("stg-byok-status");
+  if (!statusEl || !window.WMBYOK) return;
+  if (WMBYOK.isConnected()) {
+    const info = WMBYOK.getUserInfo();
+    statusEl.textContent = `Connecté${info?.preferred_username ? " · " + info.preferred_username : ""} · Cliquez pour déconnecter`;
+  } else {
+    statusEl.textContent = "Non connecté · Cliquez pour connecter votre compte";
+  }
+}
+$("stg-byok-row")?.addEventListener("click", () => {
+  if (!window.WMBYOK) return;
+  if (WMBYOK.isConnected()) {
+    WMBYOK.disconnect();
+    refreshByokStatus();
+  } else {
+    toast("Connexion à votre compte Pollinations…");
+    WMBYOK.connect();
+  }
+});
+if (window.WMBYOK) WMBYOK.onChange(refreshByokStatus);
+refreshByokStatus();
+
 $("tb-search")?.addEventListener("click", () => {
   openSidebar();
   setTimeout(() => {
@@ -6988,6 +7072,13 @@ window.addEventListener('DOMContentLoaded', () => {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
         <div class="stg-row-body"><div class="stg-row-label">Mind Tokens</div><div class="stg-row-sub" id="stg-tokens-count">Chargement…</div></div>
+        <div class="stg-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="stg-row" id="stg-byok-row">
+        <div class="stg-row-icon" style="background:rgba(244,114,182,0.15);color:#f472b6;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="stg-row-body"><div class="stg-row-label">Compte Pollinations (BYOK)</div><div class="stg-row-sub" id="stg-byok-status">Non connecté</div></div>
         <div class="stg-row-right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
       </div>
     </div>
