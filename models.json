@@ -7,6 +7,7 @@
     "groq_p2": "DP73WGdyb3FYGPxjnic",
     "groq_p3": "bCl9eWCGO6aRhA8xs",
     "pollinations": "pk_w6wnuGBObh7FeHwp",
+    "pollinations_app_key": "pk_k17pnl1BAXA1Lqsb",
     "cerebras": "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55"
   },
   "aiTokens": {
@@ -150,6 +151,24 @@
       "imageRateLimited": false,
       "logo": "pollinationai.png",
       "sourceProviders": ["pollinations", "blackforestlabs"]
+    },
+    {
+      "id": "wm-byok",
+      "displayName": "BYOK — Votre clé",
+      "apiModel": "byok",
+      "tier": "large",
+      "category": "image",
+      "description": "Connectez votre compte Pollinations · vos crédits, vos modèles",
+      "provider": "pollinations",
+      "apiEndpoint": "https://gen.pollinations.ai/image/",
+      "supportsVision": false,
+      "supportsStreaming": false,
+      "isImageModel": true,
+      "isBYOK": true,
+      "hourlyLimit": 0,
+      "imageRateLimited": false,
+      "logo": "pollinationai.png",
+      "sourceProviders": ["pollinations"]
     },
     {
       "id": "wm-video-ltx2",
