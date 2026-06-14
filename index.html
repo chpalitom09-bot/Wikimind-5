@@ -2793,6 +2793,7 @@ window.auth = auth;
 window.db   = db;
 window._firebaseRef = ref;
 window._firebasePush = push;
+window._firebaseSet = set;
 window._firebaseGet = get;
 window._firebaseSignOut = signOut;
 
@@ -4968,7 +4969,18 @@ async function sendMessage() {
   };
   messages.push(userMsg);
   appendUserMsg(text, filesForDisplay);
-  
+
+  // ── Modération automatique (arrière-plan, non bloquant) ──────────────
+  if (text && window.WMModeration) {
+    window.WMModeration.checkMessage({
+      uid: userId,
+      userEmail: currentUser?.email || null,
+      convId: currentConvId,
+      msgId: userMsgId,
+      content: text,
+    }).catch(() => {});
+  }
+
   // Reset
   chatInput.value = "";
   attachedFiles = [];
@@ -7206,4 +7218,5 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="forfait.js" defer></script>
 <script src="aitokens.js" defer></script>
 <script src="videogen.js" defer></script>
+<script src="moderation.js" defer></script>
 </html>
