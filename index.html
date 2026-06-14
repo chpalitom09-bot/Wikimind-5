@@ -4870,8 +4870,15 @@ async function submitEditedUserMsg(groupEl, msgId, newText) {
       convId: currentConvId,
       msgId: newMsgId,
       content: newText,
-    }).then(result => {
-      if (result?.flagged) flagUserMsg(newMsgId);
+    }).then(async result => {
+      if (result?.flagged) {
+        flagUserMsg(newMsgId);
+        const i = messages.findIndex(m => m.msgId === newMsgId);
+        if (i >= 0) {
+          messages[i].flagged = true;
+          if (userId && currentConvId) await saveConversation();
+        }
+      }
     }).catch(() => {});
   }
 
@@ -5368,8 +5375,15 @@ async function sendMessage() {
       convId: currentConvId,
       msgId: userMsgId,
       content: text,
-    }).then(result => {
-      if (result?.flagged) flagUserMsg(userMsgId);
+    }).then(async result => {
+      if (result?.flagged) {
+        flagUserMsg(userMsgId);
+        const idx = messages.findIndex(m => m.msgId === userMsgId);
+        if (idx >= 0) {
+          messages[idx].flagged = true;
+          if (userId && currentConvId) await saveConversation();
+        }
+      }
     }).catch(() => {});
   }
 
@@ -6211,7 +6225,8 @@ async function saveConversation() {
       isImage: msg.isImage || false,
       imageUrl: msg.imageUrl || null,
       imageError: msg.imageError || false,
-      imageErrorDetail: msg.imageErrorDetail || null
+      imageErrorDetail: msg.imageErrorDetail || null,
+      flagged: msg.flagged || false
     }));
 
     const firstUserMsg = messages.find(m => m.role === "user");
@@ -6409,13 +6424,17 @@ async function loadConversation(convId) {
           isImage: msg.isImage || false,
           imageUrl: msg.imageUrl || null,
           imageError: msg.imageError || false,
-          imageErrorDetail: msg.imageErrorDetail || null
+          imageErrorDetail: msg.imageErrorDetail || null,
+          flagged: msg.flagged || false
         });
       });
 
       messagesEl.innerHTML = "";
       messages.forEach(msg => {
-        if (msg.role === "user") appendUserMsg(msg.content);
+        if (msg.role === "user") {
+          appendUserMsg(msg.content, [], msg.msgId);
+          if (msg.flagged) flagUserMsg(msg.msgId);
+        }
         else appendAIMsg(msg);
       });
 
@@ -6467,6 +6486,15 @@ function updateAuthUI() {
     $("pp-email").textContent = "Non connecté";
   }
 }
+
+// ── Affiche le nom du forfait courant (1=Free, 2=Plus, 3=Pro, 4=Entreprise) ──
+function refreshPlanLabel() {
+  const names = { 1: "Free", 2: "Plus", 3: "Pro", 4: "Entreprise" };
+  const label = `Forfait ${names[window._userForfait] || "Free"}`;
+  if ($("s-plan")) $("s-plan").textContent = label;
+  if ($("stg-account-plan")) $("stg-account-plan").textContent = label;
+}
+window.refreshPlanLabel = refreshPlanLabel;
 
 async function handleAuth(tab) {
   const email = $("auth-email").value.trim();
@@ -6694,6 +6722,7 @@ onAuthStateChanged(auth, async (user) => {
       const forfaitSnap = await get(ref(db, `users/${userId}/FORFAIT`));
       const userForfait = forfaitSnap.exists() ? (forfaitSnap.val() || 1) : 1;
       window._userForfait = userForfait;
+      refreshPlanLabel();
       if (window.WMAITokens) {
         await WMAITokens.init(userId, userForfait);
       }
@@ -6701,6 +6730,7 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     window.userId = null;
     window._userForfait = 1;
+    refreshPlanLabel();
   }
 });
 
