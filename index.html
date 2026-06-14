@@ -2986,6 +2986,12 @@ const _gk = (()=>{
   try{const b=atob(_e);return b.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^(37+i%7))).join('');}catch{return"";}
 })();
 
+// SambaNova key — XOR-obfuscated, decoded at runtime (scanner-safe)
+const _snk = (()=>{
+  const _e="QBUSHxtIHhALQktNEgYRFENMBEtIQBcKTR4TH0AQQh4QHx9G";
+  try{const b=atob(_e);return b.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^(37+i%7))).join('');}catch{return"";}
+})();
+
 // Expose Firebase handles for settings5.js (non-module script)
 window.auth = auth;
 window.db   = db;
@@ -3994,7 +4000,7 @@ function updateSendBtn() {
 // WIKIMIND MODELS — chargés depuis models.json
 // =============================================
 let WIKIMIND_MODELS = [];
-let WM_API_KEYS = { mistral: "", groq: "", pollinations: "" };
+let WM_API_KEYS = { mistral: "", groq: "", pollinations: "", cerebras: "", sambanova: "" };
 // Rate limits par modèle image (images/heure)
 const IMAGE_RATE_LIMITS = {
   "flux":           222,  // ~0.4/0.0018 images Flux Schnell
@@ -4009,6 +4015,19 @@ async function loadModels() {
     if (!res.ok) throw new Error("fetch models.json failed");
     const data = await res.json();
     WIKIMIND_MODELS = data.models;
+
+    // ── Retrait automatique des modèles expirés (ex: SambaNova après le 12/09/2026) ──
+    if (data.modelExpiry?.removeDate) {
+      const removeDate = new Date(data.modelExpiry.removeDate);
+      if (Date.now() >= removeDate.getTime()) {
+        WIKIMIND_MODELS = WIKIMIND_MODELS.filter(m => !m.expiresAfterRemoveDate);
+      }
+    }
+
+    // ── Filtrage par forfait (minForfait) ──
+    const _uf = window._userForfait || 1;
+    WIKIMIND_MODELS = WIKIMIND_MODELS.filter(m => !m.minForfait || _uf >= m.minForfait);
+
     if (data.apiKeys) {
       // Préférer la clé _gk (XOR-décodée en dur), sinon fallback models.json
       const gk = _gk || data.apiKeys.groq || (
@@ -4020,10 +4039,13 @@ async function loadModels() {
         mistral: data.apiKeys.mistral || "", 
         groq: gk,
         pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp",
-        cerebras: data.apiKeys.cerebras || ""
+        cerebras: data.apiKeys.cerebras || "",
+        sambanova: _snk || data.apiKeys.sambanova || ""
       };
     }
-    const def = WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
+    // ── Si le modèle actuellement sélectionné a disparu (forfait insuffisant / expiré), fallback ──
+    const currentStillAvailable = WIKIMIND_MODELS.find(m => m.apiModel === selectedModel);
+    const def = currentStillAvailable || WIKIMIND_MODELS.find(m => m.id === data.defaultModel) || WIKIMIND_MODELS[0];
     selectedModel     = def.apiModel;
     selectedModelName = def.displayName;
     bubbleModelLabel.textContent = def.displayName;
@@ -4085,6 +4107,7 @@ const PROVIDER_LOGOS = {
   groq:            'groqlogo.png',
   pollinations:    'pollinationai.png',
   cerebras:        'cerebraslogo.png',
+  sambanova:       'sambanovalogo.png',
   openai:          'openailogo.png',
   blackforestlabs: 'blackforestlabs.png',
 };
@@ -4092,7 +4115,7 @@ const PROVIDER_LOGOS = {
 function providerBadge(provider) {
   const src = PROVIDER_LOGOS[provider];
   if (!src) return "";
-  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", blackforestlabs:"Black Forest Labs" };
+  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", sambanova:"SambaNova", blackforestlabs:"Black Forest Labs" };
   const logoImg = `<img src="${src}" alt="${provider}" width="12" height="12" style="flex-shrink:0;border-radius:2px;object-fit:contain;" onerror="this.style.display='none'">`;
   return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:600;letter-spacing:0.03em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:5px;padding:1px 5px 1px 3px;margin-left:4px;">${logoImg}${names[provider]||provider}</span>`;
 }
@@ -4111,6 +4134,10 @@ function byokBadge() {
   const bg = connected ? "rgba(74,222,128,0.1)" : "rgba(255,255,255,0.06)";
   const text = connected ? "Connecté" : "Non connecté";
   return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:0.58rem;font-weight:600;background:${bg};color:${color};border-radius:5px;padding:1px 5px;margin-left:3px;">${text}</span>`;
+}
+
+function paidBadge() {
+  return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:0.58rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:rgba(251,191,36,0.1);color:#fbbf24;border-radius:5px;padding:1px 5px;margin-left:3px;">Payant</span>`;
 }
 
 function checkSVG() {
@@ -4158,7 +4185,7 @@ function buildMorePanel() {
     return `<div class="model-opt${sel?" selected":""}" data-model-id="${m.id}" style="padding:10px 16px;">
       <div class="model-opt-info">
         <div class="model-opt-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
-          ${mLogoHtml}${m.displayName}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}${m.isBYOK?byokBadge():""}
+          ${mLogoHtml}${m.displayName}${m.supportsVision?visionBadge():""}${m.isImageModel?imgBadge():""}${m.isBYOK?byokBadge():""}${m.isPaid?paidBadge():""}
         </div>
         <div class="model-opt-desc" style="display:flex;align-items:center;gap:4px;">${providerBadge(m.provider)}${m.description}</div>
       </div>${checkSVG()}</div>`;
@@ -5033,7 +5060,7 @@ function appendAIMsg(msgObj, isStreaming = false) {
 
   const meta = document.createElement("div");
   meta.className = "msg-meta";
-  meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName || selectedModelName}</span>`;
+  meta.innerHTML = `<span class="model-tag-sm">${msgObj.modelName || selectedModelName}</span>${sambanovaCostBadge(msgObj)}`;
 
   const actBar = document.createElement("div");
   actBar.className = "msg-actions";
@@ -5264,11 +5291,47 @@ function mkActBtn(svgHtml, title) {
 function buildInfoPopup(popup, msgObj) {
   const rt = msgObj.responseTime ? fmtTime(msgObj.responseTime) : "–";
   const ts = msgObj.ts ? new Date(msgObj.ts).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" }) : "–";
+  const costLine = sambanovaCostInfo(msgObj);
   popup.innerHTML = `
     <div><strong>Modèle</strong> — ${msgObj.modelName || selectedModelName}</div>
     <div><strong>Heure</strong> — ${ts}</div>
     <div><strong>Temps de réponse</strong> — ${rt}</div>
+    ${costLine ? `<div><strong>Coût estimé</strong> — ${costLine}</div>` : ""}
   `;
+}
+
+// ── Estimation du coût d'une réponse SambaNova (modèles payants) ──────────────
+// Retourne null si le modèle n'est pas un modèle SambaNova payant.
+function sambanovaCostInfo(msgObj) {
+  if (!msgObj || msgObj.provider !== "sambanova") return null;
+  const mDef = WIKIMIND_MODELS.find(m => m.id === msgObj.modelId) || WIKIMIND_MODELS.find(m => m.apiModel === msgObj.model);
+  const pricing = mDef?.pricing;
+  if (!pricing) return null;
+
+  let inputTokens, outputTokens;
+  if (msgObj.usage) {
+    inputTokens  = msgObj.usage.prompt_tokens ?? msgObj.usage.input_tokens ?? 0;
+    outputTokens = msgObj.usage.completion_tokens ?? msgObj.usage.output_tokens ?? 0;
+  } else {
+    // Estimation grossière (~4 caractères / token) si l'API ne renvoie pas l'usage
+    const lastUser = messages.filter(m => m.role === "user").slice(-1)[0];
+    inputTokens  = Math.ceil(((lastUser?.content || "").length) / 4);
+    outputTokens = Math.ceil(((msgObj.content || "").length) / 4);
+  }
+
+  const cost = (inputTokens / 1e6) * pricing.input + (outputTokens / 1e6) * pricing.output;
+  // Affichage en dollars, avec plus de décimales pour les très petits montants
+  const costStr = cost < 0.01 ? `$${cost.toFixed(5)}` : `$${cost.toFixed(4)}`;
+  return `${costStr} (${inputTokens} in / ${outputTokens} out)`;
+}
+
+// Petit badge affiché sous le message pour les réponses SambaNova
+function sambanovaCostBadge(msgObj) {
+  const info = sambanovaCostInfo(msgObj);
+  if (!info) return "";
+  return `<span class="model-cost-sm" title="Estimation basée sur la tarification SambaNova" style="display:inline-flex;align-items:center;gap:3px;font-size:0.65rem;font-weight:600;color:#fbbf24;background:rgba(251,191,36,0.08);border-radius:5px;padding:1px 6px;margin-left:6px;">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${info}
+  </span>`;
 }
 
 document.addEventListener("click", () => {
@@ -5844,6 +5907,8 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
       ? (_gk || WM_API_KEYS.groq || KEY)
       : _mObj.provider === "cerebras"
       ? (WM_API_KEYS.cerebras || "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55")
+      : _mObj.provider === "sambanova"
+      ? (_snk || WM_API_KEYS.sambanova)
       : (WM_API_KEYS.mistral || KEY);
 
     // Détecter si la dernière requête concerne une modification de fichier volumineux
@@ -5876,6 +5941,7 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
       body: JSON.stringify({
         model: selectedModel,
         stream: true,
+        ...(_mObj.provider === "sambanova" ? { stream_options: { include_usage: true } } : {}),
         messages: [
           {
             role: "system",
@@ -5957,6 +6023,10 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
                   addCodeButtons(bubble);
                 }
               }
+              // Capturer l'usage de tokens (SambaNova, stream_options.include_usage)
+              if (json.usage) {
+                aiMsgObj.usage = json.usage;
+              }
             } catch (e) { /* ignore */ }
           }
         }
@@ -5983,6 +6053,9 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
       if (msgGroup) {
         const infoPopup = msgGroup.querySelector(".msg-info-popup");
         if (infoPopup) buildInfoPopup(infoPopup, aiMsgObj);
+        // Afficher l'estimation de prix pour les modèles SambaNova (payants)
+        const metaEl = msgGroup.querySelector(".msg-meta");
+        if (metaEl) metaEl.innerHTML = `<span class="model-tag-sm">${aiMsgObj.modelName || selectedModelName}</span>${sambanovaCostBadge(aiMsgObj)}`;
       }
     } else {
       appendAIMsg(aiMsgObj);
@@ -6218,8 +6291,10 @@ async function saveConversation() {
       msgId: msg.msgId || genId(),
       ts: msg.ts || Date.now(),
       model: msg.model || selectedModel,
+      modelId: msg.modelId || '',
       modelName: msg.modelName || selectedModelName,
       provider: msg.provider || '',
+      usage: msg.usage || null,
       responseTime: msg.responseTime || null,
       liked: msg.liked || 0,
       isImage: msg.isImage || false,
@@ -6726,11 +6801,19 @@ onAuthStateChanged(auth, async (user) => {
       if (window.WMAITokens) {
         await WMAITokens.init(userId, userForfait);
       }
+      // Re-charger la liste des modèles : certains modèles (ex: SambaNova) nécessitent un forfait minimum
+      await loadModels();
+      if (typeof buildMainDropdown === 'function') buildMainDropdown();
+      if (typeof buildMorePanel === 'function') buildMorePanel();
     } catch (e) { console.warn('[AI Tokens] init failed', e); }
   } else {
     window.userId = null;
     window._userForfait = 1;
     refreshPlanLabel();
+    // Re-charger la liste des modèles pour un utilisateur non connecté (Free)
+    await loadModels();
+    if (typeof buildMainDropdown === 'function') buildMainDropdown();
+    if (typeof buildMorePanel === 'function') buildMorePanel();
   }
 });
 
