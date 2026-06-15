@@ -5902,7 +5902,11 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
   try {
     // Récupérer le bon endpoint et la bonne clé selon le provider du modèle sélectionné
     const _mObj = window._wmSelectedModelObj || { provider:"mistral", apiEndpoint:"https://api.mistral.ai/v1/chat/completions" };
-    const _apiEndpoint = _mObj.apiEndpoint || "https://api.mistral.ai/v1/chat/completions";
+    // SambaNova bloque les requêtes CORS directes depuis le navigateur ("Failed to fetch") :
+    // on passe par un proxy CORS public qui relaie la requête vers api.sambanova.ai
+    const _apiEndpoint = _mObj.provider === "sambanova"
+      ? "https://corsproxy.io/?url=" + encodeURIComponent(_mObj.apiEndpoint || "https://api.sambanova.ai/v1/chat/completions")
+      : (_mObj.apiEndpoint || "https://api.mistral.ai/v1/chat/completions");
     const _apiKey = _mObj.provider === "groq"
       ? (_gk || WM_API_KEYS.groq || KEY)
       : _mObj.provider === "cerebras"
