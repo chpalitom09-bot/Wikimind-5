@@ -544,8 +544,8 @@
       "logo": "mistrallogo.png"
     },
     {
-      "id": "wm-sambanova-1.1",
-      "displayName": "SambaNova R1 70B",
+      "id": "wm-large-5.1",
+      "displayName": "Large 5.1",
       "apiModel": "DeepSeek-R1-Distill-Llama-70B",
       "tier": "large",
       "category": "more",
@@ -563,8 +563,8 @@
       "pricing": { "input": 0.70, "output": 1.40, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.2",
-      "displayName": "SambaNova V3.1 CB",
+      "id": "wm-large-6.0",
+      "displayName": "Large 6.0",
       "apiModel": "DeepSeek-V3.1-cb",
       "tier": "large",
       "category": "more",
@@ -582,8 +582,8 @@
       "pricing": { "input": 0.15, "output": 0.75, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.3",
-      "displayName": "SambaNova V3.1",
+      "id": "wm-large-6.1",
+      "displayName": "Large 6.1",
       "apiModel": "DeepSeek-V3.1",
       "tier": "large",
       "category": "more",
@@ -601,8 +601,8 @@
       "pricing": { "input": 3, "output": 4.50, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.4",
-      "displayName": "SambaNova V3.2",
+      "id": "wm-large-6.2",
+      "displayName": "Large 6.2",
       "apiModel": "DeepSeek-V3.2",
       "tier": "large",
       "category": "more",
@@ -620,8 +620,8 @@
       "pricing": { "input": 3, "output": 4.50, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.5",
-      "displayName": "SambaNova Gemma 31B",
+      "id": "wm-medium-5.8",
+      "displayName": "Medium 5.8",
       "apiModel": "gemma-4-31B-it",
       "tier": "medium",
       "category": "more",
@@ -639,8 +639,8 @@
       "pricing": { "input": 0.38, "output": 1.15, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.6",
-      "displayName": "SambaNova GPT-OSS 120B",
+      "id": "wm-large-6.3",
+      "displayName": "Large 6.3",
       "apiModel": "gpt-oss-120b",
       "tier": "large",
       "category": "more",
@@ -658,8 +658,8 @@
       "pricing": { "input": 0.22, "output": 0.59, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.7",
-      "displayName": "SambaNova Llama 3.3 70B",
+      "id": "wm-large-6.4",
+      "displayName": "Large 6.4",
       "apiModel": "Meta-Llama-3.3-70B-Instruct",
       "tier": "large",
       "category": "more",
@@ -677,8 +677,8 @@
       "pricing": { "input": 0.60, "output": 1.20, "unit": "USD/1M tokens" }
     },
     {
-      "id": "wm-sambanova-1.8",
-      "displayName": "SambaNova MiniMax M2.7",
+      "id": "wm-large-6.5",
+      "displayName": "Large 6.5",
       "apiModel": "MiniMax-M2.7",
       "tier": "large",
       "category": "more",
