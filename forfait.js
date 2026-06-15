@@ -155,7 +155,8 @@
         </div>
 
         <p id="fp-note">
-          Le forfait Entreprise est attribué manuellement après contact — aucun paiement automatique.<br>
+          Aucun paiement automatique : cliquer sur "Passer à Plus/Pro" envoie une demande d'upgrade par e-mail à l'équipe Wikimind, qui active votre forfait manuellement.<br>
+          Le forfait Entreprise est attribué manuellement après contact.<br>
           Les AI Tokens sont une monnaie virtuelle utilisable pour la génération vidéo sur la plateforme.<br>
           <a id="fp-faq-link">Voir la FAQ →</a>
         </p>
@@ -290,26 +291,65 @@
       btn.addEventListener("click", () => {
         const planId = btn.dataset.plan;
         const plan = PLANS.find(p => p.id === planId);
+        if (!plan) return;
 
-        if (plan && plan.onRequest) {
+        const userEmail = window.currentUser?.email || "";
+        const userId = window.userId || "";
+
+        if (plan.onRequest) {
           // Forfait Entreprise — contact par e-mail
           const subject = encodeURIComponent("Demande de forfait Entreprise — Wikimind");
-          const userEmail = window.currentUser?.email || "";
           const body = encodeURIComponent(
             `Bonjour,\n\nJe souhaite obtenir plus d'informations sur le forfait Entreprise de Wikimind (forfait sur mesure).\n\n` +
             (userEmail ? `Mon adresse de compte Wikimind : ${userEmail}\n` : "") +
-            (window.userId ? `Mon identifiant Wikimind : ${window.userId}\n` : "") +
+            (userId ? `Mon identifiant Wikimind : ${userId}\n` : "") +
             `\nMerci !`
           );
+          submitForfaitRequest(plan, userId, userEmail);
           window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
           return;
         }
 
-        // Hook à brancher plus tard sur le système de paiement
-        console.log("[Wikimind Forfait] Upgrade vers :", planId, "| Annuel :", isAnnual);
-        if (window.toast) window.toast("Paiement — Bientôt disponible");
+        // ── Plus / Pro : pas de paiement — demande envoyée pour upgrade manuel ──
+        if (!userId) {
+          if (window.toast) window.toast("Connecte-toi pour demander ce forfait");
+          return;
+        }
+
+        submitForfaitRequest(plan, userId, userEmail);
+
+        const subject = encodeURIComponent(`Demande de forfait ${plan.name} — Wikimind`);
+        const body = encodeURIComponent(
+          `Bonjour,\n\nJe souhaite passer au forfait ${plan.name} sur Wikimind.\n\n` +
+          (userEmail ? `Mon adresse de compte Wikimind : ${userEmail}\n` : "") +
+          (userId ? `Mon identifiant Wikimind (UID) : ${userId}\n` : "") +
+          `\nMerci !`
+        );
+        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+
+        if (window.toast) window.toast("Demande envoyée — vous recevrez une réponse par e-mail");
+        close();
       });
     });
+  }
+
+  // ── Enregistrer la demande de forfait dans Firebase pour suivi admin ──────
+  function submitForfaitRequest(plan, userId, userEmail) {
+    try {
+      if (!window.db || !window._firebaseRef || !window._firebaseSet || !userId) return;
+      const reqRef = window._firebaseRef(window.db, `forfait_requests/${userId}`);
+      window._firebaseSet(reqRef, {
+        uid: userId,
+        email: userEmail || "",
+        requestedForfait: plan.forfait,
+        requestedPlanName: plan.name,
+        currentForfait: getCurrentForfait(),
+        status: "pending",
+        ts: Date.now()
+      });
+    } catch (e) {
+      console.warn("[Wikimind Forfait] Échec enregistrement de la demande :", e);
+    }
   }
 
   function bindEvents() {
