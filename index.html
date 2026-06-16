@@ -22,6 +22,25 @@
 <link rel="stylesheet" href="statpopup.css">
 <link rel="stylesheet" href="videogen.css">
 <style>
+
+  /* --- Override Ko-fi Widget pour le placer en haut au centre --- */
+.floatingchat-container-wrap {
+  top: 8px !important;
+  bottom: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  z-index: 9999 !important;
+}
+
+/* Forcer la fenêtre de donation à s'ouvrir vers le bas (et non vers le haut) */
+.floatingchat-container-wrap .floating-chat-kofi-popup-iframe {
+  top: 60px !important;
+  bottom: auto !important;
+  right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
 /* ── Bouton topbar Vidéo ── */
 #tb-videogen {
   width: 34px; height: 34px;
@@ -7886,6 +7905,18 @@ window.addEventListener('DOMContentLoaded', () => {
     <div id="wf-decks-list"></div>
   </div>
 </div>
+
+  <!-- Widget Ko-fi -->
+<script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+<script>
+  kofiWidgetOverlay.draw('wikimindai', {
+    'type': 'floating-chat',
+    'floating-chat.donateButton.text': 'Donate',
+    'floating-chat.donateButton.background-color': '#323842',
+    'floating-chat.donateButton.text-color': '#fff'
+  });
+</script>
+  
 </body>
 <!-- Settings module — chargé après le script principal (type=module) -->
 <script src="settings5.js" defer></script>
