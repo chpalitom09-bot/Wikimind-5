@@ -4053,8 +4053,9 @@ async function loadModels() {
         groq: gk,
         pollinations: data.apiKeys.pollinations || "pk_w6wnuGBObh7FeHwp",
         cerebras: data.apiKeys.cerebras || "",
-        sambanova: _snk || data.apiKeys.sambanova || ""
-      };
+      sambanova: _snk || data.apiKeys.sambanova || "",
+      cohere: data.apiKeys.cohere || ""
+    };
     }
     // ── Si le modèle actuellement sélectionné a disparu (forfait insuffisant / expiré), fallback ──
     const currentStillAvailable = WIKIMIND_MODELS.find(m => m.apiModel === selectedModel);
@@ -4104,11 +4105,11 @@ const modelOverlay   = document.getElementById("model-dropdown-overlay");
 const modelMorePanel = document.getElementById("model-more-panel");
 
 // ── Helpers visuels ──────────────────────────────────────────────────────────
-const TIER_LABELS = { small:"Small", medium:"Medium", large:"Large", flash:"Flash" };
+const TIER_LABELS = { small:"Small", medium:"Medium", large:"Large", flash:"Flash", volume:"Volume" };
 
 function tierBadge(tier) {
-  const colors = { small:"rgba(99,179,237,0.15)", medium:"rgba(154,230,180,0.15)", large:"rgba(246,173,85,0.15)", flash:"rgba(237,100,166,0.15)" };
-  const text   = { small:"#63b3ed", medium:"#68d391", large:"#f6ad55", flash:"#ed64a6" };
+  const colors = { small:"rgba(99,179,237,0.15)", medium:"rgba(154,230,180,0.15)", large:"rgba(246,173,85,0.15)", flash:"rgba(237,100,166,0.15)", volume:"rgba(167,139,250,0.15)" };
+  const text   = { small:"#63b3ed", medium:"#68d391", large:"#f6ad55", flash:"#ed64a6", volume:"#a78bfa" };
   return `<span style="font-size:0.58rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
     background:${colors[tier]||"rgba(255,255,255,0.08)"};color:${text[tier]||"#aaa"};
     border-radius:4px;padding:1px 5px;margin-left:6px;">${tier.toUpperCase()}</span>`;
@@ -4123,15 +4124,13 @@ const PROVIDER_LOGOS = {
   sambanova:       'sambanovalogo.png',
   openai:          'openailogo.png',
   blackforestlabs: 'blackforestlabs.png',
+  cohere:          'coherelogo.png',
 };
 
 function providerBadge(provider) {
   const src = PROVIDER_LOGOS[provider];
   if (!src) return "";
-  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", sambanova:"SambaNova", blackforestlabs:"Black Forest Labs" };
-  const logoImg = `<img src="${src}" alt="${provider}" width="12" height="12" style="flex-shrink:0;border-radius:2px;object-fit:contain;" onerror="this.style.display='none'">`;
-  return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:600;letter-spacing:0.03em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:5px;padding:1px 5px 1px 3px;margin-left:4px;">${logoImg}${names[provider]||provider}</span>`;
-}
+  const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", sambanova:"SambaNova", blackforestlabs:"Black Forest Labs", cohere:"Cohere" };
 
 function visionBadge() {
   return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:0.58rem;font-weight:600;background:rgba(74,222,128,0.1);color:#4ade80;border-radius:5px;padding:1px 5px;margin-left:3px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/></svg>Vision</span>`;
@@ -4188,9 +4187,9 @@ function buildMorePanel() {
   // Modèles image (catégorie dédiée)
   const imageModels = WIKIMIND_MODELS.filter(m => m.category === "image");
   const moreModels  = WIKIMIND_MODELS.filter(m => m.category === "more");
-  const groups = { flash:[], small:[], medium:[], large:[] };
+  const groups = { flash:[], small:[], medium:[], large:[], volume:[] };
   moreModels.forEach(m => { if (groups[m.tier]) groups[m.tier].push(m); });
-  const groupOrder = ["flash","small","medium","large"];
+  const groupOrder = ["flash","small","medium","large","volume"];
 
   function modelRow(m) {
     const sel = m.apiModel === selectedModel;
@@ -5926,6 +5925,8 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
       ? (WM_API_KEYS.cerebras || "csk-y6n2np6j6y8r4j6yrmwp4yht39yf4f6c6jx4xv2e34vpdh55")
       : _mObj.provider === "sambanova"
       ? (_snk || WM_API_KEYS.sambanova)
+      : _mObj.provider === "cohere"
+      ? (WM_API_KEYS.cohere)
       : (WM_API_KEYS.mistral || KEY);
 
     // Détecter si la dernière requête concerne une modification de fichier volumineux
