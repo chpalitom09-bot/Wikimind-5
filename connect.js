@@ -1,9 +1,9 @@
 /**
  * connect.js — Wikimind AI Login Page
  * Gère : affichage instantané si non connecté, masquage si connecté,
- * connexion Google / Microsoft / Email (auto détection login vs inscription),
+ * connexion Google / Microsoft / Facebook / GitHub / Email (auto détection login vs inscription),
  * collecte du profil utilisateur (prénom, nom, profession),
- * popups Tarification + Légal, animation démo IA prédéfinie.
+ * popups Tarification + Légal.
  *
  * UTILISATION dans index.html :
  *   <link rel="stylesheet" href="connect.css">
@@ -71,7 +71,7 @@
 </div>
 
 <div id="cn-page">
-  <!-- ── LEFT ── -->
+  <!-- ── CENTERED FORM ── -->
   <div id="cn-left">
     <div id="cn-brand">
       <h1>Pensez plus vite,<br>apprenez mieux</h1>
@@ -88,6 +88,14 @@
         <button class="cn-social-btn" id="cn-btn-microsoft">
           <svg viewBox="0 0 24 24"><rect x="1" y="1" width="10.5" height="10.5" fill="#F25022"/><rect x="12.5" y="1" width="10.5" height="10.5" fill="#7FBA00"/><rect x="1" y="12.5" width="10.5" height="10.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/></svg>
           Microsoft
+        </button>
+        <button class="cn-social-btn" id="cn-btn-facebook">
+          <svg viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6c.86 0 1.65.08 1.88.12v2.18h-1.29c-1.02 0-1.22.48-1.22 1.2V12h2.5l-.4 3h-2.1v6.8C18.56 20.87 22 16.84 22 12z" fill="#1877F2"/></svg>
+          Facebook
+        </button>
+        <button class="cn-social-btn" id="cn-btn-github">
+          <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.699-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          GitHub
         </button>
       </div>
 
@@ -133,40 +141,6 @@
       </div>
 
       <p id="cn-legal">En continuant, vous acceptez la <a id="cn-legal-cgu-link">Politique de confidentialité</a> et les <a id="cn-legal-cgu2-link">Conditions d'utilisation</a> de Wikimind.</p>
-    </div>
-  </div>
-
-  <!-- ── RIGHT — MODÈLES LIVE ── -->
-  <div id="cn-right">
-    <div id="cn-models-panel">
-      <div class="cmp-panel-header">
-        <div class="cmp-panel-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-          Modèles disponibles
-        </div>
-        <div class="cmp-live-row">
-          <div class="cmp-live-dot"></div>
-          <span>Live</span>
-        </div>
-      </div>
-
-      <div class="cmp-provider-tabs" id="cmp-prov-tabs">
-        <button class="cmp-ptab active" data-prov="all">Tous</button>
-        <button class="cmp-ptab" data-prov="mistral">Mistral</button>
-        <button class="cmp-ptab" data-prov="groq">Groq</button>
-        <button class="cmp-ptab" data-prov="cerebras">Cerebras</button>
-      </div>
-
-      <div class="cmp-models-list" id="cmp-models-list">
-        <div class="cmp-loading">
-          <div class="cmp-spinner"></div>
-        </div>
-      </div>
-
-      <div class="cmp-panel-footer">
-        <span id="cmp-footer-count">—</span>
-        <span id="cmp-footer-time">—</span>
-      </div>
     </div>
   </div>
 </div>
@@ -295,11 +269,6 @@
   let _emailVal = '';
   let _mounted = false;
   let _authReady = false;
-  let _demoTimer = null;
-
-  // Models panel state
-  let _modelsData = null;
-  let _modelsFilter = 'all';
 
   // ── WAIT FOR FIREBASE ────────────────────────────────────────────────────
   function waitForAuth(cb) {
@@ -324,7 +293,6 @@
     document.body.appendChild(root);
 
     bindEvents();
-    startDemo();
   }
 
   // ── INIT ─────────────────────────────────────────────────────────────────
@@ -360,7 +328,6 @@
       root.style.opacity = '0';
       setTimeout(() => root.remove(), 320);
     }
-    if (_demoTimer) clearTimeout(_demoTimer);
   }
 
   // ── BIND EVENTS ─────────────────────────────────────────────────────────
@@ -392,6 +359,8 @@
     // Social auth
     $('cn-btn-google').onclick = () => socialAuth('google');
     $('cn-btn-microsoft').onclick = () => socialAuth('microsoft');
+    $('cn-btn-facebook').onclick = () => socialAuth('facebook');
+    $('cn-btn-github').onclick = () => socialAuth('github');
 
     // Email step
     const emailInput = $('cn-email');
@@ -540,6 +509,12 @@
       } else if (provider === 'microsoft') {
         const p = new fns.OAuthProvider('microsoft.com');
         result = await fns.signInWithPopup(auth, p);
+      } else if (provider === 'facebook') {
+        const p = new fns.FacebookAuthProvider();
+        result = await fns.signInWithPopup(auth, p);
+      } else if (provider === 'github') {
+        const p = new fns.GithubAuthProvider();
+        result = await fns.signInWithPopup(auth, p);
       }
       if (result) {
         // Save basic profile if first sign in
@@ -577,6 +552,8 @@
       fetchSignInMethodsForEmail: window._fbFetchSignInMethods,
       GoogleAuthProvider: window._fbGoogleProvider,
       OAuthProvider: window._fbOAuthProvider,
+      FacebookAuthProvider: window._fbFacebookProvider,
+      GithubAuthProvider: window._fbGithubProvider,
       signInWithPopup: window._fbSignInPopup,
       set: window._firebaseSet,
       ref: window._firebaseRef,
@@ -592,6 +569,8 @@
       fns.fetchSignInMethodsForEmail = authMod.fetchSignInMethodsForEmail;
       fns.GoogleAuthProvider = authMod.GoogleAuthProvider;
       fns.OAuthProvider = authMod.OAuthProvider;
+      fns.FacebookAuthProvider = authMod.FacebookAuthProvider;
+      fns.GithubAuthProvider = authMod.GithubAuthProvider;
       fns.signInWithPopup = authMod.signInWithPopup;
     }
     if (!fns.set) {
@@ -643,166 +622,7 @@
     if (contentEl) contentEl.classList.add('active');
   }
 
-  // ── MODELS PANEL ────────────────────────────────────────────────────────
-
-  const MODELS_META = {
-    "mistral-small-latest":    { name:"Small 5.1",    provider:"mistral" },
-    "mistral-medium-latest":   { name:"Medium 5.1",   provider:"mistral" },
-    "codestral-latest":        { name:"Code 5.1",     provider:"mistral" },
-    "mistral-large-latest":    { name:"Large 5.1",    provider:"mistral" },
-    "llama-3.2-3b-preview":    { name:"Flash 1.1",    provider:"groq" },
-    "gemma2-9b-it":            { name:"Flash 1.2",    provider:"groq" },
-    "zai-glm-4.7":             { name:"Flash 1.3",    provider:"cerebras" },
-    "ministral-3b-2512":       { name:"Flash 1.4",    provider:"mistral" },
-    "labs-leanstral-2603":     { name:"Flash 1.5",    provider:"mistral" },
-    "llama-3.1-8b-instant":    { name:"Flash 1.0",    provider:"groq" },
-    "ministral-3b-latest":     { name:"Small 4.7",    provider:"mistral" },
-    "llama-3.3-70b-versatile": { name:"Medium 5.3",   provider:"groq" },
-    "ministral-14b-2512":      { name:"Medium 5.4",   provider:"mistral" },
-    "mistral-medium-2505":     { name:"Medium 5.5",   provider:"mistral" },
-    "mistral-medium-2508":     { name:"Medium 5.6",   provider:"mistral" },
-    "magistral-medium-2509":   { name:"Medium 5.7",   provider:"mistral" },
-    "compound":                { name:"Compound 1.0", provider:"groq" },
-    "llama-3.3-70b-versatile": { name:"Medium 5.3",   provider:"groq" },
-    "deepseek-r1-distill-llama-70b": { name:"Large 5.4", provider:"groq" },
-    "gpt-oss-120b":            { name:"Large 5.6",    provider:"cerebras" },
-    "mistral-large-2512":      { name:"Large 5.7",    provider:"mistral" },
-    "codestral-2508":          { name:"Large 5.8",    provider:"mistral" },
-    "devstral-2512":           { name:"Large 5.9",    provider:"mistral" },
-  };
-
-  const PROV_COLORS = {
-    mistral:  "#ff7000",
-    groq:     "#f55036",
-    cerebras: "#9b6eff",
-  };
-
-  const PROV_NAMES = { mistral:"Mistral", groq:"Groq", cerebras:"Cerebras" };
-
-  function startDemo() {
-    // Init provider filter tabs
-    document.querySelectorAll('.cmp-ptab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.cmp-ptab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        _modelsFilter = btn.dataset.prov;
-        renderModelsList();
-      });
-    });
-    loadModelsData();
-  }
-
-  function loadModelsData() {
-    // Try to fetch from Firebase public stats
-    const DB_URL = 'https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app/wikimind5_public_stats.json?orderBy="$key"&limitToLast=500';
-    fetch(DB_URL)
-      .then(r => r.ok ? r.json() : null)
-      .then(raw => {
-        if (!raw) { showModelsError(); return; }
-        _modelsData = processModelsData(raw);
-        renderModelsList();
-        updateFooter();
-      })
-      .catch(() => {
-        // Fallback: show static known models without stats
-        _modelsData = fallbackModels();
-        renderModelsList();
-        updateFooter();
-      });
-  }
-
-  function processModelsData(raw) {
-    const byModel = {};
-    Object.values(raw).forEach(entry => {
-      if (!entry || !entry.model) return;
-      const k = entry.model;
-      if (!byModel[k]) byModel[k] = { count: 0, totalCps: 0, totalTime: 0, cpsN: 0, timeN: 0 };
-      byModel[k].count++;
-      if (entry.cps && entry.cps > 0) { byModel[k].totalCps += entry.cps; byModel[k].cpsN++; }
-      if (entry.responseTime && entry.responseTime > 0) { byModel[k].totalTime += entry.responseTime; byModel[k].timeN++; }
-    });
-    return Object.entries(byModel)
-      .map(([modelId, d]) => {
-        const meta = MODELS_META[modelId] || { name: modelId.split('-')[0], provider: 'mistral' };
-        return {
-          modelId, ...meta,
-          count: d.count,
-          cps: d.cpsN > 0 ? Math.round(d.totalCps / d.cpsN) : null,
-          avgTime: d.timeN > 0 ? Math.round(d.totalTime / d.timeN) : null,
-        };
-      })
-      .sort((a, b) => b.count - a.count);
-  }
-
-  function fallbackModels() {
-    return Object.entries(MODELS_META).slice(0, 12).map(([modelId, meta]) => ({
-      modelId, ...meta, count: null, cps: null, avgTime: null
-    }));
-  }
-
-  function renderModelsList() {
-    const list = document.getElementById('cmp-models-list');
-    if (!list || !_modelsData) return;
-    const filtered = _modelsFilter === 'all'
-      ? _modelsData
-      : _modelsData.filter(m => m.provider === _modelsFilter);
-    if (!filtered.length) {
-      list.innerHTML = '<div class="cmp-empty">Aucun modèle</div>';
-      return;
-    }
-    const maxCps = Math.max.apply(null, filtered.map(function(m){return m.cps||0;}).concat([1]));
-    list.innerHTML = filtered.map(function(m) {
-      const provCol = PROV_COLORS[m.provider] || '#888';
-      const cpsBar = m.cps ? Math.round((m.cps / maxCps) * 100) : 0;
-      const cpsLabel = m.cps ? m.cps + ' c/s' : '—';
-      const timeLabel = m.avgTime ? (m.avgTime > 1000 ? (m.avgTime/1000).toFixed(1)+'s' : m.avgTime+'ms') : '—';
-      const countLabel = m.count ? (m.count >= 1000 ? (m.count/1000).toFixed(1)+'k' : m.count) : '—';
-      const initials = (PROV_NAMES[m.provider] || '?')[0];
-      const rgb = hexToRgb(provCol);
-      return '<div class="cmp-model-row">' +
-        '<div class="cmp-model-logo" style="background:rgba('+rgb+',0.12);border-color:rgba('+rgb+',0.2);color:'+provCol+'">'+initials+'</div>' +
-        '<div class="cmp-model-info">' +
-          '<div class="cmp-model-name">'+escHtml(m.name)+'</div>' +
-          '<div class="cmp-model-prov" style="color:'+provCol+'">'+escHtml(PROV_NAMES[m.provider] || m.provider)+'</div>' +
-        '</div>' +
-        '<div class="cmp-model-stats">' +
-          '<div class="cmp-model-cps">'+cpsLabel+'</div>' +
-          '<div class="cmp-cps-bar-track"><div class="cmp-cps-bar-fill" style="width:'+cpsBar+'%;background:'+provCol+'"></div></div>' +
-        '</div>' +
-        '<div class="cmp-model-meta">' +
-          '<div class="cmp-meta-time">'+timeLabel+'</div>' +
-          '<div class="cmp-meta-count">'+countLabel+'</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  function hexToRgb(hex) {
-    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-    return r+','+g+','+b;
-  }
-
-  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  function showModelsError() {
-    const list = document.getElementById('cmp-models-list');
-    if (list) list.innerHTML = '<div class="cmp-empty">Données indisponibles</div>';
-  }
-
-  function updateFooter() {
-    const countEl = document.getElementById('cmp-footer-count');
-    const timeEl = document.getElementById('cmp-footer-time');
-    if (countEl && _modelsData) {
-      const total = _modelsData.reduce((a, m) => a + (m.count || 0), 0);
-      countEl.textContent = total > 0 ? total.toLocaleString('fr') + ' réponses analysées' : _modelsData.length + ' modèles';
-    }
-    if (timeEl) {
-      const now = new Date();
-      timeEl.textContent = 'Actualisé ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
-    }
-  }
-
-    // ── BOOT ─────────────────────────────────────────────────────────────────
+  // ── BOOT ─────────────────────────────────────────────────────────────────
   // Expose Firebase auth functions so connect.js can use them even if the
   // main module hasn't run yet. index.html should add these to window:
   //   window._fbSignIn = signInWithEmailAndPassword;
