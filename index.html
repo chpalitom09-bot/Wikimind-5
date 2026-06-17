@@ -6015,42 +6015,66 @@ async function doStream(userText, isRegen, visionContent = null, extraSources = 
     if (!res.body) throw new Error("No response body");
 
     const reader = res.body.getReader();
-    const decoder = new TextDecoder();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split("\n").filter(line => line.trim() !== "");
+      // Utilisation d'un buffer pour éviter que les mots soient coupés en plein milieu
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // Garde la fin de la phrase incomplète pour le prochain tour
 
-      for (const line of lines) {
+      for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+
+        // Cohere utilise du JSON simple, OpenAI utilise "data: {...}"
+        let dataStr = line;
         if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data !== "[DONE]") {
-            try {
-              const json = JSON.parse(data);
-              if (json.choices?.[0]?.delta?.content) {
-                const content = json.choices[0].delta.content;
-                aiMsgObj.content += content;
-
-                let bubble = document.getElementById("stream-bubble");
-                if (!bubble) {
-                  removeThinking();
-                  appendAIMsg(aiMsgObj, true);
-                  bubble = document.getElementById("stream-bubble");
-                } else {
-                  bubble.innerHTML = renderContent(aiMsgObj.content);
-                  addCodeButtons(bubble);
-                }
-              }
-              // Capturer l'usage de tokens (SambaNova, stream_options.include_usage)
-              if (json.usage) {
-                aiMsgObj.usage = json.usage;
-              }
-            } catch (e) { /* ignore */ }
-          }
+          dataStr = line.slice(6).trim();
         }
+        if (dataStr === "[DONE]") continue;
+
+        try {
+          const json = JSON.parse(dataStr);
+          let content = "";
+
+          // 1. Format OpenAI / Mistral / Groq / SambaNova
+          if (json.choices?.[0]?.delta?.content !== undefined) {
+            content = json.choices[0].delta.content;
+          } 
+          // 2. Format Cohere V2
+          else if (json.type === "content-delta" && json.delta?.message?.content?.text !== undefined) {
+            content = json.delta.message.content.text;
+          }
+
+          if (content) {
+            aiMsgObj.content += content;
+
+            let bubble = document.getElementById("stream-bubble");
+            if (!bubble) {
+              removeThinking();
+              appendAIMsg(aiMsgObj, true);
+              bubble = document.getElementById("stream-bubble");
+            } else {
+              bubble.innerHTML = renderContent(aiMsgObj.content);
+              addCodeButtons(bubble);
+            }
+          }
+          
+          // Capturer l'usage de tokens
+          if (json.usage) {
+            aiMsgObj.usage = json.usage;
+          } else if (json.type === "message-end" && json.delta?.usage?.billed_units) {
+            aiMsgObj.usage = {
+              prompt_tokens: json.delta.usage.billed_units.input_tokens || 0,
+              completion_tokens: json.delta.usage.billed_units.output_tokens || 0
+            };
+          }
+        } catch (e) { /* Ligne non valide ou incomplète, on ignore */ }
       }
     }
 
