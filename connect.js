@@ -136,143 +136,36 @@
     </div>
   </div>
 
-  <!-- ── RIGHT — FEATURE SHOWCASE ── -->
+  <!-- ── RIGHT — MODÈLES LIVE ── -->
   <div id="cn-right">
-    <div id="cn-showcase">
-      <div class="sh-glow sh-glow1"></div>
-      <div class="sh-glow sh-glow2"></div>
-
-      <div class="sh-pills">
-        <div class="sh-pill active" data-i="0">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
-          Flashcards
+    <div id="cn-models-panel">
+      <div class="cmp-panel-header">
+        <div class="cmp-panel-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          Modèles disponibles
         </div>
-        <div class="sh-pill" data-i="1">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Quiz QCM
-        </div>
-        <div class="sh-pill" data-i="2">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Sources Web
-        </div>
-        <div class="sh-pill" data-i="3">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Graphiques
+        <div class="cmp-live-row">
+          <div class="cmp-live-dot"></div>
+          <span>Live</span>
         </div>
       </div>
 
-      <div class="sh-stage">
+      <div class="cmp-provider-tabs" id="cmp-prov-tabs">
+        <button class="cmp-ptab active" data-prov="all">Tous</button>
+        <button class="cmp-ptab" data-prov="mistral">Mistral</button>
+        <button class="cmp-ptab" data-prov="groq">Groq</button>
+        <button class="cmp-ptab" data-prov="cerebras">Cerebras</button>
+      </div>
 
-        <!-- PANEL 0 : Flashcards -->
-        <div class="sh-panel active" id="sh-p0">
-          <div class="sh-panel-label">
-            <div class="sh-panel-icon" style="background:rgba(110,110,255,0.15)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6e6eff" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
-            </div>
-            <span>Flashcards IA</span>
-            <span class="sh-counter" id="sh-fc-counter">1 / 4</span>
-          </div>
-          <div class="sh-fc-scene" id="sh-fc-scene">
-            <div class="sh-fc-card" id="sh-fc-card">
-              <div class="sh-fc-face sh-fc-front">
-                <div class="sh-fc-q" id="sh-fc-q">Qu'est-ce que la rétropropagation ?</div>
-                <div class="sh-fc-hint">Cliquer pour voir la réponse</div>
-              </div>
-              <div class="sh-fc-face sh-fc-back">
-                <div class="sh-fc-a-label">Réponse</div>
-                <div class="sh-fc-a" id="sh-fc-a">Algorithme qui calcule le gradient de l'erreur en remontant couche par couche pour ajuster les poids.</div>
-              </div>
-            </div>
-          </div>
-          <div class="sh-fc-dots" id="sh-fc-dots">
-            <div class="sh-fc-dot current"></div>
-            <div class="sh-fc-dot"></div>
-            <div class="sh-fc-dot"></div>
-            <div class="sh-fc-dot"></div>
-          </div>
+      <div class="cmp-models-list" id="cmp-models-list">
+        <div class="cmp-loading">
+          <div class="cmp-spinner"></div>
         </div>
+      </div>
 
-        <!-- PANEL 1 : Quiz QCM -->
-        <div class="sh-panel" id="sh-p1">
-          <div class="sh-panel-label">
-            <div class="sh-panel-icon" style="background:rgba(168,85,247,0.12)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
-            <span>QCM Interactif</span>
-          </div>
-          <div class="sh-qz-q">Quel algorithme est utilisé pour entraîner les réseaux de neurones ?</div>
-          <div class="sh-qz-opts">
-            <div class="sh-qz-opt" id="sh-qo-a"><div class="sh-opt-letter">A</div>Algorithme de Dijkstra</div>
-            <div class="sh-qz-opt" id="sh-qo-b"><div class="sh-opt-letter">B</div>Descente de gradient</div>
-            <div class="sh-qz-opt" id="sh-qo-c"><div class="sh-opt-letter">C</div>Tri par fusion</div>
-            <div class="sh-qz-opt" id="sh-qo-d"><div class="sh-opt-letter">D</div>Recherche binaire</div>
-          </div>
-          <div class="sh-qz-expl" id="sh-qz-expl">La descente de gradient ajuste les poids en minimisant la fonction de perte, guidée par la rétropropagation.</div>
-        </div>
-
-        <!-- PANEL 2 : Sources -->
-        <div class="sh-panel" id="sh-p2">
-          <div class="sh-panel-label">
-            <div class="sh-panel-icon" style="background:rgba(74,222,128,0.1)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </div>
-            <span>Sources Vérifiées</span>
-          </div>
-          <div class="sh-src-q">"Quelles sont les dernières avancées en LLM open-source ?"</div>
-          <div class="sh-src-list">
-            <div class="sh-src-card" id="sh-sc0">
-              <div class="sh-src-logo" style="background:#1a1a2e;color:#4285f4;font-size:0.8rem;font-weight:700">W</div>
-              <div class="sh-src-body">
-                <div class="sh-src-site">wikipedia.org</div>
-                <div class="sh-src-title">Large Language Models — Architectures récentes</div>
-                <div class="sh-src-snip">Les modèles Llama 3, Mistral et Qwen représentent...</div>
-              </div>
-              <div class="sh-src-rel">98%</div>
-            </div>
-            <div class="sh-src-card" id="sh-sc1">
-              <div class="sh-src-logo" style="background:#0d1117;color:#e0e0e0;font-size:0.65rem;font-weight:700">arXiv</div>
-              <div class="sh-src-body">
-                <div class="sh-src-site">arxiv.org</div>
-                <div class="sh-src-title">Scaling Laws for Open-Source LLMs (2025)</div>
-                <div class="sh-src-snip">Cette étude compare les performances sur 47 benchmarks...</div>
-              </div>
-              <div class="sh-src-rel">94%</div>
-            </div>
-            <div class="sh-src-card" id="sh-sc2">
-              <div class="sh-src-logo" style="background:#1a0a2e;color:#a855f7;font-size:0.85rem;font-weight:700">M</div>
-              <div class="sh-src-body">
-                <div class="sh-src-site">mistral.ai</div>
-                <div class="sh-src-title">Mistral Large 2 — Technical Report</div>
-                <div class="sh-src-snip">Architecture MoE avec 8 experts actifs par token...</div>
-              </div>
-              <div class="sh-src-rel">91%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PANEL 3 : Graphiques -->
-        <div class="sh-panel" id="sh-p3">
-          <div class="sh-panel-label">
-            <div class="sh-panel-icon" style="background:rgba(251,191,36,0.1)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            </div>
-            <span>Graphiques IA</span>
-          </div>
-          <div class="sh-cht-head">
-            <div class="sh-cht-title">Précision modèles — Benchmark MMLU</div>
-            <div class="sh-cht-legend">
-              <span><span class="sh-leg-dot" style="background:#6e6eff"></span>Wm Large</span>
-              <span><span class="sh-leg-dot" style="background:#a855f7"></span>Wm Small</span>
-            </div>
-          </div>
-          <div class="sh-cht-wrap">
-            <div class="sh-cht-grid-line" style="top:20px"></div>
-            <div class="sh-cht-grid-line" style="top:56px"></div>
-            <div class="sh-cht-grid-line" style="top:92px"></div>
-            <div class="sh-cht-bars" id="sh-cht-bars"></div>
-          </div>
-        </div>
-
+      <div class="cmp-panel-footer">
+        <span id="cmp-footer-count">—</span>
+        <span id="cmp-footer-time">—</span>
       </div>
     </div>
   </div>
@@ -397,17 +290,6 @@
 </div>
 `;
 
-  // ── SHOWCASE DATA ────────────────────────────────────────────────────────
-  const SH_CARDS = [
-    { q: "Qu'est-ce que la rétropropagation ?", a: "Algorithme qui calcule le gradient de l'erreur en remontant couche par couche pour ajuster les poids du réseau." },
-    { q: "Définir l'entropie croisée ?", a: "Fonction de perte qui mesure la divergence entre la distribution prédite et la distribution réelle des labels." },
-    { q: "Qu'est-ce qu'un Transformer ?", a: "Architecture basée sur le mécanisme d'attention permettant de traiter des séquences en parallèle (self-attention)." },
-    { q: "Qu'est-ce que le fine-tuning ?", a: "Adaptation d'un modèle pré-entraîné à une tâche spécifique en continuant l'entraînement sur un dataset ciblé." }
-  ];
-  const SH_MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun'];
-  const SH_DATA_A = [71, 74, 77, 79, 83, 87];
-  const SH_DATA_B = [58, 61, 63, 67, 70, 74];
-
   // ── STATE ───────────────────────────────────────────────────────────────
   let _step = 'email';
   let _emailVal = '';
@@ -415,14 +297,9 @@
   let _authReady = false;
   let _demoTimer = null;
 
-  // Showcase state
-  let _shCurrent = 0;
-  let _shAutoTimer = null;
-  let _shFcIdx = 0;
-  let _shFcFlipped = false;
-  let _shQuizDone = false;
-  let _shSourcesDone = false;
-  let _shChartBuilt = false;
+  // Models panel state
+  let _modelsData = null;
+  let _modelsFilter = 'all';
 
   // ── WAIT FOR FIREBASE ────────────────────────────────────────────────────
   function waitForAuth(cb) {
@@ -766,153 +643,163 @@
     if (contentEl) contentEl.classList.add('active');
   }
 
-  // ── SHOWCASE ANIMATION ─────────────────────────────────────────────────────
+  // ── MODELS PANEL ────────────────────────────────────────────────────────
+
+  const MODELS_META = {
+    "mistral-small-latest":    { name:"Small 5.1",    provider:"mistral" },
+    "mistral-medium-latest":   { name:"Medium 5.1",   provider:"mistral" },
+    "codestral-latest":        { name:"Code 5.1",     provider:"mistral" },
+    "mistral-large-latest":    { name:"Large 5.1",    provider:"mistral" },
+    "llama-3.2-3b-preview":    { name:"Flash 1.1",    provider:"groq" },
+    "gemma2-9b-it":            { name:"Flash 1.2",    provider:"groq" },
+    "zai-glm-4.7":             { name:"Flash 1.3",    provider:"cerebras" },
+    "ministral-3b-2512":       { name:"Flash 1.4",    provider:"mistral" },
+    "labs-leanstral-2603":     { name:"Flash 1.5",    provider:"mistral" },
+    "llama-3.1-8b-instant":    { name:"Flash 1.0",    provider:"groq" },
+    "ministral-3b-latest":     { name:"Small 4.7",    provider:"mistral" },
+    "llama-3.3-70b-versatile": { name:"Medium 5.3",   provider:"groq" },
+    "ministral-14b-2512":      { name:"Medium 5.4",   provider:"mistral" },
+    "mistral-medium-2505":     { name:"Medium 5.5",   provider:"mistral" },
+    "mistral-medium-2508":     { name:"Medium 5.6",   provider:"mistral" },
+    "magistral-medium-2509":   { name:"Medium 5.7",   provider:"mistral" },
+    "compound":                { name:"Compound 1.0", provider:"groq" },
+    "llama-3.3-70b-versatile": { name:"Medium 5.3",   provider:"groq" },
+    "deepseek-r1-distill-llama-70b": { name:"Large 5.4", provider:"groq" },
+    "gpt-oss-120b":            { name:"Large 5.6",    provider:"cerebras" },
+    "mistral-large-2512":      { name:"Large 5.7",    provider:"mistral" },
+    "codestral-2508":          { name:"Large 5.8",    provider:"mistral" },
+    "devstral-2512":           { name:"Large 5.9",    provider:"mistral" },
+  };
+
+  const PROV_COLORS = {
+    mistral:  "#ff7000",
+    groq:     "#f55036",
+    cerebras: "#9b6eff",
+  };
+
+  const PROV_NAMES = { mistral:"Mistral", groq:"Groq", cerebras:"Cerebras" };
 
   function startDemo() {
-    // Init showcased feature panels
-    initShowcasePills();
-    // Auto-flip flashcard after delay
-    setTimeout(shFcAutoFlip, 2000);
-    // Start auto-rotate
-    _shAutoTimer = setInterval(() => {
-      shSwitchTo((_shCurrent + 1) % 4);
-    }, 4400);
-  }
-
-  function initShowcasePills() {
-    document.querySelectorAll('.sh-pill').forEach(p => {
-      p.addEventListener('click', () => {
-        const idx = parseInt(p.dataset.i);
-        clearInterval(_shAutoTimer);
-        shSwitchTo(idx);
-        _shAutoTimer = setInterval(() => shSwitchTo((_shCurrent + 1) % 4), 4400);
+    // Init provider filter tabs
+    document.querySelectorAll('.cmp-ptab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cmp-ptab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        _modelsFilter = btn.dataset.prov;
+        renderModelsList();
       });
     });
+    loadModelsData();
   }
 
-  function shSwitchTo(idx) {
-    if (idx === _shCurrent) return;
-    const panels = ['sh-p0','sh-p1','sh-p2','sh-p3'];
-    const pills = document.querySelectorAll('.sh-pill');
-    document.getElementById(panels[_shCurrent]).classList.remove('active');
-    pills[_shCurrent].classList.remove('active');
-    _shCurrent = idx;
-    document.getElementById(panels[_shCurrent]).classList.add('active');
-    pills[_shCurrent].classList.add('active');
-    // Trigger panel-specific animations
-    if (idx === 1) { _shQuizDone = false; setTimeout(shRunQuiz, 350); }
-    if (idx === 2) { _shSourcesDone = false; setTimeout(shRunSources, 300); }
-    if (idx === 3 && !_shChartBuilt) { shBuildChart(); _shChartBuilt = true; }
+  function loadModelsData() {
+    // Try to fetch from Firebase public stats
+    const DB_URL = 'https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app/wikimind5_public_stats.json?orderBy="$key"&limitToLast=500';
+    fetch(DB_URL)
+      .then(r => r.ok ? r.json() : null)
+      .then(raw => {
+        if (!raw) { showModelsError(); return; }
+        _modelsData = processModelsData(raw);
+        renderModelsList();
+        updateFooter();
+      })
+      .catch(() => {
+        // Fallback: show static known models without stats
+        _modelsData = fallbackModels();
+        renderModelsList();
+        updateFooter();
+      });
   }
 
-  // Flashcard: auto-flip every 2s then advance
-  function shFcAutoFlip() {
-    const card = document.getElementById('sh-fc-card');
-    if (!card) return;
-    if (!document.getElementById('sh-p0').classList.contains('active')) {
-      setTimeout(shFcAutoFlip, 600);
+  function processModelsData(raw) {
+    const byModel = {};
+    Object.values(raw).forEach(entry => {
+      if (!entry || !entry.model) return;
+      const k = entry.model;
+      if (!byModel[k]) byModel[k] = { count: 0, totalCps: 0, totalTime: 0, cpsN: 0, timeN: 0 };
+      byModel[k].count++;
+      if (entry.cps && entry.cps > 0) { byModel[k].totalCps += entry.cps; byModel[k].cpsN++; }
+      if (entry.responseTime && entry.responseTime > 0) { byModel[k].totalTime += entry.responseTime; byModel[k].timeN++; }
+    });
+    return Object.entries(byModel)
+      .map(([modelId, d]) => {
+        const meta = MODELS_META[modelId] || { name: modelId.split('-')[0], provider: 'mistral' };
+        return {
+          modelId, ...meta,
+          count: d.count,
+          cps: d.cpsN > 0 ? Math.round(d.totalCps / d.cpsN) : null,
+          avgTime: d.timeN > 0 ? Math.round(d.totalTime / d.timeN) : null,
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+  }
+
+  function fallbackModels() {
+    return Object.entries(MODELS_META).slice(0, 12).map(([modelId, meta]) => ({
+      modelId, ...meta, count: null, cps: null, avgTime: null
+    }));
+  }
+
+  function renderModelsList() {
+    const list = document.getElementById('cmp-models-list');
+    if (!list || !_modelsData) return;
+    const filtered = _modelsFilter === 'all'
+      ? _modelsData
+      : _modelsData.filter(m => m.provider === _modelsFilter);
+    if (!filtered.length) {
+      list.innerHTML = '<div class="cmp-empty">Aucun modèle</div>';
       return;
     }
-    _shFcFlipped = true;
-    card.classList.add('flipped');
-    setTimeout(() => {
-      card.style.transition = 'none';
-      card.classList.remove('flipped');
-      _shFcIdx = (_shFcIdx + 1) % SH_CARDS.length;
-      setTimeout(() => {
-        card.style.transition = '';
-        const qEl = document.getElementById('sh-fc-q');
-        const aEl = document.getElementById('sh-fc-a');
-        const cEl = document.getElementById('sh-fc-counter');
-        if (qEl) qEl.textContent = SH_CARDS[_shFcIdx].q;
-        if (aEl) aEl.textContent = SH_CARDS[_shFcIdx].a;
-        if (cEl) cEl.textContent = (_shFcIdx + 1) + ' / ' + SH_CARDS.length;
-        const dots = document.querySelectorAll('.sh-fc-dot');
-        dots.forEach((d, i) => {
-          d.classList.toggle('done', i < _shFcIdx);
-          d.classList.toggle('current', i === _shFcIdx);
-        });
-        _shFcFlipped = false;
-      }, 60);
-      setTimeout(shFcAutoFlip, 2200);
-    }, 750);
+    const maxCps = Math.max.apply(null, filtered.map(function(m){return m.cps||0;}).concat([1]));
+    list.innerHTML = filtered.map(function(m) {
+      const provCol = PROV_COLORS[m.provider] || '#888';
+      const cpsBar = m.cps ? Math.round((m.cps / maxCps) * 100) : 0;
+      const cpsLabel = m.cps ? m.cps + ' c/s' : '—';
+      const timeLabel = m.avgTime ? (m.avgTime > 1000 ? (m.avgTime/1000).toFixed(1)+'s' : m.avgTime+'ms') : '—';
+      const countLabel = m.count ? (m.count >= 1000 ? (m.count/1000).toFixed(1)+'k' : m.count) : '—';
+      const initials = (PROV_NAMES[m.provider] || '?')[0];
+      const rgb = hexToRgb(provCol);
+      return '<div class="cmp-model-row">' +
+        '<div class="cmp-model-logo" style="background:rgba('+rgb+',0.12);border-color:rgba('+rgb+',0.2);color:'+provCol+'">'+initials+'</div>' +
+        '<div class="cmp-model-info">' +
+          '<div class="cmp-model-name">'+escHtml(m.name)+'</div>' +
+          '<div class="cmp-model-prov" style="color:'+provCol+'">'+escHtml(PROV_NAMES[m.provider] || m.provider)+'</div>' +
+        '</div>' +
+        '<div class="cmp-model-stats">' +
+          '<div class="cmp-model-cps">'+cpsLabel+'</div>' +
+          '<div class="cmp-cps-bar-track"><div class="cmp-cps-bar-fill" style="width:'+cpsBar+'%;background:'+provCol+'"></div></div>' +
+        '</div>' +
+        '<div class="cmp-model-meta">' +
+          '<div class="cmp-meta-time">'+timeLabel+'</div>' +
+          '<div class="cmp-meta-count">'+countLabel+'</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
 
-  function shRunQuiz() {
-    if (_shQuizDone) return;
-    _shQuizDone = true;
-    // Reset
-    ['sh-qo-a','sh-qo-b','sh-qo-c','sh-qo-d'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.className = 'sh-qz-opt';
-    });
-    const expl = document.getElementById('sh-qz-expl');
-    if (expl) expl.classList.remove('show');
-
-    setTimeout(() => {
-      const a = document.getElementById('sh-qo-a');
-      if (a) a.classList.add('highlight');
-    }, 300);
-    setTimeout(() => {
-      const a = document.getElementById('sh-qo-a');
-      if (a) { a.classList.remove('highlight'); a.classList.add('wrong'); }
-    }, 900);
-    setTimeout(() => {
-      const c = document.getElementById('sh-qo-c');
-      if (c) c.classList.add('highlight');
-    }, 1300);
-    setTimeout(() => {
-      const c = document.getElementById('sh-qo-c');
-      if (c) { c.classList.remove('highlight'); c.classList.add('wrong'); }
-    }, 1850);
-    setTimeout(() => {
-      const b = document.getElementById('sh-qo-b');
-      if (b) b.classList.add('correct');
-      const expl2 = document.getElementById('sh-qz-expl');
-      if (expl2) expl2.classList.add('show');
-    }, 2300);
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return r+','+g+','+b;
   }
 
-  function shRunSources() {
-    if (_shSourcesDone) return;
-    _shSourcesDone = true;
-    const cards = document.querySelectorAll('.sh-src-card');
-    cards.forEach(c => c.classList.remove('in'));
-    cards.forEach((c, i) => {
-      setTimeout(() => c.classList.add('in'), i * 220 + 80);
-    });
+  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function showModelsError() {
+    const list = document.getElementById('cmp-models-list');
+    if (list) list.innerHTML = '<div class="cmp-empty">Données indisponibles</div>';
   }
 
-  function shBuildChart() {
-    const container = document.getElementById('sh-cht-bars');
-    if (!container) return;
-    container.innerHTML = '';
-    const maxVal = Math.max(...SH_DATA_A, ...SH_DATA_B);
-    const minVal = 50;
-    SH_MONTHS.forEach((m, i) => {
-      const col = document.createElement('div');
-      col.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;gap:3px';
-      const pair = document.createElement('div');
-      pair.style.cssText = 'display:flex;gap:2px;align-items:flex-end;width:100%';
-      const barA = document.createElement('div');
-      barA.style.cssText = 'flex:1;border-radius:3px 3px 0 0;background:#6e6eff;opacity:0.85;height:0;transition:height 1.1s cubic-bezier(0.34,1.05,0.64,1)';
-      const barB = document.createElement('div');
-      barB.style.cssText = 'flex:1;border-radius:3px 3px 0 0;background:#a855f7;opacity:0.75;height:0;transition:height 1.1s cubic-bezier(0.34,1.05,0.64,1)';
-      pair.appendChild(barA);
-      pair.appendChild(barB);
-      const lbl = document.createElement('div');
-      lbl.style.cssText = 'font-size:0.58rem;color:#444;position:absolute;bottom:0;white-space:nowrap;font-family:Geist,sans-serif';
-      lbl.textContent = m;
-      col.appendChild(pair);
-      col.appendChild(lbl);
-      container.appendChild(col);
-      const pctA = ((SH_DATA_A[i] - minVal) / (maxVal - minVal) * 100);
-      const pctB = ((SH_DATA_B[i] - minVal) / (maxVal - minVal) * 100);
-      setTimeout(() => {
-        barA.style.height = Math.round(pctA * 1.05) + 'px';
-        barB.style.height = Math.round(pctB * 1.05) + 'px';
-      }, i * 110 + 200);
-    });
+  function updateFooter() {
+    const countEl = document.getElementById('cmp-footer-count');
+    const timeEl = document.getElementById('cmp-footer-time');
+    if (countEl && _modelsData) {
+      const total = _modelsData.reduce((a, m) => a + (m.count || 0), 0);
+      countEl.textContent = total > 0 ? total.toLocaleString('fr') + ' réponses analysées' : _modelsData.length + ' modèles';
+    }
+    if (timeEl) {
+      const now = new Date();
+      timeEl.textContent = 'Actualisé ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+    }
   }
 
     // ── BOOT ─────────────────────────────────────────────────────────────────
