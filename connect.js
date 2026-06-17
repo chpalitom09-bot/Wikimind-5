@@ -464,24 +464,18 @@
     btn.innerHTML = '<span class="cn-spinner"></span>';
 
     try {
-      // Check if email exists by attempting sign-in with wrong password
-      // Firebase returns 'auth/user-not-found' vs 'auth/wrong-password'
-      const auth = window.auth;
-      const { signInWithEmailAndPassword } = await getFirebaseFns();
-      try {
-        await signInWithEmailAndPassword(auth, email, '___dummy___wikimind___');
-      } catch (e) {
-        if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-          // New user → profile step
-          showStep('profile');
-        } else if (e.code === 'auth/wrong-password' || e.code === 'auth/too-many-requests' || e.code === 'auth/invalid-login-credentials') {
-          // Existing user → password step
-          showStep('pass');
-        } else {
-          showStep('pass'); // fallback
-        }
+      const { fetchSignInMethodsForEmail } = await getFirebaseFns();
+      // [] = nouveau compte  /  ['password'] ou ['google.com'] = compte existant
+      const methods = await fetchSignInMethodsForEmail(window.auth, email);
+      if (methods && methods.length > 0) {
+        // Compte existant → demander le mot de passe
+        showStep('pass');
+      } else {
+        // Nouveau compte → collecte du profil
+        showStep('profile');
       }
     } catch (err) {
+      // Erreur réseau : fallback mot de passe
       showStep('pass');
     }
 
@@ -600,6 +594,7 @@
       createUserWithEmailAndPassword: window._fbCreateUser,
       updateProfile: window._fbUpdateProfile,
       sendEmailVerification: window._fbSendVerification,
+      fetchSignInMethodsForEmail: window._fbFetchSignInMethods,
       GoogleAuthProvider: window._fbGoogleProvider,
       OAuthProvider: window._fbOAuthProvider,
       signInWithPopup: window._fbSignInPopup,
@@ -614,6 +609,7 @@
       fns.createUserWithEmailAndPassword = authMod.createUserWithEmailAndPassword;
       fns.updateProfile = authMod.updateProfile;
       fns.sendEmailVerification = authMod.sendEmailVerification;
+      fns.fetchSignInMethodsForEmail = authMod.fetchSignInMethodsForEmail;
       fns.GoogleAuthProvider = authMod.GoogleAuthProvider;
       fns.OAuthProvider = authMod.OAuthProvider;
       fns.signInWithPopup = authMod.signInWithPopup;
