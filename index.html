@@ -2965,7 +2965,7 @@ body.chat-empty-state #input-container {
 <script src="byok.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup, sendEmailVerification, reload } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, GoogleAuthProvider, OAuthProvider, FacebookAuthProvider, signInWithPopup, sendEmailVerification, fetchSignInMethodsForEmail, reload } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push, remove } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -3004,13 +3004,14 @@ window._firebaseGet = get;
 window._firebaseSignOut = signOut;
 
 // ── Expose Firebase auth fns for connect.js (external non-module script) ──
-window._fbSignIn           = signInWithEmailAndPassword;
-window._fbCreateUser       = createUserWithEmailAndPassword;
-window._fbUpdateProfile    = updateProfile;
-window._fbSendVerification = sendEmailVerification;
-window._fbGoogleProvider   = GoogleAuthProvider;
-window._fbOAuthProvider    = OAuthProvider;
-window._fbSignInPopup      = signInWithPopup;
+window._fbSignIn              = signInWithEmailAndPassword;
+window._fbCreateUser          = createUserWithEmailAndPassword;
+window._fbUpdateProfile       = updateProfile;
+window._fbSendVerification    = sendEmailVerification;
+window._fbFetchSignInMethods  = fetchSignInMethodsForEmail;
+window._fbGoogleProvider      = GoogleAuthProvider;
+window._fbOAuthProvider       = OAuthProvider;
+window._fbSignInPopup         = signInWithPopup;
 window._fbAuthFns          = { onAuthStateChanged };
 
 // =============================================
