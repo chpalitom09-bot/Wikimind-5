@@ -136,20 +136,143 @@
     </div>
   </div>
 
-  <!-- ── RIGHT — DEMO ── -->
+  <!-- ── RIGHT — FEATURE SHOWCASE ── -->
   <div id="cn-right">
-    <div id="cn-demo-wrap">
-      <div class="demo-window">
-        <div class="demo-titlebar">
-          <div class="demo-dot r"></div>
-          <div class="demo-dot y"></div>
-          <div class="demo-dot g"></div>
-          <span class="demo-title-label">Wikimind AI</span>
-          <span class="demo-model-badge">Wm Small 5.1</span>
+    <div id="cn-showcase">
+      <div class="sh-glow sh-glow1"></div>
+      <div class="sh-glow sh-glow2"></div>
+
+      <div class="sh-pills">
+        <div class="sh-pill active" data-i="0">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+          Flashcards
         </div>
-        <div class="demo-body" id="cn-demo-body">
-          <!-- Populated by JS -->
+        <div class="sh-pill" data-i="1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Quiz QCM
         </div>
+        <div class="sh-pill" data-i="2">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Sources Web
+        </div>
+        <div class="sh-pill" data-i="3">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Graphiques
+        </div>
+      </div>
+
+      <div class="sh-stage">
+
+        <!-- PANEL 0 : Flashcards -->
+        <div class="sh-panel active" id="sh-p0">
+          <div class="sh-panel-label">
+            <div class="sh-panel-icon" style="background:rgba(110,110,255,0.15)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6e6eff" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+            </div>
+            <span>Flashcards IA</span>
+            <span class="sh-counter" id="sh-fc-counter">1 / 4</span>
+          </div>
+          <div class="sh-fc-scene" id="sh-fc-scene">
+            <div class="sh-fc-card" id="sh-fc-card">
+              <div class="sh-fc-face sh-fc-front">
+                <div class="sh-fc-q" id="sh-fc-q">Qu'est-ce que la rétropropagation ?</div>
+                <div class="sh-fc-hint">Cliquer pour voir la réponse</div>
+              </div>
+              <div class="sh-fc-face sh-fc-back">
+                <div class="sh-fc-a-label">Réponse</div>
+                <div class="sh-fc-a" id="sh-fc-a">Algorithme qui calcule le gradient de l'erreur en remontant couche par couche pour ajuster les poids.</div>
+              </div>
+            </div>
+          </div>
+          <div class="sh-fc-dots" id="sh-fc-dots">
+            <div class="sh-fc-dot current"></div>
+            <div class="sh-fc-dot"></div>
+            <div class="sh-fc-dot"></div>
+            <div class="sh-fc-dot"></div>
+          </div>
+        </div>
+
+        <!-- PANEL 1 : Quiz QCM -->
+        <div class="sh-panel" id="sh-p1">
+          <div class="sh-panel-label">
+            <div class="sh-panel-icon" style="background:rgba(168,85,247,0.12)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <span>QCM Interactif</span>
+          </div>
+          <div class="sh-qz-q">Quel algorithme est utilisé pour entraîner les réseaux de neurones ?</div>
+          <div class="sh-qz-opts">
+            <div class="sh-qz-opt" id="sh-qo-a"><div class="sh-opt-letter">A</div>Algorithme de Dijkstra</div>
+            <div class="sh-qz-opt" id="sh-qo-b"><div class="sh-opt-letter">B</div>Descente de gradient</div>
+            <div class="sh-qz-opt" id="sh-qo-c"><div class="sh-opt-letter">C</div>Tri par fusion</div>
+            <div class="sh-qz-opt" id="sh-qo-d"><div class="sh-opt-letter">D</div>Recherche binaire</div>
+          </div>
+          <div class="sh-qz-expl" id="sh-qz-expl">La descente de gradient ajuste les poids en minimisant la fonction de perte, guidée par la rétropropagation.</div>
+        </div>
+
+        <!-- PANEL 2 : Sources -->
+        <div class="sh-panel" id="sh-p2">
+          <div class="sh-panel-label">
+            <div class="sh-panel-icon" style="background:rgba(74,222,128,0.1)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <span>Sources Vérifiées</span>
+          </div>
+          <div class="sh-src-q">"Quelles sont les dernières avancées en LLM open-source ?"</div>
+          <div class="sh-src-list">
+            <div class="sh-src-card" id="sh-sc0">
+              <div class="sh-src-logo" style="background:#1a1a2e;color:#4285f4;font-size:0.8rem;font-weight:700">W</div>
+              <div class="sh-src-body">
+                <div class="sh-src-site">wikipedia.org</div>
+                <div class="sh-src-title">Large Language Models — Architectures récentes</div>
+                <div class="sh-src-snip">Les modèles Llama 3, Mistral et Qwen représentent...</div>
+              </div>
+              <div class="sh-src-rel">98%</div>
+            </div>
+            <div class="sh-src-card" id="sh-sc1">
+              <div class="sh-src-logo" style="background:#0d1117;color:#e0e0e0;font-size:0.65rem;font-weight:700">arXiv</div>
+              <div class="sh-src-body">
+                <div class="sh-src-site">arxiv.org</div>
+                <div class="sh-src-title">Scaling Laws for Open-Source LLMs (2025)</div>
+                <div class="sh-src-snip">Cette étude compare les performances sur 47 benchmarks...</div>
+              </div>
+              <div class="sh-src-rel">94%</div>
+            </div>
+            <div class="sh-src-card" id="sh-sc2">
+              <div class="sh-src-logo" style="background:#1a0a2e;color:#a855f7;font-size:0.85rem;font-weight:700">M</div>
+              <div class="sh-src-body">
+                <div class="sh-src-site">mistral.ai</div>
+                <div class="sh-src-title">Mistral Large 2 — Technical Report</div>
+                <div class="sh-src-snip">Architecture MoE avec 8 experts actifs par token...</div>
+              </div>
+              <div class="sh-src-rel">91%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 3 : Graphiques -->
+        <div class="sh-panel" id="sh-p3">
+          <div class="sh-panel-label">
+            <div class="sh-panel-icon" style="background:rgba(251,191,36,0.1)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <span>Graphiques IA</span>
+          </div>
+          <div class="sh-cht-head">
+            <div class="sh-cht-title">Précision modèles — Benchmark MMLU</div>
+            <div class="sh-cht-legend">
+              <span><span class="sh-leg-dot" style="background:#6e6eff"></span>Wm Large</span>
+              <span><span class="sh-leg-dot" style="background:#a855f7"></span>Wm Small</span>
+            </div>
+          </div>
+          <div class="sh-cht-wrap">
+            <div class="sh-cht-grid-line" style="top:20px"></div>
+            <div class="sh-cht-grid-line" style="top:56px"></div>
+            <div class="sh-cht-grid-line" style="top:92px"></div>
+            <div class="sh-cht-bars" id="sh-cht-bars"></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -274,52 +397,32 @@
 </div>
 `;
 
-  // ── DEMO SCRIPT ─────────────────────────────────────────────────────────
-  const DEMO_SEQUENCE = [
-    {
-      type: 'user',
-      text: 'Explique-moi les réseaux de neurones en 3 points clés',
-      delay: 600
-    },
-    {
-      type: 'ai',
-      text: 'Voici les 3 fondements essentiels :',
-      code: `<span class="kw">1.</span> <span class="fn">Neurones artificiels</span> — unités qui reçoivent,\n   pondèrent et transmettent un signal.\n<span class="kw">2.</span> <span class="fn">Apprentissage</span> — ajustement des poids\n   via rétropropagation + gradient descent.\n<span class="kw">3.</span> <span class="fn">Couches profondes</span> — représentations\n   hiérarchiques : pixels → formes → objets.`,
-      delay: 1200
-    },
-    {
-      type: 'tags',
-      tags: [
-        { label: '🧠 Deep Learning', cls: 'purple' },
-        { label: '📐 Mathématiques', cls: '' },
-        { label: '✅ Simplifié', cls: 'green' }
-      ],
-      delay: 400
-    },
-    {
-      type: 'user',
-      text: 'Génère un quiz sur ce sujet',
-      delay: 1600
-    },
-    {
-      type: 'ai',
-      text: 'Quiz généré — 5 questions, difficulté progressive.',
-      code: `<span class="kw">Q1.</span> Quel algorithme ajuste les poids ?\n   a) <span class="str">Gradient Descent</span>  b) Tri rapide\n   c) Dijkstra          d) KNN\n<span class="num">→ Réponse : a)</span>`,
-      delay: 1000
-    },
-    {
-      type: 'input',
-      text: 'Crée des flashcards pour réviser…',
-      delay: 2800
-    }
+  // ── SHOWCASE DATA ────────────────────────────────────────────────────────
+  const SH_CARDS = [
+    { q: "Qu'est-ce que la rétropropagation ?", a: "Algorithme qui calcule le gradient de l'erreur en remontant couche par couche pour ajuster les poids du réseau." },
+    { q: "Définir l'entropie croisée ?", a: "Fonction de perte qui mesure la divergence entre la distribution prédite et la distribution réelle des labels." },
+    { q: "Qu'est-ce qu'un Transformer ?", a: "Architecture basée sur le mécanisme d'attention permettant de traiter des séquences en parallèle (self-attention)." },
+    { q: "Qu'est-ce que le fine-tuning ?", a: "Adaptation d'un modèle pré-entraîné à une tâche spécifique en continuant l'entraînement sur un dataset ciblé." }
   ];
+  const SH_MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun'];
+  const SH_DATA_A = [71, 74, 77, 79, 83, 87];
+  const SH_DATA_B = [58, 61, 63, 67, 70, 74];
 
   // ── STATE ───────────────────────────────────────────────────────────────
-  let _step = 'email'; // 'email' | 'pass' | 'profile'
+  let _step = 'email';
   let _emailVal = '';
   let _mounted = false;
   let _authReady = false;
   let _demoTimer = null;
+
+  // Showcase state
+  let _shCurrent = 0;
+  let _shAutoTimer = null;
+  let _shFcIdx = 0;
+  let _shFcFlipped = false;
+  let _shQuizDone = false;
+  let _shSourcesDone = false;
+  let _shChartBuilt = false;
 
   // ── WAIT FOR FIREBASE ────────────────────────────────────────────────────
   function waitForAuth(cb) {
@@ -663,128 +766,156 @@
     if (contentEl) contentEl.classList.add('active');
   }
 
-  // ── DEMO ANIMATION ───────────────────────────────────────────────────────
+  // ── SHOWCASE ANIMATION ─────────────────────────────────────────────────────
+
   function startDemo() {
-    const body = document.getElementById('cn-demo-body');
-    if (!body) return;
+    // Init showcased feature panels
+    initShowcasePills();
+    // Auto-flip flashcard after delay
+    setTimeout(shFcAutoFlip, 2000);
+    // Start auto-rotate
+    _shAutoTimer = setInterval(() => {
+      shSwitchTo((_shCurrent + 1) % 4);
+    }, 4400);
+  }
 
-    let idx = 0;
-    let inputFakeEl = null;
+  function initShowcasePills() {
+    document.querySelectorAll('.sh-pill').forEach(p => {
+      p.addEventListener('click', () => {
+        const idx = parseInt(p.dataset.i);
+        clearInterval(_shAutoTimer);
+        shSwitchTo(idx);
+        _shAutoTimer = setInterval(() => shSwitchTo((_shCurrent + 1) % 4), 4400);
+      });
+    });
+  }
 
-    function nextStep() {
-      if (idx >= DEMO_SEQUENCE.length) {
-        // Loop: reset after pause
-        _demoTimer = setTimeout(() => {
-          body.innerHTML = '';
-          inputFakeEl = null;
-          idx = 0;
-          nextStep();
-        }, 3000);
-        return;
-      }
+  function shSwitchTo(idx) {
+    if (idx === _shCurrent) return;
+    const panels = ['sh-p0','sh-p1','sh-p2','sh-p3'];
+    const pills = document.querySelectorAll('.sh-pill');
+    document.getElementById(panels[_shCurrent]).classList.remove('active');
+    pills[_shCurrent].classList.remove('active');
+    _shCurrent = idx;
+    document.getElementById(panels[_shCurrent]).classList.add('active');
+    pills[_shCurrent].classList.add('active');
+    // Trigger panel-specific animations
+    if (idx === 1) { _shQuizDone = false; setTimeout(shRunQuiz, 350); }
+    if (idx === 2) { _shSourcesDone = false; setTimeout(shRunSources, 300); }
+    if (idx === 3 && !_shChartBuilt) { shBuildChart(); _shChartBuilt = true; }
+  }
 
-      const step = DEMO_SEQUENCE[idx++];
-
-      if (step.type === 'user') {
-        const msg = createMsg('user', step.text);
-        body.appendChild(msg);
-        requestAnimationFrame(() => msg.classList.add('visible'));
-      }
-
-      else if (step.type === 'ai') {
-        const msg = createMsg('ai', '');
-        body.appendChild(msg);
-        requestAnimationFrame(() => msg.classList.add('visible'));
-        const bubble = msg.querySelector('.demo-bubble');
-        typeText(bubble, step.text, step.code, 22, () => {});
-      }
-
-      else if (step.type === 'tags') {
-        const row = document.createElement('div');
-        row.className = 'demo-tags';
-        body.appendChild(row);
-        step.tags.forEach((t, i) => {
-          const tag = document.createElement('span');
-          tag.className = 'demo-tag' + (t.cls ? ' ' + t.cls : '');
-          tag.textContent = t.label;
-          row.appendChild(tag);
-          setTimeout(() => tag.classList.add('visible'), i * 120);
-        });
-      }
-
-      else if (step.type === 'input') {
-        if (!inputFakeEl) {
-          inputFakeEl = document.createElement('div');
-          inputFakeEl.className = 'demo-input-bar';
-          inputFakeEl.innerHTML = `<div class="demo-input-fake" id="cn-demo-fake-input"></div>
-            <div class="demo-send-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>`;
-          body.appendChild(inputFakeEl);
-        }
-        typeInputFake(document.getElementById('cn-demo-fake-input'), step.text, 40);
-      }
-
-      _demoTimer = setTimeout(nextStep, step.delay);
+  // Flashcard: auto-flip every 2s then advance
+  function shFcAutoFlip() {
+    const card = document.getElementById('sh-fc-card');
+    if (!card) return;
+    if (!document.getElementById('sh-p0').classList.contains('active')) {
+      setTimeout(shFcAutoFlip, 600);
+      return;
     }
-
-    _demoTimer = setTimeout(nextStep, 400);
+    _shFcFlipped = true;
+    card.classList.add('flipped');
+    setTimeout(() => {
+      card.style.transition = 'none';
+      card.classList.remove('flipped');
+      _shFcIdx = (_shFcIdx + 1) % SH_CARDS.length;
+      setTimeout(() => {
+        card.style.transition = '';
+        const qEl = document.getElementById('sh-fc-q');
+        const aEl = document.getElementById('sh-fc-a');
+        const cEl = document.getElementById('sh-fc-counter');
+        if (qEl) qEl.textContent = SH_CARDS[_shFcIdx].q;
+        if (aEl) aEl.textContent = SH_CARDS[_shFcIdx].a;
+        if (cEl) cEl.textContent = (_shFcIdx + 1) + ' / ' + SH_CARDS.length;
+        const dots = document.querySelectorAll('.sh-fc-dot');
+        dots.forEach((d, i) => {
+          d.classList.toggle('done', i < _shFcIdx);
+          d.classList.toggle('current', i === _shFcIdx);
+        });
+        _shFcFlipped = false;
+      }, 60);
+      setTimeout(shFcAutoFlip, 2200);
+    }, 750);
   }
 
-  function createMsg(role, text) {
-    const wrap = document.createElement('div');
-    wrap.className = 'demo-msg ' + role;
+  function shRunQuiz() {
+    if (_shQuizDone) return;
+    _shQuizDone = true;
+    // Reset
+    ['sh-qo-a','sh-qo-b','sh-qo-c','sh-qo-d'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.className = 'sh-qz-opt';
+    });
+    const expl = document.getElementById('sh-qz-expl');
+    if (expl) expl.classList.remove('show');
 
-    const av = document.createElement('div');
-    av.className = 'demo-avatar ' + role;
-    av.textContent = role === 'ai' ? 'W' : 'U';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'demo-bubble ' + role;
-    bubble.textContent = text;
-
-    wrap.appendChild(av);
-    wrap.appendChild(bubble);
-    return wrap;
+    setTimeout(() => {
+      const a = document.getElementById('sh-qo-a');
+      if (a) a.classList.add('highlight');
+    }, 300);
+    setTimeout(() => {
+      const a = document.getElementById('sh-qo-a');
+      if (a) { a.classList.remove('highlight'); a.classList.add('wrong'); }
+    }, 900);
+    setTimeout(() => {
+      const c = document.getElementById('sh-qo-c');
+      if (c) c.classList.add('highlight');
+    }, 1300);
+    setTimeout(() => {
+      const c = document.getElementById('sh-qo-c');
+      if (c) { c.classList.remove('highlight'); c.classList.add('wrong'); }
+    }, 1850);
+    setTimeout(() => {
+      const b = document.getElementById('sh-qo-b');
+      if (b) b.classList.add('correct');
+      const expl2 = document.getElementById('sh-qz-expl');
+      if (expl2) expl2.classList.add('show');
+    }, 2300);
   }
 
-  function typeText(el, text, code, speed, cb) {
-    let i = 0;
-    const cursor = document.createElement('span');
-    cursor.className = 'demo-cursor';
-    el.innerHTML = '';
-    el.appendChild(cursor);
-
-    const iv = setInterval(() => {
-      if (i < text.length) {
-        el.insertBefore(document.createTextNode(text[i]), cursor);
-        i++;
-      } else {
-        clearInterval(iv);
-        cursor.remove();
-        if (code) {
-          const pre = document.createElement('div');
-          pre.className = 'demo-code';
-          pre.innerHTML = code;
-          el.appendChild(pre);
-        }
-        cb && cb();
-      }
-    }, speed);
+  function shRunSources() {
+    if (_shSourcesDone) return;
+    _shSourcesDone = true;
+    const cards = document.querySelectorAll('.sh-src-card');
+    cards.forEach(c => c.classList.remove('in'));
+    cards.forEach((c, i) => {
+      setTimeout(() => c.classList.add('in'), i * 220 + 80);
+    });
   }
 
-  function typeInputFake(el, text, speed) {
-    let i = 0;
-    el.textContent = '';
-    const iv = setInterval(() => {
-      if (i < text.length) {
-        el.textContent += text[i];
-        i++;
-      } else {
-        clearInterval(iv);
-      }
-    }, speed);
+  function shBuildChart() {
+    const container = document.getElementById('sh-cht-bars');
+    if (!container) return;
+    container.innerHTML = '';
+    const maxVal = Math.max(...SH_DATA_A, ...SH_DATA_B);
+    const minVal = 50;
+    SH_MONTHS.forEach((m, i) => {
+      const col = document.createElement('div');
+      col.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;gap:3px';
+      const pair = document.createElement('div');
+      pair.style.cssText = 'display:flex;gap:2px;align-items:flex-end;width:100%';
+      const barA = document.createElement('div');
+      barA.style.cssText = 'flex:1;border-radius:3px 3px 0 0;background:#6e6eff;opacity:0.85;height:0;transition:height 1.1s cubic-bezier(0.34,1.05,0.64,1)';
+      const barB = document.createElement('div');
+      barB.style.cssText = 'flex:1;border-radius:3px 3px 0 0;background:#a855f7;opacity:0.75;height:0;transition:height 1.1s cubic-bezier(0.34,1.05,0.64,1)';
+      pair.appendChild(barA);
+      pair.appendChild(barB);
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:0.58rem;color:#444;position:absolute;bottom:0;white-space:nowrap;font-family:Geist,sans-serif';
+      lbl.textContent = m;
+      col.appendChild(pair);
+      col.appendChild(lbl);
+      container.appendChild(col);
+      const pctA = ((SH_DATA_A[i] - minVal) / (maxVal - minVal) * 100);
+      const pctB = ((SH_DATA_B[i] - minVal) / (maxVal - minVal) * 100);
+      setTimeout(() => {
+        barA.style.height = Math.round(pctA * 1.05) + 'px';
+        barB.style.height = Math.round(pctB * 1.05) + 'px';
+      }, i * 110 + 200);
+    });
   }
 
-  // ── BOOT ─────────────────────────────────────────────────────────────────
+    // ── BOOT ─────────────────────────────────────────────────────────────────
   // Expose Firebase auth functions so connect.js can use them even if the
   // main module hasn't run yet. index.html should add these to window:
   //   window._fbSignIn = signInWithEmailAndPassword;
