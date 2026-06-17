@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════
    WIKIMIND AI v5 — sources.js  (v2)
-   Sources : Jina, Tavily, OpenAI, Wikipedia
+   Sources : Jina, Tavily, OpenAI, Wikipedia, OpenRouter
    Personnalités soulignées + panneau latéral
    ═══════════════════════════════════════════════════ */
 
@@ -76,6 +76,22 @@ const PROVIDER_SOURCES = {
   },
 
   // ── NOUVEAUX — IA INTERNATIONALE ─────────────────────────────────────────
+  openrouter: {
+    name: "OpenRouter",
+    logo: "openrouterlogo.png",
+    url: "https://openrouter.ai/",
+    desc: "Routage multi-modèles IA",
+    badge: "ROUTER",
+    badgeClass: "sources-badge-openrouter"
+  },
+  microsoft: {
+    name: "Microsoft",
+    logo: "microsoftlogo.png",
+    url: "https://www.microsoft.com/",
+    desc: "Modèles Phi & Azure AI",
+    badge: "MSFT",
+    badgeClass: "sources-badge-microsoft"
+  },
   anthropic: {
     name: "Anthropic",
     logo: "anthropiclogo.png",
@@ -148,7 +164,9 @@ const PROVIDER_SOURCES = {
     name: "Qwen / Alibaba",
     logo: "qwenlogo.png",
     url: "https://qwenlm.github.io/",
-    desc: "Modèles Qwen d'Alibaba Cloud"
+    desc: "Modèles Qwen d'Alibaba Cloud",
+    badge: "QWEN",
+    badgeClass: "sources-badge-qwen"
   },
   perplexity: {
     name: "Perplexity AI",
@@ -185,12 +203,6 @@ const PROVIDER_SOURCES = {
     desc: "Synthèse vocale IA",
     badge: "TTS",
     badgeClass: "sources-badge-elevenlabs"
-  },
-  openrouter: {
-    name: "OpenRouter",
-    logo: "openrouterlogo.png",
-    url: "https://openrouter.ai/",
-    desc: "Routage multi-modèles IA"
   },
   replicate: {
     name: "Replicate",
@@ -611,6 +623,8 @@ function isWikipediaRequest(text) { return WIKI_KEYWORDS.test(text); }
 // La source est ajoutée si le mot-clé apparaît dans le message user OU la réponse IA
 const KEYWORD_SOURCES = [
   // IA internationale
+  ["openrouter",      /\b(open\s*router|openrouter)\b/i],
+  ["microsoft",       /\b(microsoft|phi[- ]?3|phi[- ]?4)\b/i],
   ["anthropic",       /\b(anthropic|claude\s*(3|sonnet|opus|haiku)?)\b/i],
   ["google",          /\b(google|gemini|deepmind|bard|palm)\b/i],
   ["meta",            /\b(meta\s*ai|llama\s*[23]?|llama\.cpp|facebook\s*ai)\b/i],
@@ -626,7 +640,6 @@ const KEYWORD_SOURCES = [
   ["stability",       /\b(stability\s*ai|stable\s*diffusion|sdxl|sd[- ]?\d)\b/i],
   ["runway",          /\b(runway\s*(ml|gen)?|gen[- ]?[23]\b)\b/i],
   ["elevenlabs",      /\b(eleven\s*labs?|elevenlabs|voix\s*ia|tts\s*ia|synthèse\s*vocale)\b/i],
-  ["openrouter",      /\b(open\s*router|openrouter)\b/i],
   ["replicate",       /\b(replicate\.com|replicate\s*api)\b/i],
   ["suno",            /\b(suno\s*(ai)?|musique\s*(ia|générée)|génération\s*musicale)\b/i],
   ["udio",            /\b(udio\s*(ai)?)\b/i],
@@ -815,7 +828,7 @@ function resolveMsgSources(msgObj) {
   const sources = [];
   const add = (key) => { if (PROVIDER_SOURCES[key] && !sources.includes(key)) sources.push(key); };
 
-  // Provider principal (mistral, groq, cerebras…)
+  // Provider principal (mistral, groq, cerebras, openrouter…)
   add(msgObj.provider || 'mistral');
 
   // Model IDs spéciaux
