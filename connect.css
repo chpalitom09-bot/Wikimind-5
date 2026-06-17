@@ -106,25 +106,27 @@ html, body {
 /* ── MAIN LAYOUT ────────────────────────────── */
 #cn-page {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   padding-top: 56px;
+  justify-content: center;
+  align-items: center;
 }
 
-/* ── LEFT PANEL ─────────────────────────────── */
+/* ── LEFT PANEL (CENTERED FORM) ─────────────── */
 #cn-left {
-  width: 50%;
-  min-width: 420px;
-  max-width: 560px;
+  width: 100%;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 48px 56px;
+  padding: 48px 24px;
   position: relative;
   z-index: 10;
 }
 
 #cn-brand {
   margin-bottom: 36px;
+  text-align: center;
 }
 #cn-brand h1 {
   font-size: clamp(1.8rem, 3vw, 2.6rem);
@@ -149,6 +151,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
 }
 
 /* Social buttons */
@@ -325,243 +328,6 @@ select.cn-input option { background: #1a1a1a; }
   animation: spin 0.6s linear infinite;
   display: inline-block;
   vertical-align: middle;
-}
-
-/* ── RIGHT PANEL — MODÈLES LIVE ─────────────── */
-#cn-right {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  border-left: 1px solid var(--border);
-}
-
-/* Subtle ambient glow */
-#cn-right::before {
-  content: '';
-  position: absolute;
-  width: 500px; height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(110,110,255,0.06) 0%, transparent 65%);
-  top: 20%; right: -100px;
-  pointer-events: none;
-}
-
-#cn-models-panel {
-  position: relative;
-  z-index: 1;
-  width: 420px;
-  max-width: calc(100% - 40px);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-/* Panel header */
-.cmp-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.cmp-panel-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
-}
-.cmp-panel-title svg {
-  color: var(--accent);
-  flex-shrink: 0;
-}
-.cmp-live-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  color: #4ade80;
-  letter-spacing: 0.06em;
-}
-.cmp-live-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #4ade80;
-  animation: cnPulse 2.2s ease-in-out infinite;
-}
-@keyframes cnPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(0.8); }
-}
-
-/* Provider filter tabs */
-.cmp-provider-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 3px;
-  margin-bottom: 10px;
-}
-.cmp-ptab {
-  flex: 1;
-  padding: 5px 8px;
-  background: none;
-  border: none;
-  border-radius: 7px;
-  font-family: 'Geist', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.cmp-ptab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-.cmp-ptab.active { background: var(--bg3); color: var(--text); }
-
-/* Models list */
-.cmp-models-list {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  min-height: 220px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-.cmp-models-list::-webkit-scrollbar { width: 4px; }
-.cmp-models-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-.cmp-models-list::-webkit-scrollbar-track { background: transparent; }
-
-/* Loading state */
-.cmp-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 0;
-}
-.cmp-spinner {
-  width: 20px; height: 20px;
-  border: 2px solid rgba(255,255,255,0.06);
-  border-top-color: rgba(110,110,255,0.5);
-  border-radius: 50%;
-  animation: cnSpin 0.7s linear infinite;
-}
-@keyframes cnSpin { to { transform: rotate(360deg); } }
-
-.cmp-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 0;
-  font-size: 0.78rem;
-  color: var(--text3);
-}
-
-/* Model row */
-.cmp-model-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.12s;
-}
-.cmp-model-row:last-child { border-bottom: none; }
-.cmp-model-row:hover { background: rgba(255,255,255,0.018); }
-
-.cmp-model-logo {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-.cmp-model-info {
-  flex: 1;
-  min-width: 0;
-}
-.cmp-model-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.2;
-}
-.cmp-model-prov {
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  margin-top: 1px;
-}
-
-.cmp-model-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 88px;
-  flex-shrink: 0;
-}
-.cmp-model-cps {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--text2);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-.cmp-cps-bar-track {
-  height: 3px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.cmp-cps-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  opacity: 0.75;
-  transition: width 0.5s ease;
-}
-
-.cmp-model-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-  min-width: 44px;
-}
-.cmp-meta-time {
-  font-size: 0.66rem;
-  color: var(--text3);
-  font-variant-numeric: tabular-nums;
-}
-.cmp-meta-count {
-  font-size: 0.62rem;
-  color: var(--text3);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Panel footer */
-.cmp-panel-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-  padding: 0 2px;
-  font-size: 0.65rem;
-  color: var(--text3);
 }
 
 /* ── FORFAIT POPUP ──────────────────────────── */
@@ -781,8 +547,6 @@ select.cn-input option { background: #1a1a1a; }
 
 /* ── RESPONSIVE ─────────────────────────────── */
 @media (max-width: 900px) {
-  #cn-right { display: none; }
-  #cn-left { width: 100%; max-width: 100%; min-width: 0; padding: 32px 24px; }
   #cn-page { overflow-y: auto; }
   html, body { overflow: auto; }
 }
