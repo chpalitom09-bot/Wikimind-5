@@ -4131,6 +4131,9 @@ function providerBadge(provider) {
   const src = PROVIDER_LOGOS[provider];
   if (!src) return "";
   const names = { mistral:"Mistral", groq:"Groq", pollinations:"Pollinations", cerebras:"Cerebras", sambanova:"SambaNova", blackforestlabs:"Black Forest Labs", cohere:"Cohere" };
+  const logoImg = `<img src="${src}" alt="${provider}" width="12" height="12" style="flex-shrink:0;border-radius:2px;object-fit:contain;" onerror="this.style.display='none'">`;
+  return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.58rem;font-weight:600;letter-spacing:0.03em;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:5px;padding:1px 5px 1px 3px;margin-left:4px;">${logoImg}${names[provider]||provider}</span>`;
+}
 
 function visionBadge() {
   return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:0.58rem;font-weight:600;background:rgba(74,222,128,0.1);color:#4ade80;border-radius:5px;padding:1px 5px;margin-left:3px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/></svg>Vision</span>`;
@@ -7922,7 +7925,7 @@ window.addEventListener('DOMContentLoaded', () => {
 <script src="statpopup.js" defer></script>
 <link rel="stylesheet" href="forfait.css">
 <script src="forfait.js" defer></script>
-<script src="aitokens.js" defer></script>
+
 <script src="videogen.js" defer></script>
 <script src="moderation.js" defer></script>
 <script src="legal.js" defer></script>
