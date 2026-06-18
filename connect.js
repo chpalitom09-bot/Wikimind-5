@@ -51,13 +51,13 @@
 <div id="cn-topbar">
   <a id="cn-logo" href="#">
     <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="8" fill="url(#wm-grad2)"/>
+      <rect width="32" height="32" rx="8" fill="url(#wm-grad)"/>
       <path d="M9 16c0-3.866 3.134-7 7-7s7 3.134 7 7-3.134 7-7 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
       <circle cx="16" cy="16" r="2.5" fill="#fff"/>
       <defs>
-        <linearGradient id="wm-grad2" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#7c6dfa"/>
-          <stop offset="1" stop-color="#e879f9"/>
+        <linearGradient id="wm-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#6e6eff"/>
+          <stop offset="1" stop-color="#a855f7"/>
         </linearGradient>
       </defs>
     </svg>
@@ -66,59 +66,16 @@
   <nav id="cn-topbar-nav">
     <button class="cn-nav-btn" id="cn-btn-tarif">Tarification</button>
     <button class="cn-nav-btn" id="cn-btn-legal">Légal & Confidentialité</button>
-    <a class="cn-nav-btn" id="cn-topbar-contact" href="mailto:${CONTACT_EMAIL}">Contacter</a>
+    <a class="cn-nav-btn" id="cn-topbar-contact" href="mailto:${CONTACT_EMAIL}">Contacter Wikimind</a>
   </nav>
 </div>
 
 <div id="cn-page">
-
-  <!-- ── LEFT: HERO ── -->
-  <div id="cn-hero">
-    <canvas id="cn-canvas"></canvas>
-    <div id="cn-hero-content">
-      <div id="cn-hero-eyebrow"><span></span>Intelligence augmentée</div>
-      <h1>Pensez plus vite,<br><em>apprenez mieux</em></h1>
-      <p id="cn-hero-sub">Wikimind connecte vos idées, accélère votre apprentissage et amplifie votre pensée grâce à l'IA.</p>
-      <div id="cn-features">
-        <div class="cn-feature">
-          <div class="cn-feature-icon">✦</div>
-          <div class="cn-feature-text">
-            <div class="cn-feature-title">Modèles frontier</div>
-            <div class="cn-feature-desc">Mistral, Llama, et bien d'autres</div>
-          </div>
-        </div>
-        <div class="cn-feature">
-          <div class="cn-feature-icon">⚡</div>
-          <div class="cn-feature-text">
-            <div class="cn-feature-title">Flashcards & Quiz IA</div>
-            <div class="cn-feature-desc">Mémorisez en une fraction du temps</div>
-          </div>
-        </div>
-        <div class="cn-feature">
-          <div class="cn-feature-icon">🔗</div>
-          <div class="cn-feature-text">
-            <div class="cn-feature-title">Connecteurs Google</div>
-            <div class="cn-feature-desc">Drive, Gmail, Calendar intégrés</div>
-          </div>
-        </div>
-        <div class="cn-feature">
-          <div class="cn-feature-icon">🛡️</div>
-          <div class="cn-feature-text">
-            <div class="cn-feature-title">Données hébergées en Europe</div>
-            <div class="cn-feature-desc">RGPD, Firebase europe-west1</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="cn-divider"></div>
-
-  <!-- ── RIGHT: FORM ── -->
+  <!-- ── CENTERED FORM ── -->
   <div id="cn-left">
     <div id="cn-brand">
-      <h1>Créer un compte</h1>
-      <p>Déjà inscrit ? Entrez votre e-mail pour vous connecter.</p>
+      <h1>Pensez plus vite,<br>apprenez mieux</h1>
+      <p>Wikimind AI — votre assistant intelligent pour étudier, créer et explorer.</p>
     </div>
 
     <div id="cn-card">
@@ -419,67 +376,6 @@
     $('cn-back-profile').onclick = () => showStep('email');
     $('cn-profile-submit').onclick = submitProfile;
     $('cn-pass-new').onkeydown = e => { if (e.key === 'Enter') submitProfile(); };
-
-    // ── KNOWLEDGE GRAPH CANVAS ───────────────────────────────────────────
-    initCanvas();
-  }
-
-  function initCanvas() {
-    const canvas = document.getElementById('cn-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let W, H, nodes;
-
-    function resize() {
-      const hero = document.getElementById('cn-hero');
-      if (!hero) return;
-      W = canvas.width = hero.offsetWidth;
-      H = canvas.height = hero.offsetHeight;
-    }
-
-    function buildGraph() {
-      const count = Math.max(16, Math.floor(W / 58));
-      nodes = Array.from({ length: count }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.2,
-        vy: (Math.random() - 0.5) * 0.2,
-        r: Math.random() * 1.6 + 0.8,
-        hue: Math.random() < 0.72 ? 0 : 1,
-      }));
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 155) {
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = 'rgba(124,109,250,' + ((1 - dist / 155) * 0.17) + ')';
-            ctx.lineWidth = 0.7;
-            ctx.stroke();
-          }
-        }
-      }
-      for (const n of nodes) {
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = n.hue === 0 ? 'rgba(124,109,250,0.65)' : 'rgba(232,121,249,0.55)';
-        ctx.fill();
-        n.x += n.vx; n.y += n.vy;
-        if (n.x < 0 || n.x > W) n.vx *= -1;
-        if (n.y < 0 || n.y > H) n.vy *= -1;
-      }
-      requestAnimationFrame(draw);
-    }
-
-    resize(); buildGraph(); draw();
-    window.addEventListener('resize', () => { resize(); buildGraph(); });
   }
 
   // ── STEP NAVIGATION ──────────────────────────────────────────────────────
