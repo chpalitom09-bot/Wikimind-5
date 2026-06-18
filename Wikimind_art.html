@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WikiMind Art — Génération d'images IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #000000;
+      --bg2: #0a0a0a;
+      --bg3: #111111;
+      --bg4: #1a1a1a;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --text: #ffffff;
+      --text2: #a0a0a0;
+      --text3: #555555;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Geist', sans-serif;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      background: rgba(0,0,0,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: background 0.3s;
+    }
+    .nav.scrolled { background: rgba(0,0,0,0.97); }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--text);
+    }
+    .nav-logo-img {
+      height: 22px; width: auto;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-logo-wordmark {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: #fff; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-logo-wordmark svg { width: 14px; height: 14px; }
+    .nav-logo-text { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; }
+    .nav-logo-badge {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.1em;
+      color: var(--text3); background: var(--bg3); border: 1px solid var(--border);
+      padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+    }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px;
+      color: var(--text2); font-size: 0.83rem; font-weight: 500;
+      text-decoration: none; border: none; background: transparent; cursor: pointer;
+      transition: all 0.15s; font-family: 'Geist', sans-serif;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-link i { font-size: 0.78rem; }
+    .nav-btn-primary {
+      padding: 7px 16px; border-radius: 8px;
+      background: #fff; color: #000; font-size: 0.83rem; font-weight: 600;
+      border: none; cursor: pointer; text-decoration: none;
+      transition: opacity 0.15s; font-family: 'Geist', sans-serif;
+    }
+    .nav-btn-primary:hover { opacity: 0.88; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 24px 60px;
+      position: relative; text-align: center;
+      overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.025;
+      background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 14px; border-radius: 100px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-size: 0.75rem; font-weight: 500; color: var(--text2); letter-spacing: 0.06em;
+      margin-bottom: 28px; text-transform: uppercase;
+      animation: fadeInUp 0.6s ease both;
+    }
+    .hero-eyebrow span { color: var(--text); }
+    .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0; animation: pulse 2s ease infinite; }
+    .hero-title {
+      font-size: clamp(2.8rem, 7vw, 5.5rem); font-weight: 800;
+      line-height: 1.06; letter-spacing: -0.03em; color: var(--text);
+      max-width: 900px; margin: 0 auto 20px;
+      animation: fadeInUp 0.6s 0.1s ease both;
+    }
+    .hero-title-dim { color: rgba(255,255,255,0.28); }
+    .hero-subtitle {
+      font-size: 1.1rem; font-weight: 400; color: var(--text2); line-height: 1.6;
+      max-width: 540px; margin: 0 auto 40px;
+      animation: fadeInUp 0.6s 0.2s ease both;
+    }
+    .hero-actions {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+      animation: fadeInUp 0.6s 0.3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 10px;
+      background: #fff; color: #000; font-size: 0.9rem; font-weight: 600;
+      border: none; cursor: pointer; text-decoration: none; font-family: 'Geist', sans-serif;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 10px;
+      background: transparent; color: var(--text2); font-size: 0.9rem; font-weight: 500;
+      border: 1px solid var(--border); cursor: pointer; text-decoration: none; font-family: 'Geist', sans-serif;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--border2); background: rgba(255,255,255,0.03); }
+
+    /* HERO QUICK GENERATE */
+    .hero-generator {
+      margin-top: 60px; width: 100%; max-width: 700px;
+      animation: fadeInUp 0.6s 0.4s ease both;
+    }
+    .hero-gen-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+    }
+    .hero-gen-label {
+      font-size: 0.72rem; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 12px; text-align: left;
+    }
+    .hero-gen-input-row { display: flex; gap: 10px; }
+    .hero-gen-input {
+      flex: 1; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px;
+      color: var(--text); font-family: 'Geist', sans-serif; font-size: 0.9rem;
+      outline: none; transition: border-color 0.15s;
+    }
+    .hero-gen-input:focus { border-color: rgba(255,255,255,0.25); }
+    .hero-gen-input::placeholder { color: var(--text3); }
+    .hero-gen-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 20px; border-radius: 10px;
+      background: #fff; color: #000; font-size: 0.85rem; font-weight: 600;
+      border: none; cursor: pointer; white-space: nowrap; font-family: 'Geist', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .hero-gen-btn:hover { opacity: 0.85; }
+    .hero-gen-btn:disabled { opacity: 0.45; cursor: default; }
+    .hero-gen-result {
+      margin-top: 16px; border-radius: 12px; overflow: hidden;
+      display: none; position: relative;
+    }
+    .hero-gen-result img {
+      width: 100%; max-height: 340px; object-fit: cover;
+      display: block; border-radius: 12px;
+    }
+    .hero-gen-result-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px 16px 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .hero-gen-prompt-tag {
+      font-size: 0.75rem; color: rgba(255,255,255,0.7); max-width: 70%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .hero-gen-dl {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 0.78rem; font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.15); cursor: pointer; text-decoration: none;
+      transition: background 0.15s;
+    }
+    .hero-gen-dl:hover { background: rgba(255,255,255,0.18); }
+    .hero-gen-loader {
+      display: none; flex-direction: column; align-items: center; gap: 14px;
+      padding: 30px; color: var(--text2); font-size: 0.85rem;
+    }
+    .hero-gen-spinner {
+      width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.08);
+      border-top-color: rgba(255,255,255,0.6); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .hero-gen-free-note {
+      margin-top: 12px; font-size: 0.72rem; color: var(--text3);
+      display: flex; align-items: center; gap: 6px; justify-content: center;
+    }
+    .hero-gen-free-note i { color: #4ade80; font-size: 0.65rem; }
+
+    /* SCROLL INDICATOR */
+    .scroll-indicator {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: var(--text3); font-size: 0.7rem; letter-spacing: 0.08em;
+      text-transform: uppercase; animation: fadeInUp 0.6s 0.8s ease both;
+    }
+    .scroll-arrow {
+      width: 18px; height: 18px; border-right: 1.5px solid var(--text3);
+      border-bottom: 1.5px solid var(--text3);
+      transform: rotate(45deg); animation: scrollBounce 1.5s ease infinite;
+    }
+
+    /* SECTIONS */
+    .section { padding: 100px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text3); margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700;
+      letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 16px;
+    }
+    .section-sub { font-size: 1rem; color: var(--text2); max-width: 500px; line-height: 1.6; }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* GALLERY */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px; margin-top: 48px;
+    }
+    .gallery-card {
+      border-radius: 14px; overflow: hidden; position: relative;
+      background: var(--bg3); border: 1px solid var(--border);
+      aspect-ratio: 1; cursor: pointer;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .gallery-card:hover { transform: scale(1.02); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    .gallery-card img {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block; transition: opacity 0.3s;
+    }
+    .gallery-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%);
+      opacity: 0; transition: opacity 0.25s;
+      display: flex; align-items: flex-end; padding: 16px;
+    }
+    .gallery-card:hover .gallery-card-overlay { opacity: 1; }
+    .gallery-card-prompt { font-size: 0.78rem; color: rgba(255,255,255,0.9); line-height: 1.4; }
+    .gallery-card-tall { grid-row: span 2; aspect-ratio: auto; }
+    .gallery-card-wide { grid-column: span 2; aspect-ratio: 16/9; }
+
+    /* shimmer placeholder */
+    .img-placeholder {
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      position: absolute; inset: 0;
+    }
+    .gallery-card img.loaded + .img-placeholder,
+    .gallery-card img[src] { z-index: 1; position: relative; }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1px; margin-top: 60px;
+      background: var(--border);
+      border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    }
+    .feature-card {
+      background: var(--bg); padding: 32px 28px;
+      transition: background 0.2s;
+    }
+    .feature-card:hover { background: var(--bg2); }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; color: var(--text2); margin-bottom: 18px;
+    }
+    .feature-title { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .feature-desc { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+
+    /* STEPS */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px; margin-top: 60px;
+    }
+    .step-num {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+      color: var(--text3); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .step-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; margin-bottom: 16px; color: var(--text2);
+    }
+    .step-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; }
+    .step-desc { font-size: 0.84rem; color: var(--text2); line-height: 1.6; }
+
+    /* MODELS */
+    .models-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 40px; }
+    .model-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-radius: 100px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 0.83rem; font-weight: 500; color: var(--text2);
+      transition: all 0.15s; cursor: default;
+    }
+    .model-chip:hover { border-color: var(--border2); color: var(--text); }
+    .model-chip-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+    .model-chip-dot.green { background: #4ade80; }
+    .model-chip-dot.blue { background: #60a5fa; }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px; margin-top: 48px; max-width: 800px;
+    }
+    .pricing-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; position: relative;
+      transition: border-color 0.2s;
+    }
+    .pricing-card:hover { border-color: var(--border2); }
+    .pricing-card.featured { border-color: rgba(255,255,255,0.2); background: var(--bg3); }
+    .pricing-badge {
+      position: absolute; top: -1px; right: 20px;
+      background: #fff; color: #000; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 0 0 8px 8px;
+    }
+    .pricing-name { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); margin-bottom: 12px; }
+    .pricing-price { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+    .pricing-price-sub { font-size: 0.78rem; color: var(--text3); margin-bottom: 20px; }
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .pricing-features li { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text2); }
+    .pricing-features li i { color: #4ade80; font-size: 0.78rem; flex-shrink: 0; }
+    .pricing-btn {
+      width: 100%; padding: 10px; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none;
+      transition: opacity 0.15s; font-family: 'Geist', sans-serif;
+    }
+    .pricing-btn.outlined { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .pricing-btn.outlined:hover { border-color: var(--border2); background: rgba(255,255,255,0.03); }
+    .pricing-btn.filled { background: #fff; color: #000; }
+    .pricing-btn.filled:hover { opacity: 0.88; }
+
+    /* FOOTER */
+    .footer { padding: 60px 32px 40px; border-top: 1px solid var(--border); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+    .footer-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 32px; }
+    .footer-brand { max-width: 260px; }
+    .footer-brand-name { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .footer-brand-desc { font-size: 0.82rem; color: var(--text3); line-height: 1.6; }
+    .footer-links-group { display: flex; flex-direction: column; gap: 10px; }
+    .footer-links-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+    .footer-link { font-size: 0.83rem; color: var(--text2); text-decoration: none; transition: color 0.15s; }
+    .footer-link:hover { color: var(--text); }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text3); flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border); padding-top: 24px; }
+    .footer-powered { display: flex; align-items: center; gap: 8px; }
+    .footer-powered-logo { display: flex; align-items: center; gap: 4px; }
+    .footer-powered-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
+
+    /* ANIMATIONS */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes scrollBounce {
+      0%, 100% { transform: rotate(45deg) translateY(0); }
+      50% { transform: rotate(45deg) translateY(4px); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* TOAST */
+    #toast-container {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .toast {
+      padding: 10px 18px; border-radius: 100px;
+      background: rgba(20,20,20,0.97); border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; font-size: 0.82rem; font-weight: 500;
+      backdrop-filter: blur(20px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) both;
+      display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .toast.success { border-color: rgba(74,222,128,0.3); }
+    .toast.error { border-color: rgba(239,68,68,0.3); }
+    .toast i { font-size: 0.75rem; }
+    .toast i.fa-circle-check { color: #4ade80; }
+    .toast i.fa-circle-exclamation { color: #f87171; }
+    .toast i.fa-circle-info { color: #60a5fa; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (max-width: 600px) {
+      .nav { padding: 0 16px; }
+      .nav-links .nav-link.hide-mobile { display: none; }
+      .hero-title { font-size: 2.4rem; }
+      .hero-gen-input-row { flex-direction: column; }
+      .gallery-card-wide { grid-column: span 1; aspect-ratio: 1; }
+      .gallery-card-tall { grid-row: span 1; aspect-ratio: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="main-nav">
+  <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="nav-logo">
+    <div class="nav-logo-wordmark">
+      <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="5" height="5" rx="1.2" fill="#000"/>
+        <rect x="8" y="1" width="5" height="5" rx="1.2" fill="#000"/>
+        <rect x="1" y="8" width="5" height="5" rx="1.2" fill="#000"/>
+        <rect x="8" y="8" width="5" height="5" rx="1.2" fill="#000"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">WikiMind Art</span>
+    <span class="nav-logo-badge">Beta</span>
+  </a>
+  <div class="nav-links">
+    <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="nav-link hide-mobile">
+      <i class="fa-solid fa-house"></i> Accueil
+    </a>
+    <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="nav-link hide-mobile">
+      <i class="fa-solid fa-robot"></i> IA Chat
+    </a>
+    <a href="art.html" class="nav-btn-primary">
+      Lancer l'app <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;margin-left:2px"></i>
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-eyebrow">
+    <span class="hero-eyebrow-dot"></span>
+    Propulse par <span>Pollinations AI</span> &nbsp;&middot;&nbsp; Gratuit pour commencer
+  </div>
+
+  <h1 class="hero-title">
+    Creez des images<br>
+    <span class="hero-title-dim">avec l'IA</span>
+  </h1>
+
+  <p class="hero-subtitle">
+    Des illustrations, photos, oeuvres d'art et visuels professionnels en quelques secondes.
+    Aucune competence requise.
+  </p>
+
+  <div class="hero-actions">
+    <a href="art.html" class="btn-primary">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> Commencer a creer
+    </a>
+    <a href="#gallery" class="btn-secondary">
+      Voir les exemples <i class="fa-solid fa-arrow-down"></i>
+    </a>
+  </div>
+
+  <!-- Quick generate demo -->
+  <div class="hero-generator">
+    <div class="hero-gen-box">
+      <div class="hero-gen-label">Essayez maintenant — 1 generation gratuite sans compte</div>
+      <div class="hero-gen-input-row">
+        <input type="text" class="hero-gen-input" id="hero-prompt"
+          placeholder="Un chateau flottant dans les nuages au coucher du soleil..."
+          maxlength="500">
+        <button class="hero-gen-btn" id="hero-gen-btn" onclick="heroGenerate()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Generer
+        </button>
+      </div>
+      <div class="hero-gen-loader" id="hero-loader">
+        <div class="hero-gen-spinner"></div>
+        <span>Creation en cours...</span>
+      </div>
+      <div class="hero-gen-result" id="hero-result">
+        <img id="hero-result-img" src="" alt="">
+        <div class="hero-gen-result-overlay">
+          <span class="hero-gen-prompt-tag" id="hero-result-prompt"></span>
+          <a class="hero-gen-dl" id="hero-result-dl" href="#" download>
+            <i class="fa-solid fa-download"></i> Telecharger
+          </a>
+        </div>
+      </div>
+      <div class="hero-gen-free-note">
+        <i class="fa-solid fa-check"></i>
+        1 generation gratuite &middot; Creez un compte pour en generer plus
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <span>Decouvrir</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- GALLERY -->
+<section class="section" id="gallery">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Galerie d'exemples</div>
+      <h2 class="section-title">Ce que WikiMind Art peut creer</h2>
+      <p class="section-sub">Des portraits photorealistes aux paysages fantastiques, en passant par l'art abstrait et le design graphique.</p>
+    </div>
+
+    <div class="gallery-grid reveal">
+      <div class="gallery-card">
+        <div class="img-placeholder"></div>
+        <img src="gallery_1.png" alt="Chateau medieval sous une aurore boreale" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Chateau medieval sous une aurore boreale violette et verte, ultra-realiste</span>
+        </div>
+      </div>
+      <div class="gallery-card gallery-card-tall">
+        <div class="img-placeholder"></div>
+        <img src="gallery_2.png" alt="Portrait cyborg" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Portrait d'une femme cyborg aux yeux lumineux bleus, cinematic lighting</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="img-placeholder"></div>
+        <img src="gallery_3.png" alt="Foret de bambous" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Foret de bambous au Japon, brume matinale, style aquarelle</span>
+        </div>
+      </div>
+      <div class="gallery-card gallery-card-wide">
+        <div class="img-placeholder"></div>
+        <img src="gallery_4.png" alt="Cite futuriste" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Cite futuriste flottante dans les nuages au coucher du soleil, Blade Runner</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="img-placeholder"></div>
+        <img src="gallery_5.png" alt="Dragon de cristal" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Dragon de cristal lumineux dans une caverne de glace bleue</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="img-placeholder"></div>
+        <img src="gallery_6.png" alt="Astronaute" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Astronaute marchant sur une planete rouge avec deux lunes, peinture a l'huile</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="img-placeholder"></div>
+        <img src="gallery_7.png" alt="Cafe parisien" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Cafe parisien sous la pluie la nuit, reflets colores sur le pave mouille</span>
+        </div>
+      </div>
+      <div class="gallery-card">
+        <div class="img-placeholder"></div>
+        <img src="gallery_8.png" alt="Architecture organique" loading="lazy"
+          onerror="this.style.display='none'" onload="this.previousElementSibling.style.display='none'">
+        <div class="gallery-card-overlay">
+          <span class="gallery-card-prompt">Architecture organique biomimetique, vue interieure, lumiere naturelle</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<section class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Fonctionnalites</div>
+      <h2 class="section-title">Tout ce dont vous avez besoin</h2>
+      <p class="section-sub">Une plateforme complete de generation d'images, simple a utiliser et puissante sous le capot.</p>
+    </div>
+
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="feature-title">Generation en temps reel</div>
+        <div class="feature-desc">Vos images se creent en quelques secondes grace aux modeles Flux de Pollinations AI, les plus rapides du marche.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-sliders"></i></div>
+        <div class="feature-title">Controle total</div>
+        <div class="feature-desc">Choisissez le modele, le style artistique, le format, le seed — chaque parametre est ajustable pour un resultat parfait.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="feature-title">Multi-generation</div>
+        <div class="feature-desc">Generez jusqu'a 4 images en parallele depuis un seul prompt et comparez les variantes cote a cote.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-download"></i></div>
+        <div class="feature-title">Telechargement libre</div>
+        <div class="feature-desc">Toutes vos creations vous appartiennent. Telechargez-les en haute resolution sans filigrane.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div class="feature-title">Historique local</div>
+        <div class="feature-desc">Retrouvez jusqu'a 50 de vos dernieres generations, stockees en local, sans serveur.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-key"></i></div>
+        <div class="feature-title">BYOK — Cle API</div>
+        <div class="feature-desc">Connectez votre propre cle Pollinations API pour des generations illimitees sans contrainte de quota.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Comment ca marche</div>
+      <h2 class="section-title">Simple comme bonjour</h2>
+    </div>
+
+    <div class="steps-grid reveal">
+      <div>
+        <div class="step-num">Etape 01</div>
+        <div class="step-icon"><i class="fa-solid fa-pen"></i></div>
+        <div class="step-title">Decrivez votre vision</div>
+        <div class="step-desc">Entrez un prompt en texte libre. Soyez aussi precis ou vague que vous le souhaitez — le modele s'adapte.</div>
+      </div>
+      <div>
+        <div class="step-num">Etape 02</div>
+        <div class="step-icon"><i class="fa-solid fa-sliders"></i></div>
+        <div class="step-title">Ajustez les parametres</div>
+        <div class="step-desc">Choisissez le style artistique, le format d'image, le modele IA et le nombre de variantes a generer.</div>
+      </div>
+      <div>
+        <div class="step-num">Etape 03</div>
+        <div class="step-icon"><i class="fa-solid fa-bolt"></i></div>
+        <div class="step-title">Generez en un clic</div>
+        <div class="step-desc">Pollinations AI traite votre requete en temps reel. Vos images apparaissent en quelques secondes.</div>
+      </div>
+      <div>
+        <div class="step-num">Etape 04</div>
+        <div class="step-icon"><i class="fa-solid fa-download"></i></div>
+        <div class="step-title">Telechargez et utilisez</div>
+        <div class="step-desc">Exportez vos creations en haute resolution. Elles vous appartiennent entierement.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- MODELS -->
+<section class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Modeles disponibles</div>
+      <h2 class="section-title">Le meilleur de Pollinations AI</h2>
+      <p class="section-sub">Acces a tous les modeles de generation d'images de Pollinations AI, de Flux standard aux variantes specialisees.</p>
+    </div>
+
+    <div class="models-row reveal">
+      <div class="model-chip"><div class="model-chip-dot green"></div> Flux — Recommande</div>
+      <div class="model-chip"><div class="model-chip-dot green"></div> Flux Pro</div>
+      <div class="model-chip"><div class="model-chip-dot green"></div> Flux Realism</div>
+      <div class="model-chip"><div class="model-chip-dot blue"></div> Flux Anime</div>
+      <div class="model-chip"><div class="model-chip-dot blue"></div> Flux 3D</div>
+      <div class="model-chip"><div class="model-chip-dot"></div> Turbo</div>
+      <div class="model-chip"><div class="model-chip-dot"></div> Kontext</div>
+      <div class="model-chip"><div class="model-chip-dot"></div> Ghibli</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PRICING -->
+<section class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Acces</div>
+      <h2 class="section-title">Commencez gratuitement</h2>
+      <p class="section-sub">Aucune carte bancaire requise pour commencer. Passez au compte pour plus de generations quotidiennes.</p>
+    </div>
+
+    <div class="pricing-grid reveal">
+      <div class="pricing-card">
+        <div class="pricing-name">Visiteur</div>
+        <div class="pricing-price">Gratuit</div>
+        <div class="pricing-price-sub">Sans compte</div>
+        <ul class="pricing-features">
+          <li><i class="fa-solid fa-check"></i> 1 generation gratuite</li>
+          <li><i class="fa-solid fa-check"></i> Telechargement inclus</li>
+          <li><i class="fa-solid fa-check"></i> Tous les modeles</li>
+        </ul>
+        <a href="art.html" class="pricing-btn outlined">Essayer maintenant</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Populaire</div>
+        <div class="pricing-name">Compte gratuit</div>
+        <div class="pricing-price">Gratuit</div>
+        <div class="pricing-price-sub">Compte WikiMind</div>
+        <ul class="pricing-features">
+          <li><i class="fa-solid fa-check"></i> 10 generations par jour</li>
+          <li><i class="fa-solid fa-check"></i> Historique sauvegarde</li>
+          <li><i class="fa-solid fa-check"></i> Tous les modeles et styles</li>
+          <li><i class="fa-solid fa-check"></i> Multi-generation (x4)</li>
+        </ul>
+        <a href="art.html" class="pricing-btn filled">Creer un compte</a>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-name">BYOK</div>
+        <div class="pricing-price">Illimite</div>
+        <div class="pricing-price-sub">Votre cle Pollinations</div>
+        <ul class="pricing-features">
+          <li><i class="fa-solid fa-check"></i> Generations illimitees</li>
+          <li><i class="fa-solid fa-check"></i> Aucun quota</li>
+          <li><i class="fa-solid fa-check"></i> Priorite maximale</li>
+          <li><i class="fa-solid fa-check"></i> Cle stockee en local</li>
+        </ul>
+        <a href="art.html" class="pricing-btn outlined">Connecter ma cle</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- CTA -->
+<section class="section">
+  <div class="section-inner" style="text-align:center">
+    <div class="reveal">
+      <h2 class="section-title" style="margin:0 auto 16px">Pret a creer ?</h2>
+      <p class="section-sub" style="margin:0 auto 32px">
+        Rejoignez les createurs qui utilisent WikiMind Art pour donner vie a leurs idees, alimente par Pollinations AI.
+      </p>
+      <a href="art.html" class="btn-primary" style="font-size:1rem;padding:14px 32px">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Ouvrir WikiMind Art
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-brand-name">
+          <div class="nav-logo-wordmark" style="width:18px;height:18px">
+            <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="5" height="5" rx="1.2" fill="#000"/>
+              <rect x="8" y="1" width="5" height="5" rx="1.2" fill="#000"/>
+              <rect x="1" y="8" width="5" height="5" rx="1.2" fill="#000"/>
+              <rect x="8" y="8" width="5" height="5" rx="1.2" fill="#000"/>
+            </svg>
+          </div>
+          WikiMind Art
+        </div>
+        <div class="footer-brand-desc">
+          Generation d'images IA premium, propulse par Pollinations AI.
+          Faisant partie de l'ecosysteme WikiMind.
+        </div>
+      </div>
+      <div class="footer-links-group">
+        <div class="footer-links-title">WikiMind</div>
+        <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="footer-link">Accueil</a>
+        <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="footer-link">IA Chat</a>
+        <a href="art.html" class="footer-link">WikiMind Art</a>
+      </div>
+      <div class="footer-links-group">
+        <div class="footer-links-title">Application</div>
+        <a href="art.html" class="footer-link">Generer des images</a>
+        <a href="art.html" class="footer-link">Connexion</a>
+        <a href="art.html" class="footer-link">Inscription</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2025 WikiMind &middot; Tous droits reserves</span>
+      <div class="footer-powered">
+        Propulse par
+        <div class="footer-powered-logo">
+          <div class="footer-powered-dot"></div>
+          <span style="color:var(--text2);font-weight:500">Pollinations AI</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div id="toast-container"></div>
+
+<script>
+// NAV scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// Reveal on scroll
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Hero Enter key
+document.getElementById('hero-prompt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') heroGenerate();
+});
+
+let heroFreeUsed = localStorage.getItem('wm_art_free_used') === '1';
+
+async function heroGenerate() {
+  const prompt = document.getElementById('hero-prompt').value.trim();
+  if (!prompt) return;
+
+  const btn = document.getElementById('hero-gen-btn');
+  const loader = document.getElementById('hero-loader');
+  const result = document.getElementById('hero-result');
+  const img = document.getElementById('hero-result-img');
+
+  if (heroFreeUsed) {
+    showToast('Generation gratuite deja utilisee — ouvrez l\'app pour creer un compte', 'info');
+    setTimeout(() => window.location.href = 'art.html', 1500);
+    return;
+  }
+
+  btn.disabled = true;
+  loader.style.display = 'flex';
+  result.style.display = 'none';
+
+  const seed = Math.floor(Math.random() * 99999);
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=1024&height=768&seed=${seed}&nologo=true&enhance=true`;
+
+  const loadImg = new Image();
+  loadImg.crossOrigin = 'anonymous';
+  loadImg.onload = () => {
+    img.src = url;
+    document.getElementById('hero-result-prompt').textContent = prompt;
+    const dl = document.getElementById('hero-result-dl');
+    dl.href = url;
+    dl.download = 'wikimind-art.png';
+    loader.style.display = 'none';
+    result.style.display = 'block';
+    btn.disabled = false;
+    heroFreeUsed = true;
+    localStorage.setItem('wm_art_free_used', '1');
+  };
+  loadImg.onerror = () => {
+    loader.style.display = 'none';
+    btn.disabled = false;
+    showToast('Erreur lors de la generation, reessayez', 'error');
+  };
+  loadImg.src = url;
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icon = type === 'success' ? 'circle-check' : type === 'error' ? 'circle-exclamation' : 'circle-info';
+  toast.innerHTML = `<i class="fa-solid fa-${icon}"></i> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(8px) scale(0.95)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => { if (toast.parentNode) container.removeChild(toast); }, 300);
+  }, 3200);
+}
+</script>
+
+</body>
+</html>
